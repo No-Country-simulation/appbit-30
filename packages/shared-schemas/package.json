@@ -1,0 +1,21 @@
+{
+  "name": "@appbit/shared-schemas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.34.3",
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}
