@@ -1,0 +1,19 @@
+{
+  "name": "appbit-30",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:ai": "pnpm --filter ai-service dev",
+    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:ai\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.34.3"
+}
