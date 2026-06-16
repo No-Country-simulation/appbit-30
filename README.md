@@ -2,6 +2,8 @@
 
 ## Descripción
 
+
+
 AppBit es una plataforma de orientación profesional impulsada por IA, diseñada para acompañar a personas de grupos subrepresentados en su desarrollo académico, profesional y personal.
 
 La aplicación integra en una única experiencia:
