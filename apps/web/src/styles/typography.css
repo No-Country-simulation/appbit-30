@@ -1,0 +1,49 @@
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+.ds-h1 {
+  font-size: 48px;
+  font-weight: 900;
+}
+
+.ds-h2 {
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.ds-h3 {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.ds-body {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.ds-body-medium {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ds-body-semibold {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ds-caption {
+  font-size: 12px;
+  font-weight: 600;
+}
