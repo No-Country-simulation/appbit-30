@@ -1,5 +1,5 @@
 // apps/web/prisma/seed.ts
-import { PrismaClient, Prisma } from '../app/generated/prisma'
+import { PrismaClient, Prisma } from '../src/server/generated/prisma'
 import { PrismaPg } from '@prisma/adapter-pg'
 import 'dotenv/config'
 
@@ -45,6 +45,7 @@ async function main() {
             lng: new Prisma.Decimal(-58.3816),
             confianza: new Prisma.Decimal(0.85),
             auth_uid: '550e8400-e29b-41d4-a716-446655440000',
+            home_cluster: 'Buenos Aires',
         },
     })
 
@@ -71,6 +72,7 @@ async function main() {
             lng: new Prisma.Decimal(-99.1332),
             confianza: new Prisma.Decimal(0.70),
             auth_uid: '6ba7b810-e29b-41d4-a716-00c04fd430c8',
+            home_cluster: 'Ciudad de México',
         },
     })
 
@@ -97,6 +99,7 @@ async function main() {
             lng: new Prisma.Decimal(-70.6693),
             confianza: new Prisma.Decimal(0.50),
             auth_uid: '6ba7b811-e29b-41d4-a716-00c04fd430c8',
+            home_cluster: 'Santiago',
         },
     })
 
@@ -123,6 +126,7 @@ async function main() {
             lng: new Prisma.Decimal(-75.5812),
             confianza: new Prisma.Decimal(0.90),
             auth_uid: '6ba7b812-e29b-41d4-a716-00c04fd430c8',
+            home_cluster: 'Medellín',
         },
     })
 
@@ -149,6 +153,7 @@ async function main() {
             lng: new Prisma.Decimal(-77.0428),
             confianza: new Prisma.Decimal(0.30),
             auth_uid: '6ba7b813-e29b-41d4-a716-00c04fd430c8',
+            home_cluster: 'Lima',
         },
     })
 
@@ -181,6 +186,7 @@ async function main() {
             lat: new Prisma.Decimal(-31.4201),
             lng: new Prisma.Decimal(-64.1888),
             confianza: new Prisma.Decimal(0.75),
+            home_cluster: 'Buenos Aires',
         },
         {
             email: 'diego.fernandez@email.com',
@@ -201,6 +207,7 @@ async function main() {
             lat: new Prisma.Decimal(-34.9011),
             lng: new Prisma.Decimal(-56.1645),
             confianza: new Prisma.Decimal(0.82),
+            home_cluster: 'Montevideo',
         },
         {
             email: 'sofia.arias@email.com',
@@ -221,6 +228,7 @@ async function main() {
             lat: new Prisma.Decimal(9.9281),
             lng: new Prisma.Decimal(-84.0907),
             confianza: new Prisma.Decimal(0.60),
+            home_cluster: 'San José',
         },
         {
             email: 'javier.torres@email.com',
@@ -241,6 +249,7 @@ async function main() {
             lat: new Prisma.Decimal(40.4168),
             lng: new Prisma.Decimal(-3.7038),
             confianza: new Prisma.Decimal(0.88),
+            home_cluster: 'Madrid',
         },
         {
             email: 'lucia.rivera@email.com',
@@ -261,6 +270,7 @@ async function main() {
             lat: new Prisma.Decimal(9.0335),
             lng: new Prisma.Decimal(-79.5016),
             confianza: new Prisma.Decimal(0.68),
+            home_cluster: 'Panamá',
         },
     ]
 
@@ -599,13 +609,13 @@ async function main() {
     // ============================================
     console.log('📝 Creando empresas...')
     const empresasData = [
-        { nombre: 'TechCorp S.A.', descripcion: 'Empresa líder en desarrollo de software', sector: 'Tecnología', tamanio: '500-1000' },
-        { nombre: 'CloudWise', descripcion: 'Soluciones de infraestructura en la nube', sector: 'Cloud Computing', tamanio: '200-500' },
-        { nombre: 'DataMind', descripcion: 'Consultoría en inteligencia de negocios', sector: 'Consultoría', tamanio: '50-200' },
-        { nombre: 'DesignLab', descripcion: 'Agencia de diseño y experiencia de usuario', sector: 'Diseño', tamanio: '10-50' },
-        { nombre: 'CyberShield', descripcion: 'Seguridad informática y ciberseguridad', sector: 'Seguridad', tamanio: '100-200' },
-        { nombre: 'AI Solutions', descripcion: 'Desarrollo de aplicaciones de IA', sector: 'Inteligencia Artificial', tamanio: '50-100' },
-        { nombre: 'DevOps Masters', descripcion: 'Automatización y DevOps', sector: 'DevOps', tamanio: '20-50' },
+        { nombre: 'TechCorp S.A.', descripcion: 'Empresa líder en desarrollo de software', sector: 'Tecnología', tamanio: '500-1000', cluster: 'Buenos Aires' },
+        { nombre: 'CloudWise', descripcion: 'Soluciones de infraestructura en la nube', sector: 'Cloud Computing', tamanio: '200-500', cluster: 'Buenos Aires' },
+        { nombre: 'DataMind', descripcion: 'Consultoría en inteligencia de negocios', sector: 'Consultoría', tamanio: '50-200', cluster: 'Buenos Aires' },
+        { nombre: 'DesignLab', descripcion: 'Agencia de diseño y experiencia de usuario', sector: 'Diseño', tamanio: '10-50', cluster: 'Buenos Aires' },
+        { nombre: 'CyberShield', descripcion: 'Seguridad informática y ciberseguridad', sector: 'Seguridad', tamanio: '100-200', cluster: 'Buenos Aires' },
+        { nombre: 'AI Solutions', descripcion: 'Desarrollo de aplicaciones de IA', sector: 'Inteligencia Artificial', tamanio: '50-100', cluster: 'Buenos Aires' },
+        { nombre: 'DevOps Masters', descripcion: 'Automatización y DevOps', sector: 'DevOps', tamanio: '20-50', cluster: 'Buenos Aires' },
     ]
 
     const empresasMap = new Map()
@@ -618,6 +628,7 @@ async function main() {
                 descripcion: emp.descripcion,
                 sector: emp.sector,
                 tamanio: emp.tamanio,
+                cluster: emp.cluster,
             },
         })
         empresasMap.set(emp.nombre, created.empresa_id)
@@ -1103,6 +1114,29 @@ async function main() {
     // ============================================
     // 22. CALIDAD DE RED ZONA
     // ============================================
+
+    console.log('📝 Creando antenas...')
+    const antenasData = [
+        { ecgi: 'ECGI001', lat: -34.6037, lon: -58.3816, cluster: 'Buenos Aires', municipio: 'CABA' },
+        { ecgi: 'ECGI002', lat: 19.4326, lon: -99.1332, cluster: 'CDMX', municipio: 'Cuauhtémoc' },
+        { ecgi: 'ECGI003', lat: 6.2442, lon: -75.5812, cluster: 'Medellín', municipio: 'El Poblado' },
+    ]
+
+    for (const ant of antenasData) {
+        await prisma.antenas.upsert({
+            where: { ecgi: ant.ecgi },
+            update: {},
+            create: {
+                ecgi: ant.ecgi,
+                lat: new Prisma.Decimal(ant.lat),
+                lon: new Prisma.Decimal(ant.lon),
+                cluster: ant.cluster,
+                municipio: ant.municipio,
+            },
+        })
+    }
+
+
     console.log('📝 Creando datos de calidad de red...')
     const calidadData = [
         { ecgi: 'ECGI001', cluster: 'Buenos Aires', municipio: 'CABA', day_date: new Date('2025-01-15'), periodo: 'mañana', n_usuarios: 1500, n_sessoes: 12000, download: 1000000000, upload: 500000000, dur_media: 120.5, drop_pct: 0.05, congestion: 0.12, lat: -34.6037, lon: -58.3816 },
@@ -1186,6 +1220,59 @@ async function main() {
                 },
             })
         }
+    }
+
+    console.log('📝 Creando distancias entre clusters...')
+    const distanciasData = [
+        { origem: 'Buenos Aires', destino: 'CDMX', dist: 7000.0, p25: 6500, p75: 7500, periodo: 'diurno', amostras: 1000 },
+        { origem: 'Buenos Aires', destino: 'Medellín', dist: 5000.0, p25: 4800, p75: 5200, periodo: 'nocturno', amostras: 800 },
+    ]
+
+    for (const d of distanciasData) {
+        await prisma.distanciasCluster.upsert({
+            where: {
+                cluster_origem_cluster_destino: {
+                    cluster_origem: d.origem,
+                    cluster_destino: d.destino,
+                },
+            },
+            update: {},
+            create: {
+                cluster_origem: d.origem,
+                cluster_destino: d.destino,
+                dist_media_km: new Prisma.Decimal(d.dist),
+                dist_p25_km: new Prisma.Decimal(d.p25),
+                dist_p75_km: new Prisma.Decimal(d.p75),
+                periodo_predominante: d.periodo,
+                n_amostras: d.amostras,
+            },
+        })
+    }
+
+    console.log('📝 Creando flujos origen-destino...')
+    const odData = [
+        { origem: 'Buenos Aires', destino: 'CDMX', periodo: 'diurno', viajes: 500, dist: 7000, mesmo: 0 },
+        { origem: 'Buenos Aires', destino: 'Medellín', periodo: 'nocturno', viajes: 300, dist: 5000, mesmo: 0 },
+    ]
+
+    for (const od of odData) {
+        await prisma.origenDestino.upsert({
+            where: {
+                cluster_origem_cluster_destino: {
+                    cluster_origem: od.origem,
+                    cluster_destino: od.destino,
+                },
+            },
+            update: {},
+            create: {
+                cluster_origem: od.origem,
+                cluster_destino: od.destino,
+                periodo_predominante: od.periodo,
+                n_viagens_estimado: od.viajes,
+                dist_media_km: new Prisma.Decimal(od.dist),
+                mesmo_cluster: od.mesmo,
+            },
+        })
     }
 
     console.log('✅ Seed completado exitosamente')

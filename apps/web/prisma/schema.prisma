@@ -2,11 +2,12 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  //output   = "../app/generated/prisma"
+  output   = "../src/server/generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // ============================================
@@ -207,6 +208,7 @@ model Usuarios {
   avatar_url          String?                @db.Text
   creado_en           DateTime               @default(now()) @db.Timestamptz
   actualizado_en      DateTime               @default(now()) @db.Timestamptz
+  home_cluster        String?                @db.VarChar(100)
 
   // Relaciones
   usuario_objetivos     UsuarioObjetivos[]
@@ -232,6 +234,8 @@ model Usuarios {
   @@index([pais], map: "idx_usuarios_pais")
   @@index([ciudad], map: "idx_usuarios_ciudad")
   @@index([email], map: "idx_usuarios_email")
+  @@index([home_cluster], map: "idx_usuarios_home_cluster")
+  @@index([lat, lng], map: "idx_usuarios_coords") 
 }
 
 model UsuarioObjetivos {
@@ -353,11 +357,14 @@ model Empresas {
   tamanio      String?   @db.VarChar(50)
   logo_url     String?   @db.Text
   creado_en    DateTime  @default(now()) @db.Timestamptz
+  cluster      String?   @db.VarChar(100)  
+
 
   vacantes     Vacantes[]
 
   @@index([nombre], map: "idx_empresa_nombre")
   @@map("empresas")
+  @@index([cluster], map: "idx_empresas_cluster")
 }
 
 model Vacantes {
@@ -442,7 +449,8 @@ model CheckIns {
 
   @@index([usuario_id], map: "idx_chk_usuario")
   @@index([creado_en], map: "idx_chk_fecha")
-  @@map("check_ins")
+  @@index([nota_diaria], map: "idx_chk_nota")
+  @@map("check_ins") 
 }
 
 model CheckInMotivos {
@@ -731,4 +739,49 @@ model NotificacionesRadar {
   @@index([usuario_id], map: "idx_notif_usuario")
   @@index([leida], map: "idx_notif_leida")
   @@map("notificaciones_radar")
+}
+
+model Antenas {
+  ecgi      String   @id @db.VarChar(50)
+  lat       Decimal  @db.Decimal(10, 7)
+  lon       Decimal  @db.Decimal(10, 7)
+  cluster   String   @db.VarChar(100)
+  municipio String?  @db.VarChar(100)
+  creado_en DateTime @default(now()) @db.Timestamptz
+
+  @@index([cluster], map: "idx_antenas_cluster")
+  @@index([lat, lon], map: "idx_antenas_coords")
+  @@map("antenas")
+}
+
+model DistanciasCluster {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cluster_origem      String   @db.VarChar(100)
+  cluster_destino     String   @db.VarChar(100)
+  dist_media_km       Decimal  @db.Decimal(10, 4)
+  dist_p25_km         Decimal? @db.Decimal(10, 4)
+  dist_p75_km         Decimal? @db.Decimal(10, 4)
+  periodo_predominante String? @db.VarChar(20)
+  n_amostras          Int?
+  creado_en           DateTime @default(now()) @db.Timestamptz
+
+  @@unique([cluster_origem, cluster_destino])
+  @@index([cluster_origem], map: "idx_dist_cluster_origem")
+  @@index([cluster_destino], map: "idx_dist_cluster_destino")
+  @@map("distancias_cluster")
+}
+
+model OrigenDestino {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cluster_origem      String   @db.VarChar(100)
+  cluster_destino     String   @db.VarChar(100)
+  periodo_predominante String? @db.VarChar(20)
+  n_viagens_estimado  Int?
+  dist_media_km       Decimal? @db.Decimal(10, 4)
+  mesmo_cluster       Int?     @db.SmallInt
+
+  @@unique([cluster_origem, cluster_destino])
+  @@index([cluster_origem], map: "idx_od_origem")
+  @@index([cluster_destino], map: "idx_od_destino")
+  @@map("origen_destino")
 }
