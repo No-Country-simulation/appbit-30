@@ -1,0 +1,72 @@
+:root {
+  /* PRIMARY */
+
+  --color-primary: #7c3aed;
+  --color-primary-light: #a78bfa;
+  --color-primary-dark: #5b21b6;
+  --color-primary-pale: #f3e8ff;
+
+  /* SECONDARY */
+
+  --color-secondary: #ffd166;
+  --color-secondary-dark: #e5b234;
+  --color-secondary-pale: #fef08a;
+
+  /* FEEDBACK */
+
+  --color-success: #06d6a0;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #166534;
+
+  --color-danger: #ef476f;
+  --color-danger-bg: #fee2e2;
+  --color-danger-text: #991b1b;
+
+  --color-warning: #854d0e;
+
+  /* SURFACES */
+
+  --color-body: #f8fafc;
+  --color-card: #ffffff;
+  --color-dark-surface: #0f172a;
+
+  /* TEXT */
+
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+
+  /* BORDERS */
+
+  --color-border: #e2e8f0;
+  --color-input-border: #d1d5db;
+  --color-input-focus-ring: rgba(124, 58, 237, 0.15);
+
+  /* RADIUS */
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 99px;
+
+  /* SHADOWS */
+
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.02);
+
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+  --shadow-lg: 0 10px 40px rgba(124, 58, 237, 0.1);
+
+  /* SIDEBAR */
+
+  --sidebar-width: 280px;
+
+  /* TRANSITIONS */
+
+  --transition-default: all 0.3s ease;
+
+  /* GRID */
+
+  --grid-gap-sm: 16px;
+  --grid-gap-md: 24px;
+  --grid-gap-lg: 32px;
+}
