@@ -54,7 +54,7 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Color Tokens</H2>
 
-          <div className='grid grid-cols-4 gap-4'>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
             <ColorBox name='Primary' color='var(--color-primary)' />
 
             <ColorBox name='Primary Light' color='var(--color-primary-light)' />
@@ -102,7 +102,7 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Radius Tokens</H2>
 
-          <div className='flex gap-8 items-end'>
+          <div className='flex flex-wrap items-end gap-4 lg:gap-8'>
             <RadiusBox label='sm' radius='var(--radius-sm)' />
 
             <RadiusBox label='md' radius='var(--radius-md)' />
@@ -120,7 +120,7 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Shadow Tokens</H2>
 
-          <div className='grid grid-cols-3 gap-6'>
+          <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
             <ShadowBox label='shadow-sm' shadow='var(--shadow-sm)' />
 
             <ShadowBox label='shadow-md' shadow='var(--shadow-md)' />
@@ -203,7 +203,7 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Cards</H2>
 
-          <div className='grid grid-cols-2 gap-8'>
+          <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-8'>
             <AppCard>Normal Card</AppCard>
 
             <AppCard hover>Hover Card</AppCard>
@@ -217,7 +217,7 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Animations</H2>
 
-          <div className='grid grid-cols-3 gap-8'>
+          <div className='grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8'>
             <div className='space-y-4'>
               <AppButton onClick={() => setKey((value) => value + 1)}>
                 Reproducir animación
@@ -227,7 +227,7 @@ export default function PlaygroundScreen() {
               </AppCard>
             </div>
 
-            <div className='relative h-80 border rounded-xl overflow-hidden'>
+            <div className='relative h-56 overflow-hidden rounded-xl border sm:h-72 lg:h-80'>
               <AuthBlob />
             </div>
 
@@ -242,55 +242,46 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>Icons</H2>
 
-          <div className='flex gap-8 flex-wrap'>
+          <div className='grid grid-cols-3 gap-6 sm:grid-cols-4 lg:grid-cols-6'>
             <AppIcon
               name='user'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='bell'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='settings'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='heart'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='chart'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='google'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='github'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='linkedin'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='lock'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
-
             <AppIcon
               name='lockOpen'
-              className='w-24 h-24 text-[var(--color-text-muted)]'
+              className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
           </div>
         </section>
@@ -305,7 +296,7 @@ export default function PlaygroundScreen() {
           <div>
             <BodyMedium>gap-4 (16px)</BodyMedium>
 
-            <div className='grid grid-cols-4 gap-4 mt-4'>
+            <div className='mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
               {Array.from({ length: 4 }).map((_, i) => (
                 <AppCard key={i}>Card</AppCard>
               ))}
@@ -315,7 +306,7 @@ export default function PlaygroundScreen() {
           <div>
             <BodyMedium>gap-8 (32px)</BodyMedium>
 
-            <div className='grid grid-cols-4 gap-8 mt-4'>
+            <div className='mt-4 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4'>
               {Array.from({ length: 4 }).map((_, i) => (
                 <AppCard key={i}>Card</AppCard>
               ))}
@@ -352,7 +343,10 @@ function RadiusBox({ label, radius }: { label: string; radius: string }) {
 
 function ShadowBox({ label, shadow }: { label: string; shadow: string }) {
   return (
-    <div className='h-32 bg-white rounded-xl' style={{ boxShadow: shadow }}>
+    <div
+      className='h-32 rounded-xl bg-[var(--color-card)]'
+      style={{ boxShadow: shadow }}
+    >
       <div className='p-4'>{label}</div>
     </div>
   );

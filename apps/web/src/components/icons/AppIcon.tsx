@@ -11,6 +11,7 @@ import {
   faLock,
   faLockOpen,
   faCheck,
+  faBars,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -36,6 +37,7 @@ const icons = {
   lockOpen: faLockOpen,
 
   check: faCheck,
+  menu: faBars,
 };
 
 type IconName = keyof typeof icons;
