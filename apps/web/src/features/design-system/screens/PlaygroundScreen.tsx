@@ -1,3 +1,4 @@
+'use client';
 import {
   AppBadge,
   AppButton,
@@ -14,9 +15,13 @@ import {
   H2,
   H3,
   PulseIndicator,
+  AppChoiceChips,
 } from '@/src/components';
+import { useState } from 'react';
 
 export default function PlaygroundScreen() {
+  const [key, setKey] = useState(0);
+
   return (
     <AppShell>
       <div className='space-y-16'>
@@ -141,6 +146,23 @@ export default function PlaygroundScreen() {
         </section>
 
         {/* ====================================================== */}
+        {/* CHOICE CHIPS */}
+        {/* ====================================================== */}
+
+        <section className='space-y-4'>
+          <H2>Choice Chips</H2>
+
+          <AppChoiceChips
+            defaultSelected={['pc-laptop']}
+            options={[
+              { label: 'Solo celular', value: 'solo-celular' },
+              { label: 'PC / Laptop', value: 'pc-laptop' },
+              { label: 'Tablet', value: 'tablet' },
+            ]}
+          />
+        </section>
+
+        {/* ====================================================== */}
         {/* INPUTS */}
         {/* ====================================================== */}
 
@@ -196,7 +218,14 @@ export default function PlaygroundScreen() {
           <H2>Animations</H2>
 
           <div className='grid grid-cols-3 gap-8'>
-            <AppCard className='animate-fade-up'>Fade In Up</AppCard>
+            <div className='space-y-4'>
+              <AppButton onClick={() => setKey((value) => value + 1)}>
+                Reproducir animación
+              </AppButton>
+              <AppCard key={key} className='animate-fade-up'>
+                Fade In Up
+              </AppCard>
+            </div>
 
             <div className='relative h-80 border rounded-xl overflow-hidden'>
               <AuthBlob />
@@ -216,42 +245,52 @@ export default function PlaygroundScreen() {
           <div className='flex gap-8 flex-wrap'>
             <AppIcon
               name='user'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='bell'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='settings'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='heart'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='chart'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='google'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='github'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
 
             <AppIcon
               name='linkedin'
-              className='h-50 w-50 text-[var(--color-text-muted)]'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
+            />
+
+            <AppIcon
+              name='lock'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
+            />
+
+            <AppIcon
+              name='lockOpen'
+              className='w-24 h-24 text-[var(--color-text-muted)]'
             />
           </div>
         </section>
