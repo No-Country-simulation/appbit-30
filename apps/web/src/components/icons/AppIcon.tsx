@@ -8,6 +8,7 @@ import {
   faArrowLeft,
   faHeart,
   faChartLine,
+  faBars,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -28,6 +29,8 @@ const icons = {
   google: faGoogle,
   github: faGithub,
   linkedin: faLinkedin,
+
+  menu: faBars,
 };
 
 type IconName = keyof typeof icons;
