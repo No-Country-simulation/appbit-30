@@ -1,4 +1,4 @@
-import { AppIcon } from '@/src/components';
+import { AppIcon, AppLanguageSwitcher } from '@/src/components';
 
 interface Props {
   onMenuClick?: () => void;
@@ -16,7 +16,13 @@ export function AppHeader({ onMenuClick }: Props) {
         <AppIcon name='menu' className='size-5' />
       </button>
 
-      <div className='hidden lg:block'>Header</div>
+      <div className='hidden font-body text-sm font-semibold text-[var(--color-text-muted)] lg:block'>
+        AppBit
+      </div>
+
+      <div className='ml-auto'>
+        <AppLanguageSwitcher />
+      </div>
     </header>
   );
 }

@@ -19,18 +19,26 @@ import {
 } from '@/src/components';
 import { useState } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 export default function PlaygroundScreen() {
+  const t = useTranslations('Playground');
   const [key, setKey] = useState(0);
 
   return (
     <AppShell>
       <div className='space-y-16'>
+        <div className='space-y-4'>
+          <H1>{t('title')}</H1>
+          <Body>{t('description')}</Body>
+        </div>
+
         {/* ====================================================== */}
         {/* TYPOGRAPHY */}
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H1>Typography</H1>
+          <H1>{t('typography')}</H1>
 
           <H1>Heading 1 - Outfit Black</H1>
 
@@ -52,7 +60,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Color Tokens</H2>
+          <H2>{t('colors')}</H2>
 
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
             <ColorBox name='Primary' color='var(--color-primary)' />
@@ -100,7 +108,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Radius Tokens</H2>
+          <H2>{t('radius')}</H2>
 
           <div className='flex flex-wrap items-end gap-4 lg:gap-8'>
             <RadiusBox label='sm' radius='var(--radius-sm)' />
@@ -118,7 +126,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Shadow Tokens</H2>
+          <H2>{t('shadows')}</H2>
 
           <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
             <ShadowBox label='shadow-sm' shadow='var(--shadow-sm)' />
@@ -134,14 +142,14 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Buttons</H2>
+          <H2>{t('buttons')}</H2>
 
           <div className='flex gap-4 flex-wrap'>
-            <AppButton>Primary</AppButton>
+            <AppButton>{t('primary')}</AppButton>
 
-            <AppButton variant='outline'>Outline</AppButton>
+            <AppButton variant='outline'>{t('outline')}</AppButton>
 
-            <AppButton disabled>Disabled</AppButton>
+            <AppButton disabled>{t('disabled')}</AppButton>
           </div>
         </section>
 
@@ -155,9 +163,9 @@ export default function PlaygroundScreen() {
           <AppChoiceChips
             defaultSelected={['pc-laptop']}
             options={[
-              { label: 'Solo celular', value: 'solo-celular' },
-              { label: 'PC / Laptop', value: 'pc-laptop' },
-              { label: 'Tablet', value: 'tablet' },
+              { label: t('onlyPhone'), value: 'solo-celular' },
+              { label: t('pcOrLaptop'), value: 'pc-laptop' },
+              { label: t('tablet'), value: 'tablet' },
             ]}
           />
         </section>
@@ -167,14 +175,14 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Inputs</H2>
+          <H2>{t('inputs')}</H2>
 
           <div className='max-w-md space-y-4'>
-            <AppInput placeholder='Normal Input' />
+            <AppInput placeholder={t('normalInput')} />
 
-            <AppInput value='Filled Input' readOnly />
+            <AppInput value={t('filledInput')} readOnly />
 
-            <AppInput disabled placeholder='Disabled Input' />
+            <AppInput disabled placeholder={t('disabledInput')} />
           </div>
         </section>
 
@@ -183,7 +191,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Badges</H2>
+          <H2>{t('badges')}</H2>
 
           <div className='flex gap-4 flex-wrap'>
             <AppBadge>Primary</AppBadge>
@@ -201,12 +209,12 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Cards</H2>
+          <H2>{t('cards')}</H2>
 
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-8'>
-            <AppCard>Normal Card</AppCard>
+            <AppCard>{t('normalCard')}</AppCard>
 
-            <AppCard hover>Hover Card</AppCard>
+            <AppCard hover>{t('hoverCard')}</AppCard>
           </div>
         </section>
 
@@ -215,15 +223,15 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Animations</H2>
+          <H2>{t('animations')}</H2>
 
           <div className='grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8'>
             <div className='space-y-4'>
               <AppButton onClick={() => setKey((value) => value + 1)}>
-                Reproducir animación
+                {t('playAnimation')}
               </AppButton>
               <AppCard key={key} className='animate-fade-up'>
-                Fade In Up
+                {t('fadeInUp')}
               </AppCard>
             </div>
 
@@ -240,7 +248,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-4'>
-          <H2>Icons</H2>
+          <H2>{t('icons')}</H2>
 
           <div className='grid grid-cols-3 gap-6 sm:grid-cols-4 lg:grid-cols-6'>
             <AppIcon
@@ -291,7 +299,7 @@ export default function PlaygroundScreen() {
         {/* ====================================================== */}
 
         <section className='space-y-8'>
-          <H2>Grid Spacing</H2>
+          <H2>{t('gridSpacing')}</H2>
 
           <div>
             <BodyMedium>gap-4 (16px)</BodyMedium>
