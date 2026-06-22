@@ -8,6 +8,9 @@ import {
   faArrowLeft,
   faHeart,
   faChartLine,
+  faLock,
+  faLockOpen,
+  faCheck,
   faBars,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -30,6 +33,10 @@ const icons = {
   github: faGithub,
   linkedin: faLinkedin,
 
+  lock: faLock,
+  lockOpen: faLockOpen,
+
+  check: faCheck,
   menu: faBars,
 };
 
