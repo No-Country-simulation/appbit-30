@@ -35,8 +35,11 @@
     "disabledInput": "Input deshabilitado",
     "normalCard": "Card normal",
     "hoverCard": "Card con hover",
-    "replayAnimation": "Reproducir animación",
-    "fadeInUp": "Fade In Up"
+    "playAnimation": "Reproducir animación",
+    "fadeInUp": "Fade In Up",
+    "onlyPhone": "Solo celular",
+    "pcOrLaptop": "PC / Laptop",
+    "tablet": "Tablet"
   },
   "Auth": {
     "heroTitleLine1": "Tu talento",

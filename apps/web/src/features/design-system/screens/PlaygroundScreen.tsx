@@ -163,9 +163,9 @@ export default function PlaygroundScreen() {
           <AppChoiceChips
             defaultSelected={['pc-laptop']}
             options={[
-              { label: 'Solo celular', value: 'solo-celular' },
-              { label: 'PC / Laptop', value: 'pc-laptop' },
-              { label: 'Tablet', value: 'tablet' },
+              { label: t('onlyPhone'), value: 'solo-celular' },
+              { label: t('pcOrLaptop'), value: 'pc-laptop' },
+              { label: t('tablet'), value: 'tablet' },
             ]}
           />
         </section>
@@ -228,7 +228,7 @@ export default function PlaygroundScreen() {
           <div className='grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8'>
             <div className='space-y-4'>
               <AppButton onClick={() => setKey((value) => value + 1)}>
-                Reproducir animación
+                {t('playAnimation')}
               </AppButton>
               <AppCard key={key} className='animate-fade-up'>
                 {t('fadeInUp')}
