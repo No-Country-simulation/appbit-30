@@ -9,7 +9,3 @@ export interface OrientationRequest {
   level: string;
   goal: string;
 }
-
-export interface TestType {
-  id: string;
-}
