@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from '@/src/components/ui/dialog';
 import { AppButton, AppInput, ChoiceChip, StepIndicator } from '@/src/components';
-import { Body, Caption } from '@/src/components/typography';
+import { Body } from '@/src/components/typography';
 
 type Step = 1 | 2 | 3;
 
@@ -124,348 +124,359 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
     setWhatsappNumero('');
   }
 
+  const generoOptions = [
+    { value: 'Masculino', label: t('generoOption1') },
+    { value: 'Femenino', label: t('generoOption2') },
+    { value: 'No_binario', label: t('generoOption3') },
+    { value: 'Prefiero_no_decir', label: t('generoOption4') },
+  ];
+
+  const nivelEducacionOptions = [
+    { value: 'Secundario', label: t('nivelEducacionOption1') },
+    { value: 'Terciario', label: t('nivelEducacionOption2') },
+    { value: 'Universitario', label: t('nivelEducacionOption3') },
+    { value: 'Posgrado', label: t('nivelEducacionOption4') },
+    { value: 'Curso_tecnico_bootcamp', label: t('nivelEducacionOption5') },
+    { value: 'Otro', label: t('nivelEducacionOption6') },
+  ];
+
+  const momentoProfesionalOptions = [
+    { value: 'Estudiando', label: t('momentoProfesionalOption1') },
+    { value: 'Buscando_trabajo', label: t('momentoProfesionalOption2') },
+    { value: 'Trabajando_menos_1_anio', label: t('momentoProfesionalOption3') },
+    { value: 'Trabajando_mas_1_anio', label: t('momentoProfesionalOption4') },
+    { value: 'Transicion_carrera', label: t('momentoProfesionalOption5') },
+    { value: 'Desempleado', label: t('momentoProfesionalOption6') },
+  ];
+
+  const areasInteresOptions = [
+    { value: 'Desarrollo_software', label: t('areasInteresOption1') },
+    { value: 'Datos_analisis', label: t('areasInteresOption2') },
+    { value: 'Diseno_UX_UI', label: t('areasInteresOption3') },
+    { value: 'Marketing_digital', label: t('areasInteresOption4') },
+    { value: 'Ciberseguridad', label: t('areasInteresOption5') },
+    { value: 'Cloud_infraestructura', label: t('areasInteresOption6') },
+    { value: 'IA', label: t('areasInteresOption7') },
+    { value: 'Gestion_proyectos', label: t('areasInteresOption8') },
+    { value: 'Soporte_tecnico', label: t('areasInteresOption9') },
+    { value: 'Otro', label: t('areasInteresOption10') },
+  ];
+
+  const idiomasOptions = [
+    { value: 'Ingles_basico', label: t('idiomasOption1') },
+    { value: 'Ingles_intermedio', label: t('idiomasOption2') },
+    { value: 'Ingles_avanzado', label: t('idiomasOption3') },
+    { value: 'Portugues', label: t('idiomasOption4') },
+    { value: 'Espanol', label: t('idiomasOption5') },
+    { value: 'Otro', label: t('idiomasOption6') },
+  ];
+
+  const disponibilidadOptions = [
+    { value: 'Inmediata', label: t('disponibilidadOption1') },
+    { value: 'En_1_mes', label: t('disponibilidadOption2') },
+    { value: 'En_3_meses', label: t('disponibilidadOption3') },
+    { value: 'Mas_3_meses', label: t('disponibilidadOption4') },
+  ];
+
+  const ubicacionTrabajoOptions = [
+    { value: 'Remoto', label: t('ubicacionTrabajoOption1') },
+    { value: 'Hibrido', label: t('ubicacionTrabajoOption2') },
+    { value: 'Presencial', label: t('ubicacionTrabajoOption3') },
+  ];
+
+  const objetivosOptions = [
+    { value: 'Primer_empleo_tech', label: t('objetivosOption1') },
+    { value: 'Cambiar_area_profesional', label: t('objetivosOption2') },
+    { value: 'Mejorar_puesto_actual', label: t('objetivosOption3') },
+    { value: 'Crear_emprendimiento', label: t('objetivosOption4') },
+    { value: 'Aprender_nueva_habilidad', label: t('objetivosOption5') },
+    { value: 'Obtener_certificacion', label: t('objetivosOption6') },
+  ];
+
+  const dispositivosOptions = [
+    { value: 'Smartphone_Android', label: t('dispositivosOption1') },
+    { value: 'iPhone', label: t('dispositivosOption2') },
+    { value: 'PC_Notebook', label: t('dispositivosOption3') },
+    { value: 'Tablet', label: t('dispositivosOption4') },
+    { value: 'Solo_celular', label: t('dispositivosOption5') },
+  ];
+
+  const tipoConexionOptions = [
+    { value: 'WiFi_casa', label: t('tipoConexionOption1') },
+    { value: 'Datos_4G', label: t('tipoConexionOption2') },
+    { value: 'Datos_5G', label: t('tipoConexionOption3') },
+    { value: 'WiFi_compartido', label: t('tipoConexionOption4') },
+  ];
+
   return (
     <>
       <span onClick={() => setOpen(true)} className='cursor-pointer'>
         {children}
       </span>
       <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
-      <DialogContent
-        showCloseButton={false}
-        className='sm:max-w-lg'
-      >
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
-        </DialogHeader>
+        <DialogContent
+          showCloseButton={false}
+          className='sm:max-w-lg'
+        >
+          <DialogHeader>
+            <DialogTitle>{t('step1Title')}</DialogTitle>
+            <DialogDescription>{t('stepIndicator', { step, total: 3 })}</DialogDescription>
+          </DialogHeader>
 
-        <div className='flex justify-center py-4'>
-          <StepIndicator currentStep={step} totalSteps={3} />
-        </div>
+          <div className='flex justify-center py-4'>
+            <StepIndicator currentStep={step} totalSteps={3} />
+          </div>
 
-        <div className='space-y-5'>
-          {/* ===== STEP 1 ===== */}
-          {step === 1 && (
-            <>
-              <Caption>{t('step1Subtitle')}</Caption>
+          <div className='space-y-5'>
+            {/* ===== STEP 1 ===== */}
+            {step === 1 && (
+              <>
+                <Body>{t('step1Title')}</Body>
 
-              <div className='space-y-4'>
-                <div>
-                  <Body>{t('fechaNacimiento')}</Body>
-                  <AppInput
-                    type='date'
-                    value={fechaNacimiento}
-                    onChange={(e) => setFechaNacimiento(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Body>{t('genero')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {['Masculino', 'Femenino', 'No_binario', 'Prefiero_no_decir'].map(
-                      (opt) => (
-                        <ChoiceChip
-                          key={opt}
-                          label={t(`genero_${opt}`)}
-                          selected={genero === opt}
-                          onClick={() =>
-                            setGenero(genero === opt ? null : opt)
-                          }
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('pais')}</Body>
-                  <AppInput
-                    value={pais}
-                    onChange={(e) => setPais(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Body>{t('provinciaEstado')}</Body>
-                  <AppInput
-                    value={provinciaEstado}
-                    onChange={(e) => setProvinciaEstado(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Body>{t('ciudad')}</Body>
-                  <AppInput
-                    value={ciudad}
-                    onChange={(e) => setCiudad(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Body>{t('zonaResidencia')}</Body>
-                  <AppInput
-                    value={zonaResidencia}
-                    onChange={(e) => setZonaResidencia(e.target.value)}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ===== STEP 2 ===== */}
-          {step === 2 && (
-            <>
-              <Caption>{t('step2Subtitle')}</Caption>
-
-              <div className='space-y-5'>
-                <div>
-                  <Body>{t('nivelEducacion')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Secundario_incompleto',
-                      'Secundario_completo',
-                      'Universitario_incompleto',
-                      'Universitario_completo',
-                      'Licenciatura',
-                      'Diplomatura',
-                      'Maestria',
-                      'Doctorado',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`nivel_${opt}`)}
-                        selected={nivelEducacion.includes(opt)}
-                        onClick={() =>
-                          toggleArray(nivelEducacion, opt, setNivelEducacion)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('momentoProfesional')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Estudio_actualmente',
-                      'Sin_experiencia_laboral',
-                      'En_busqueda_activa',
-                      'Trabajando_cambiar',
-                      'Freelancer',
-                      'Emprendedor_a',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`momento_${opt}`)}
-                        selected={momentoProfesional === opt}
-                        onClick={() =>
-                          setMomentoProfesional(
-                            momentoProfesional === opt ? null : opt,
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('areasInteres')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Data_Analytics',
-                      'Desarrollo_Web',
-                      'UX_UI_Design',
-                      'Ciberseguridad',
-                      'Cloud_DevOps',
-                      'Inteligencia_Artificial',
-                      'Marketing_Digital',
-                      'Product_Management',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`area_${opt}`)}
-                        selected={areasInteres.includes(opt)}
-                        onClick={() =>
-                          toggleArray(areasInteres, opt, setAreasInteres)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('idiomas')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Nativo',
-                      'A1_Basico',
-                      'B1_Intermedio',
-                      'B2_Avanzado',
-                      'C1_C2_Bilingue',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`idioma_${opt}`)}
-                        selected={idiomas.includes(opt)}
-                        onClick={() =>
-                          toggleArray(idiomas, opt, setIdiomas)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('disponibilidad')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {['Part_time', 'Full_time', 'Contractor', 'Freelance'].map(
-                      (opt) => (
-                        <ChoiceChip
-                          key={opt}
-                          label={t(`disp_${opt}`)}
-                          selected={disponibilidad === opt}
-                          onClick={() =>
-                            setDisponibilidad(
-                              disponibilidad === opt ? null : opt,
-                            )
-                          }
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('ubicacionTrabajo')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {['Presencial', 'Hibrido', 'Remoto'].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`ubic_${opt}`)}
-                        selected={ubicacionTrabajo === opt}
-                        onClick={() =>
-                          setUbicacionTrabajo(
-                            ubicacionTrabajo === opt ? null : opt,
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ===== STEP 3 ===== */}
-          {step === 3 && (
-            <>
-              <Caption>{t('step3Subtitle')}</Caption>
-
-              <div className='space-y-5'>
-                <div>
-                  <Body>{t('objetivos')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Primer_empleo_IT',
-                      'Reconversion_laboral',
-                      'Mejorar_salario',
-                      'Definir_camino',
-                      'Ampliar_red',
-                      'Aprender_tecnologias',
-                      'Estudiar_sin_trabajar',
-                      'Emprender',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`obj_${opt}`)}
-                        selected={objetivos.includes(opt)}
-                        onClick={() =>
-                          toggleArray(objetivos, opt, setObjetivos)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('dispositivos')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {['Solo_celular', 'PC_Laptop', 'Tablet'].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`disp_${opt}`)}
-                        selected={dispositivos.includes(opt)}
-                        onClick={() =>
-                          toggleArray(dispositivos, opt, setDispositivos)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Body>{t('tipoConexion')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
-                    {[
-                      'Banda_ancha_estable',
-                      'Datos_moviles',
-                      'Conexion_inestable',
-                      'Sin_conexion_casa',
-                    ].map((opt) => (
-                      <ChoiceChip
-                        key={opt}
-                        label={t(`conexion_${opt}`)}
-                        selected={tipoConexion === opt}
-                        onClick={() =>
-                          setTipoConexion(
-                            tipoConexion === opt ? null : opt,
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className='flex gap-2'>
-                  <div className='w-1/3'>
-                    <Body>{t('whatsappCodigo')}</Body>
+                <div className='space-y-4'>
+                  <div>
+                    <Body>{t('fechaNacimientoLabel')}</Body>
                     <AppInput
-                      value={whatsappCodigo}
-                      onChange={(e) => setWhatsappCodigo(e.target.value)}
-                      placeholder='+54'
+                      type='date'
+                      value={fechaNacimiento}
+                      onChange={(e) => setFechaNacimiento(e.target.value)}
                     />
                   </div>
-                  <div className='w-2/3'>
-                    <Body>{t('whatsappNumero')}</Body>
+
+                  <div>
+                    <Body>{t('generoLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {generoOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={genero === opt.value}
+                          onClick={() => setGenero(genero === opt.value ? null : opt.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('paisLabel')}</Body>
                     <AppInput
-                      value={whatsappNumero}
-                      onChange={(e) => setWhatsappNumero(e.target.value)}
-                      placeholder='11 1234 5678'
+                      value={pais}
+                      onChange={(e) => setPais(e.target.value)}
+                      placeholder={t('paisPlaceholder')}
+                    />
+                  </div>
+
+                  <div>
+                    <Body>{t('provinciaEstadoLabel')}</Body>
+                    <AppInput
+                      value={provinciaEstado}
+                      onChange={(e) => setProvinciaEstado(e.target.value)}
+                      placeholder={t('provinciaEstadoPlaceholder')}
+                    />
+                  </div>
+
+                  <div>
+                    <Body>{t('ciudadLabel')}</Body>
+                    <AppInput
+                      value={ciudad}
+                      onChange={(e) => setCiudad(e.target.value)}
+                      placeholder={t('ciudadPlaceholder')}
+                    />
+                  </div>
+
+                  <div>
+                    <Body>{t('zonaResidenciaLabel')}</Body>
+                    <AppInput
+                      value={zonaResidencia}
+                      onChange={(e) => setZonaResidencia(e.target.value)}
+                      placeholder={t('zonaResidenciaPlaceholder')}
                     />
                   </div>
                 </div>
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )}
 
-        <DialogFooter>
-          {step > 1 && (
-            <AppButton variant='outline' onClick={handleBack}>
-              {t('backButton')}
-            </AppButton>
-          )}
-          {step < 3 ? (
-            <AppButton disabled={!isStepValid()} onClick={handleNext}>
-              {t('nextButton')}
-            </AppButton>
-          ) : (
-            <AppButton disabled={!isStepValid()} onClick={handleFinish}>
-              {t('finishButton')}
-            </AppButton>
-          )}
-        </DialogFooter>
-      </DialogContent>
+            {/* ===== STEP 2 ===== */}
+            {step === 2 && (
+              <>
+                <Body>{t('step2Title')}</Body>
+
+                <div className='space-y-5'>
+                  <div>
+                    <Body>{t('nivelEducacionLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {nivelEducacionOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={nivelEducacion.includes(opt.value)}
+                          onClick={() => toggleArray(nivelEducacion, opt.value, setNivelEducacion)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('momentoProfesionalLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {momentoProfesionalOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={momentoProfesional === opt.value}
+                          onClick={() => setMomentoProfesional(momentoProfesional === opt.value ? null : opt.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('areasInteresLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {areasInteresOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={areasInteres.includes(opt.value)}
+                          onClick={() => toggleArray(areasInteres, opt.value, setAreasInteres)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('idiomasLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {idiomasOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={idiomas.includes(opt.value)}
+                          onClick={() => toggleArray(idiomas, opt.value, setIdiomas)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('disponibilidadLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {disponibilidadOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={disponibilidad === opt.value}
+                          onClick={() => setDisponibilidad(disponibilidad === opt.value ? null : opt.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('ubicacionTrabajoLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {ubicacionTrabajoOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={ubicacionTrabajo === opt.value}
+                          onClick={() => setUbicacionTrabajo(ubicacionTrabajo === opt.value ? null : opt.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ===== STEP 3 ===== */}
+            {step === 3 && (
+              <>
+                <Body>{t('step3Title')}</Body>
+
+                <div className='space-y-5'>
+                  <div>
+                    <Body>{t('objetivosLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {objetivosOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={objetivos.includes(opt.value)}
+                          onClick={() => toggleArray(objetivos, opt.value, setObjetivos)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('dispositivosLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {dispositivosOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={dispositivos.includes(opt.value)}
+                          onClick={() => toggleArray(dispositivos, opt.value, setDispositivos)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Body>{t('tipoConexionLabel')}</Body>
+                    <div className='mt-2 flex flex-wrap gap-2'>
+                      {tipoConexionOptions.map((opt) => (
+                        <ChoiceChip
+                          key={opt.value}
+                          label={opt.label}
+                          selected={tipoConexion === opt.value}
+                          onClick={() => setTipoConexion(tipoConexion === opt.value ? null : opt.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className='flex gap-2'>
+                    <div className='w-1/3'>
+                      <Body>{t('whatsappCodigoLabel')}</Body>
+                      <AppInput
+                        value={whatsappCodigo}
+                        onChange={(e) => setWhatsappCodigo(e.target.value)}
+                        placeholder={t('whatsappCodigoPlaceholder')}
+                      />
+                    </div>
+                    <div className='w-2/3'>
+                      <Body>{t('whatsappNumeroLabel')}</Body>
+                      <AppInput
+                        value={whatsappNumero}
+                        onChange={(e) => setWhatsappNumero(e.target.value)}
+                        placeholder={t('whatsappNumeroPlaceholder')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            {step > 1 && (
+              <AppButton variant='outline' onClick={handleBack}>
+                {t('backButton')}
+              </AppButton>
+            )}
+            {step < 3 ? (
+              <AppButton disabled={!isStepValid()} onClick={handleNext}>
+                {t('nextButton')}
+              </AppButton>
+            ) : (
+              <AppButton disabled={!isStepValid()} onClick={handleFinish}>
+                {t('finishButton')}
+              </AppButton>
+            )}
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );

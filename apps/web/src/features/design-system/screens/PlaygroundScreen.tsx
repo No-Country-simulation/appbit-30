@@ -277,6 +277,7 @@ export default function PlaygroundScreen() {
           <StepIndicator currentStep={2} totalSteps={3} />
           <StepIndicator currentStep={3} totalSteps={3} />
         </section>
+
         {/* ====================================================== */}
         {/* ONBOARDING MODAL */}
         {/* ====================================================== */}
