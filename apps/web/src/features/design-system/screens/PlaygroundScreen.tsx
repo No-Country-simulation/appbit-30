@@ -16,6 +16,7 @@ import {
   H3,
   PulseIndicator,
   AppChoiceChips,
+  ChoiceChip,
   StepIndicator,
 } from "@/src/components";
 
@@ -26,6 +27,7 @@ import { useTranslations } from 'next-intl';
 export default function PlaygroundScreen() {
   const t = useTranslations('Playground');
   const [key, setKey] = useState(0);
+  const [selectedChip, setSelectedChip] = useState('react');
 
   return (
     <AppShell>
@@ -170,6 +172,25 @@ export default function PlaygroundScreen() {
               { label: t('tablet'), value: 'tablet' },
             ]}
           />
+        </section>
+
+        {/* ====================================================== */}
+        {/* CHOICE CHIP (simple) */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>ChoiceChip (simple)</H2>
+
+          <div className="flex flex-wrap gap-3">
+            {['React', 'Vue', 'Angular', 'Svelte'].map((chip) => (
+              <ChoiceChip
+                key={chip}
+                label={chip}
+                selected={selectedChip === chip}
+                onClick={() => setSelectedChip(chip)}
+              />
+            ))}
+          </div>
         </section>
 
         {/* ====================================================== */}
