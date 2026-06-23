@@ -11,9 +11,13 @@
   "license": "ISC",
   "packageManager": "pnpm@10.34.3",
   "dependencies": {
-    "@appbit/shared-types": "workspace:*",
     "@appbit/shared-schemas": "workspace:*",
-    "hono": "^4.12.25"
+    "@appbit/shared-types": "workspace:*",
+    "@google/generative-ai": "^0.24.1",
+    "@hono/node-server": "^2.0.5",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.25",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
