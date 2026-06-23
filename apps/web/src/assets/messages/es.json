@@ -59,8 +59,10 @@
     "invalidEmail": "Ingresá un correo electrónico válido.",
     "emailError": "No pudimos enviar el acceso. Intentá nuevamente.",
     "googleError": "No pudimos iniciar sesión con Google.",
+    "callbackMissingCode": "El enlace de acceso no es válido.",
+    "callbackFailed": "No pudimos completar el inicio de sesión. Intentá nuevamente.",
     "checkEmailTitle": "Revisá tu correo",
-    "checkEmailDescription": "Te enviamos un acceso a {email}. Abrí el enlace para continuar.",
+    "checkEmailDescription": "Te enviamos un enlace de acceso a {email}. Abrilo para continuar.",
     "useAnotherEmail": "Usar otro correo",
     "termsSentence": "Al continuar aceptas nuestros Términos y Política de privacidad."
   }
