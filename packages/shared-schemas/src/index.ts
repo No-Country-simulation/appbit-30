@@ -39,29 +39,55 @@ export const wellbeingResponseSchema = z.object({
 });
 
 // --- SCHEMAS PARA ONBOARDING (FE-002) ---
+export const onboardingStep1Schema = z.object({
+  fechaNacimiento: z.string()
+    .refine(val => !isNaN(Date.parse(val)), { message: 'Fecha inválida (ISO 8601)' })
+    .refine(val => new Date(val) < new Date(), { message: 'La fecha debe ser pasada' }),
+  genero: z.enum(['Masculino', 'Femenino', 'No_binario', 'Prefiero_no_decir'] as const),
+  pais: z.string().min(2).max(100),
+  provinciaEstado: z.string().min(2).max(100).optional(),
+  ciudad: z.string().min(2).max(100),
+  zonaResidencia: z.string().min(2).max(100).optional(),
+}).strip();
+
+export const onboardingStep2Schema = z.object({
+  nivelEducacion: z.array(
+    z.enum(['Secundario', 'Terciario', 'Universitario', 'Posgrado', 'Curso_técnico_Bootcamp', 'Otro'] as const)
+  ).min(1, { message: 'Seleccioná al menos un nivel educativo' }),
+  momentoProfesional: z.enum(
+    ['Estudiando', 'Buscando_trabajo', 'Trabajando_menos_1año', 'Trabajando_mas_1año', 'Transicion_carrera', 'Desempleado'] as const
+  ),
+  areasInteres: z.array(
+    z.enum(['Desarrollo_software', 'Datos_analisis', 'Diseno_UX_UI', 'Marketing_digital', 'Ciberseguridad', 'Cloud_infraestructura', 'Inteligencia_artificial', 'Gestion_proyectos', 'Soporte_tecnico', 'Otro'] as const)
+  ).min(1, { message: 'Seleccioná al menos un área de interés' }),
+  idiomas: z.array(
+    z.enum(['Ingles_basico', 'Ingles_intermedio', 'Ingles_avanzado', 'Portugues', 'Espanol', 'Otro'] as const)
+  ).min(1, { message: 'Seleccioná al menos un idioma' }),
+  disponibilidad: z.enum(['Inmediata', 'Un_mes', 'Tres_meses', 'Mas_de_tres_meses'] as const),
+  ubicacionTrabajo: z.enum(['Remoto', 'Hibrido', 'Presencial'] as const),
+}).strip();
+
+export const onboardingStep3Schema = z.object({
+  objetivos: z.array(
+    z.enum(['Primer_empleo_tech', 'Cambio_area', 'Mejorar_puesto_actual', 'Emprendimiento', 'Nueva_habilidad', 'Certificacion'] as const)
+  ).min(1, { message: 'Seleccioná al menos un objetivo' }),
+  dispositivos: z.array(
+    z.enum(['Android', 'iPhone', 'PC_Notebook', 'Tablet', 'Solo_celular'] as const)
+  ).min(1, { message: 'Seleccioná al menos un dispositivo' }),
+  tipoConexion: z.enum(['WiFi_casa', 'Datos_4G', 'Datos_5G', 'WiFi_compartido'] as const),
+  whatsappCodigo: z.string().regex(/^\+\d{1,4}$/, 'Código de país inválido (ej: +54)').optional(),
+  whatsappNumero: z.string().regex(/^\d{7,15}$/, 'Número inválido (solo dígitos)').optional(),
+}).strip();
+
 export const onboardingSchema = z.object({
-  userId: z.string(),
-  // Step 1 - Datos personales
-  fechaNacimiento: z.string().min(1, 'Fecha de nacimiento es requerida'),
-  genero: z.enum(['Masculino', 'Femenino', 'No_binario', 'Prefiero_no_decir']),
-  pais: z.string().min(2, 'País es requerido'),
-  provinciaEstado: z.string().optional(),
-  ciudad: z.string().min(2, 'Ciudad es requerida'),
-  zonaResidencia: z.string().optional(),
-  // Step 2 - Perfil profesional
-  nivelEducacion: z.array(z.string()).min(1, 'Selecciona al menos un nivel'),
-  momentoProfesional: z.string().min(1, 'Selecciona tu momento profesional'),
-  areasInteres: z.array(z.string()).min(1, 'Selecciona al menos un área de interés'),
-  idiomas: z.array(z.string()).min(1, 'Selecciona al menos un idioma'),
-  disponibilidad: z.string().min(1, 'Selecciona tu disponibilidad'),
-  ubicacionTrabajo: z.string().min(1, 'Selecciona tu ubicación de trabajo'),
-  // Step 3 - Objetivos y contexto
-  objetivos: z.array(z.string()).min(1, 'Selecciona al menos un objetivo'),
-  dispositivos: z.array(z.string()).min(1, 'Selecciona al menos un dispositivo'),
-  tipoConexion: z.string().min(1, 'Selecciona tu tipo de conexión'),
-  whatsappCodigo: z.string().optional(),
-  whatsappNumero: z.string().optional(),
-});
+  ...onboardingStep1Schema.shape,
+  ...onboardingStep2Schema.shape,
+  ...onboardingStep3Schema.shape,
+}).refine(data => {
+  if ((data.whatsappCodigo && !data.whatsappNumero) || (!data.whatsappCodigo && data.whatsappNumero))
+    return false;
+  return true;
+}, { message: 'whatsappCodigo y whatsappNumero deben completarse juntos' });
 
 export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 
