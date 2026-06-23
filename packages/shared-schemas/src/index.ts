@@ -37,3 +37,36 @@ export const wellbeingResponseSchema = z.object({
   derivar_cvv: z.boolean(),
   alerta: z.boolean()
 });
+
+// --- SCHEMAS PARA ONBOARDING (FE-002) ---
+export const onboardingSchema = z.object({
+  userId: z.string(),
+  // Step 1 - Datos personales
+  fechaNacimiento: z.string().min(1, 'Fecha de nacimiento es requerida'),
+  genero: z.enum(['Masculino', 'Femenino', 'No_binario', 'Prefiero_no_decir']),
+  pais: z.string().min(2, 'País es requerido'),
+  provinciaEstado: z.string().optional(),
+  ciudad: z.string().min(2, 'Ciudad es requerida'),
+  zonaResidencia: z.string().optional(),
+  // Step 2 - Perfil profesional
+  nivelEducacion: z.array(z.string()).min(1, 'Selecciona al menos un nivel'),
+  momentoProfesional: z.string().min(1, 'Selecciona tu momento profesional'),
+  areasInteres: z.array(z.string()).min(1, 'Selecciona al menos un área de interés'),
+  idiomas: z.array(z.string()).min(1, 'Selecciona al menos un idioma'),
+  disponibilidad: z.string().min(1, 'Selecciona tu disponibilidad'),
+  ubicacionTrabajo: z.string().min(1, 'Selecciona tu ubicación de trabajo'),
+  // Step 3 - Objetivos y contexto
+  objetivos: z.array(z.string()).min(1, 'Selecciona al menos un objetivo'),
+  dispositivos: z.array(z.string()).min(1, 'Selecciona al menos un dispositivo'),
+  tipoConexion: z.string().min(1, 'Selecciona tu tipo de conexión'),
+  whatsappCodigo: z.string().optional(),
+  whatsappNumero: z.string().optional(),
+});
+
+export type OnboardingRequest = z.infer<typeof onboardingSchema>;
+
+export const onboardingResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  userId: z.string(),
+});

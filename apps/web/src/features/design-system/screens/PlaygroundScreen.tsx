@@ -20,6 +20,8 @@ import {
   StepIndicator,
 } from "@/src/components";
 
+import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
+
 import { useState } from 'react';
 
 import { useTranslations } from 'next-intl';
@@ -275,6 +277,17 @@ export default function PlaygroundScreen() {
           <StepIndicator currentStep={2} totalSteps={3} />
           <StepIndicator currentStep={3} totalSteps={3} />
         </section>
+        {/* ====================================================== */}
+        {/* ONBOARDING MODAL */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>OnboardingModal</H2>
+          <OnboardingModal>
+            <AppButton>Abrir Onboarding</AppButton>
+          </OnboardingModal>
+        </section>
+
         {/* ====================================================== */}
         {/* ICONS */}
         {/* ====================================================== */}
