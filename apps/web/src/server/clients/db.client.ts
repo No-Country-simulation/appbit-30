@@ -1,16 +1,24 @@
-// apps/web/src/server/clients/db.client.ts
-import { PrismaClient } from '../../../src/server/generated/prisma';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@/src/server/generated/prisma';
 
-const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
 
-// Evita que Next.js cree múltiples conexiones a la base de datos cada vez que recarga el código en desarrollo
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
+
 export const dbClient =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
+    adapter,
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']
         : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = dbClient;
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = dbClient;
+}
