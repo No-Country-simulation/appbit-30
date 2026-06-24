@@ -97,6 +97,8 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
   }, []);
 
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function toggleArray(field: keyof Pick<FormData, 'nivelEducacion' | 'momentoProfesional' | 'areasInteres' | 'disponibilidad' | 'objetivos' | 'dispositivos'>, value: string) {
     setFormData(prev => ({
@@ -171,13 +173,35 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
       return;
     }
     setShowErrors(false);
-    console.log('Onboarding data:', formData);
+    setIsLoading(true);
+    setSubmitError(null);
+
+    // TODO(Franco): agregar authUid, email, nombreCompleto desde la sesión de Supabase
+    fetch('/api/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || 'Error al completar onboarding');
+        setOpen(false);
+        resetForm();
+      })
+      .catch((err) => {
+        setSubmitError(err.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }
 
   function resetForm() {
     setStep(1);
     setFormData(INITIAL_FORM_DATA);
     setShowErrors(false);
+    setIsLoading(false);
+    setSubmitError(null);
   }
 
   const nivelEducacionOptions = [
@@ -604,9 +628,15 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                 {t('nextButton')} →
               </AppButton>
             ) : (
-              <AppButton onClick={handleFinish}>
-                {t('finishButton')}
+              <AppButton onClick={handleFinish} disabled={isLoading}>
+                {isLoading ? t('savingButton') : t('finishButton')}
               </AppButton>
+            )}
+            {submitError && (
+              <div className='flex items-center gap-1.5 mt-2 text-[var(--color-error)]'>
+                <AlertCircleIcon className='size-4 shrink-0' />
+                <Caption>{submitError}</Caption>
+              </div>
             )}
           </DialogFooter>
         </DialogContent>
