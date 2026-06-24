@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { CheckIcon } from 'lucide-react';
+import { Fragment } from 'react';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -9,18 +10,29 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ currentStep, totalSteps, labels }: StepIndicatorProps) {
   return (
-    <div className='flex items-start justify-center gap-0'>
-      {Array.from({ length: totalSteps }, (_, i) => {
-        const step = i + 1;
-        const isCompleted = step < currentStep;
-        const isActive = step === currentStep;
+    <div className='flex w-full flex-col'>
+      <div className='flex w-full items-center'>
+        {Array.from({ length: totalSteps }, (_, i) => {
+          const step = i + 1;
+          const isCompleted = step < currentStep;
+          const isActive = step === currentStep;
 
-        return (
-          <div key={step} className='flex flex-col items-center'>
-            <div className='flex items-center'>
+          return (
+            <Fragment key={step}>
+              {i > 0 && (
+                <div
+                  className={cn(
+                    'h-0.5 flex-1',
+                    step <= currentStep
+                      ? 'bg-[var(--color-primary)]'
+                      : 'bg-[var(--color-text-muted)]/30',
+                  )}
+                />
+              )}
+
               <div
                 className={cn(
-                  'flex size-10 items-center justify-center rounded-[var(--radius-pill)] text-sm font-semibold transition-all duration-300',
+                  'flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-sm font-semibold transition-all duration-300',
                   isCompleted && 'bg-[var(--color-success)] text-white',
                   isActive && 'bg-[var(--color-primary)] text-white',
                   !isCompleted && !isActive &&
@@ -29,30 +41,32 @@ export function StepIndicator({ currentStep, totalSteps, labels }: StepIndicator
               >
                 {isCompleted ? <CheckIcon className='size-5' /> : step}
               </div>
+            </Fragment>
+          );
+        })}
+      </div>
 
-              {step < totalSteps && (
-                <div
+      <div className='flex w-full'>
+        {Array.from({ length: totalSteps }, (_, i) => {
+          const step = i + 1;
+          const isActive = step === currentStep;
+
+          return (
+            <div key={step} className='flex flex-1 justify-center'>
+              {labels?.[i] && (
+                <span
                   className={cn(
-                    'mx-1 h-0.5 w-10 transition-all duration-300 sm:w-16',
-                    isCompleted ? 'bg-[var(--color-success)]' : 'bg-[var(--color-text-muted)]/30',
+                    'mt-2 text-xs font-medium transition-colors',
+                    isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]',
                   )}
-                />
+                >
+                  {labels[i]}
+                </span>
               )}
             </div>
-
-            {labels?.[i] && (
-              <span
-                className={cn(
-                  'mt-2 text-xs font-medium transition-colors',
-                  isActive || isCompleted ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]',
-                )}
-              >
-                {labels[i]}
-              </span>
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -50,7 +50,7 @@ export function CountryCodeSelect({ value, onChange, onOpenChange, placeholder }
 
   return (
     <Select value={value} onValueChange={onChange} onOpenChange={onOpenChange}>
-      <SelectTrigger className='w-full'>
+      <SelectTrigger className='w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto'>
         <SelectValue placeholder={placeholder}>
           {selected ? `${selected.flag} ${selected.code} (${selected.label.split('(')[1]?.replace(')', '') || ''})` : placeholder}
         </SelectValue>
