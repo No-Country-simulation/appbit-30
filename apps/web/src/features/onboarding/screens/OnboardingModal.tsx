@@ -19,11 +19,52 @@ import {
 } from '@/src/components/ui/select';
 import { AppButton, AppInput, ChoiceChip, CountryCodeSelect, StepIndicator } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
+import { FieldError } from '@/src/features/onboarding/components';
 import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
 
 const SELECT_TRIGGER_CLASSES = 'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
 const NUMBERS_ONLY_REGEX = /^\d*$/;
+
+interface FormData {
+  fechaNacimiento: string;
+  genero: string;
+  pais: string;
+  provinciaEstado: string;
+  ciudad: string;
+  zonaResidencia: string;
+  nivelEducacion: string[];
+  momentoProfesional: string[];
+  areasInteres: string[];
+  idiomas: string[];
+  disponibilidad: string[];
+  ubicacionTrabajo: string;
+  objetivos: string[];
+  dispositivos: string[];
+  tipoConexion: string;
+  whatsappCodigo: string;
+  whatsappNumero: string;
+}
+
+const INITIAL_FORM_DATA: FormData = {
+  fechaNacimiento: '',
+  genero: '',
+  pais: '',
+  provinciaEstado: '',
+  ciudad: '',
+  zonaResidencia: '',
+  nivelEducacion: [],
+  momentoProfesional: [],
+  areasInteres: [],
+  idiomas: [],
+  disponibilidad: [],
+  ubicacionTrabajo: '',
+  objetivos: [],
+  dispositivos: [],
+  tipoConexion: '',
+  whatsappCodigo: '',
+  whatsappNumero: '',
+};
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -55,48 +96,34 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
     }
   }, []);
 
-  // Step 1
-  const [fechaNacimiento, setFechaNacimiento] = useState('');
-  const [genero, setGenero] = useState('');
-  const [pais, setPais] = useState('');
-  const [provinciaEstado, setProvinciaEstado] = useState('');
-  const [ciudad, setCiudad] = useState('');
-  const [zonaResidencia, setZonaResidencia] = useState('');
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
 
-  // Step 2
-  const [nivelEducacion, setNivelEducacion] = useState<string[]>([]);
-  const [momentoProfesional, setMomentoProfesional] = useState<string[]>([]);
-  const [areasInteres, setAreasInteres] = useState<string[]>([]);
-  const [idiomas, setIdiomas] = useState<string[]>([]);
-  const [disponibilidad, setDisponibilidad] = useState<string[]>([]);
-  const [ubicacionTrabajo, setUbicacionTrabajo] = useState('');
-
-  // Step 3
-  const [objetivos, setObjetivos] = useState<string[]>([]);
-  const [dispositivos, setDispositivos] = useState<string[]>([]);
-  const [tipoConexion, setTipoConexion] = useState('');
-  const [whatsappCodigo, setWhatsappCodigo] = useState('');
-  const [whatsappNumero, setWhatsappNumero] = useState('');
-
-  function toggleArray(arr: string[], value: string, setter: (v: string[]) => void) {
-    setter(arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]);
+  function toggleArray(field: keyof Pick<FormData, 'nivelEducacion' | 'momentoProfesional' | 'areasInteres' | 'idiomas' | 'disponibilidad' | 'objetivos' | 'dispositivos'>, value: string) {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].includes(value)
+        ? prev[field].filter(v => v !== value)
+        : [...prev[field], value],
+    }));
+    setShowErrors(false);
   }
 
   function isStepValid(): boolean {
+    const d = formData;
     if (step === 1) {
-      return !!fechaNacimiento && !!genero && !!pais && !!ciudad;
+      return !!d.fechaNacimiento && !!d.genero && !!d.pais && !!d.ciudad;
     }
     if (step === 2) {
       return (
-        nivelEducacion.length > 0 &&
-        momentoProfesional.length > 0 &&
-        areasInteres.length > 0 &&
-        idiomas.length > 0 &&
-        disponibilidad.length > 0 &&
-        !!ubicacionTrabajo
+        d.nivelEducacion.length > 0 &&
+        d.momentoProfesional.length > 0 &&
+        d.areasInteres.length > 0 &&
+        d.idiomas.length > 0 &&
+        d.disponibilidad.length > 0 &&
+        !!d.ubicacionTrabajo
       );
     }
-    return objetivos.length > 0 && dispositivos.length > 0 && !!tipoConexion;
+    return d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion;
   }
 
   function handleNext() {
@@ -125,47 +152,13 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
       return;
     }
     setShowErrors(false);
-    const data = {
-      fechaNacimiento,
-      genero,
-      pais,
-      provinciaEstado,
-      ciudad,
-      zonaResidencia,
-      nivelEducacion,
-      momentoProfesional,
-      areasInteres,
-      idiomas,
-      disponibilidad,
-      ubicacionTrabajo,
-      objetivos,
-      dispositivos,
-      tipoConexion,
-      whatsappCodigo,
-      whatsappNumero,
-    };
-    console.log('Onboarding data:', data);
+    console.log('Onboarding data:', formData);
   }
 
   function resetForm() {
     setStep(1);
-    setFechaNacimiento('');
-    setGenero('');
-    setPais('');
-    setProvinciaEstado('');
-    setCiudad('');
-    setZonaResidencia('');
-    setNivelEducacion([]);
-    setMomentoProfesional([]);
-    setAreasInteres([]);
-    setIdiomas([]);
-    setDisponibilidad([]);
-    setUbicacionTrabajo('');
-    setObjetivos([]);
-    setDispositivos([]);
-    setTipoConexion('');
-    setWhatsappCodigo('');
-    setWhatsappNumero('');
+    setFormData(INITIAL_FORM_DATA);
+    setShowErrors(false);
   }
 
   const nivelEducacionOptions = [
@@ -249,16 +242,6 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
   const currentSubtitle =
     step === 1 ? t('step1Subtitle') : step === 2 ? t('step2Subtitle') : t('step3Subtitle');
 
-  function FieldError({ show }: { show: boolean }) {
-    if (!show) return null;
-    return (
-      <Caption className='mt-1 flex items-center gap-1 text-[var(--color-danger)]'>
-        <AlertCircleIcon className='size-3 shrink-0' />
-        {t('fieldRequired')}
-      </Caption>
-    );
-  }
-
   return (
     <>
       <span onClick={() => setOpen(true)} className='cursor-pointer'>
@@ -284,16 +267,16 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                     <Body>{t('fechaNacimientoLabel')}</Body>
                     <AppInput
                       type='date'
-                      value={fechaNacimiento}
-                      onChange={(e) => { setFechaNacimiento(e.target.value); setShowErrors(false); }}
+                      value={formData.fechaNacimiento}
+                      onChange={(e) => { setFormData(prev => ({...prev, fechaNacimiento: e.target.value})); setShowErrors(false); }}
                       max={new Date().toISOString().split('T')[0]}
                     />
-                    <FieldError show={showErrors && !fechaNacimiento} />
+                    <FieldError show={showErrors && !formData.fechaNacimiento} />
                   </div>
 
                   <div>
                     <Body>{t('generoLabel')}</Body>
-                    <Select value={genero} onValueChange={(v) => { setGenero(v); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
+                    <Select value={formData.genero} onValueChange={(v) => { setFormData(prev => ({...prev, genero: v})); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
                       <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                         <SelectValue placeholder={t('generoPlaceholder')} />
                       </SelectTrigger>
@@ -304,13 +287,13 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                         <SelectItem value='Prefiero_no_decir'>{t('generoOption4')}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FieldError show={showErrors && !genero} />
+                    <FieldError show={showErrors && !formData.genero} />
                   </div>
 
                   <div className='grid grid-cols-2 gap-4'>
                     <div>
                       <Body>{t('paisLabel')}</Body>
-                      <Select value={pais} onValueChange={(v) => { setPais(v); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
+                      <Select value={formData.pais} onValueChange={(v) => { setFormData(prev => ({...prev, pais: v})); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
                         <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                           <SelectValue placeholder={t('paisPlaceholder')} />
                         </SelectTrigger>
@@ -326,13 +309,13 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                           <SelectItem value='Otro'>Otro</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FieldError show={showErrors && !pais} />
+                      <FieldError show={showErrors && !formData.pais} />
                     </div>
                     <div>
                       <Body>{t('provinciaEstadoLabel')}</Body>
                       <AppInput
-                        value={provinciaEstado}
-                        onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setProvinciaEstado(e.target.value); }}
+                        value={formData.provinciaEstado}
+                        onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, provinciaEstado: e.target.value})); }}
                         placeholder={t('provinciaEstadoPlaceholder')}
                       />
                     </div>
@@ -341,11 +324,11 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                   <div>
                     <Body>{t('ciudadLabel')}</Body>
                     <AppInput
-                      value={ciudad}
-                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) { setCiudad(e.target.value); setShowErrors(false); } }}
+                      value={formData.ciudad}
+                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) { setFormData(prev => ({...prev, ciudad: e.target.value})); setShowErrors(false); } }}
                       placeholder={t('ciudadPlaceholder')}
                     />
-                    <FieldError show={showErrors && !ciudad} />
+                    <FieldError show={showErrors && !formData.ciudad} />
                   </div>
 
                   <div>
@@ -354,8 +337,8 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <span className='text-[var(--color-text-muted)] text-xs'>{t('zonaResidenciaOptional')}</span>
                     </Body>
                     <AppInput
-                      value={zonaResidencia}
-                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setZonaResidencia(e.target.value); }}
+                      value={formData.zonaResidencia}
+                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, zonaResidencia: e.target.value})); }}
                       placeholder={t('zonaResidenciaPlaceholder')}
                     />
                   </div>
@@ -383,12 +366,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={nivelEducacion.includes(opt.value)}
-                        onClick={() => { toggleArray(nivelEducacion, opt.value, setNivelEducacion); setShowErrors(false); }}
+                        selected={formData.nivelEducacion.includes(opt.value)}
+                        onClick={() => toggleArray('nivelEducacion', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && nivelEducacion.length === 0} />
+                  <FieldError show={showErrors && formData.nivelEducacion.length === 0} />
                 </div>
 
                 <div>
@@ -401,12 +384,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={momentoProfesional.includes(opt.value)}
-                        onClick={() => { toggleArray(momentoProfesional, opt.value, setMomentoProfesional); setShowErrors(false); }}
+                        selected={formData.momentoProfesional.includes(opt.value)}
+                        onClick={() => toggleArray('momentoProfesional', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && momentoProfesional.length === 0} />
+                  <FieldError show={showErrors && formData.momentoProfesional.length === 0} />
                 </div>
 
                 <div>
@@ -419,12 +402,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={areasInteres.includes(opt.value)}
-                        onClick={() => { toggleArray(areasInteres, opt.value, setAreasInteres); setShowErrors(false); }}
+                        selected={formData.areasInteres.includes(opt.value)}
+                        onClick={() => toggleArray('areasInteres', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && areasInteres.length === 0} />
+                  <FieldError show={showErrors && formData.areasInteres.length === 0} />
                 </div>
 
                 <div>
@@ -437,12 +420,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={idiomas.includes(opt.value)}
-                        onClick={() => { toggleArray(idiomas, opt.value, setIdiomas); setShowErrors(false); }}
+                        selected={formData.idiomas.includes(opt.value)}
+                        onClick={() => toggleArray('idiomas', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && idiomas.length === 0} />
+                  <FieldError show={showErrors && formData.idiomas.length === 0} />
                 </div>
 
                 <div>
@@ -455,12 +438,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={disponibilidad.includes(opt.value)}
-                        onClick={() => { toggleArray(disponibilidad, opt.value, setDisponibilidad); setShowErrors(false); }}
+                        selected={formData.disponibilidad.includes(opt.value)}
+                        onClick={() => toggleArray('disponibilidad', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && disponibilidad.length === 0} />
+                  <FieldError show={showErrors && formData.disponibilidad.length === 0} />
                 </div>
 
                 <div>
@@ -470,12 +453,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={ubicacionTrabajo === opt.value}
-                        onClick={() => { setUbicacionTrabajo(ubicacionTrabajo === opt.value ? '' : opt.value); setShowErrors(false); }}
+                        selected={formData.ubicacionTrabajo === opt.value}
+                        onClick={() => { setFormData(prev => ({...prev, ubicacionTrabajo: prev.ubicacionTrabajo === opt.value ? '' : opt.value})); setShowErrors(false); }}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !ubicacionTrabajo} />
+                  <FieldError show={showErrors && !formData.ubicacionTrabajo} />
                 </div>
               </div>
             )}
@@ -493,12 +476,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={objetivos.includes(opt.value)}
-                        onClick={() => { toggleArray(objetivos, opt.value, setObjetivos); setShowErrors(false); }}
+                        selected={formData.objetivos.includes(opt.value)}
+                        onClick={() => toggleArray('objetivos', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && objetivos.length === 0} />
+                  <FieldError show={showErrors && formData.objetivos.length === 0} />
                 </div>
 
                 <div>
@@ -511,12 +494,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={dispositivos.includes(opt.value)}
-                        onClick={() => { toggleArray(dispositivos, opt.value, setDispositivos); setShowErrors(false); }}
+                        selected={formData.dispositivos.includes(opt.value)}
+                        onClick={() => toggleArray('dispositivos', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && dispositivos.length === 0} />
+                  <FieldError show={showErrors && formData.dispositivos.length === 0} />
                 </div>
 
                 <div>
@@ -526,12 +509,12 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={tipoConexion === opt.value}
-                        onClick={() => { setTipoConexion(tipoConexion === opt.value ? '' : opt.value); setShowErrors(false); }}
+                        selected={formData.tipoConexion === opt.value}
+                        onClick={() => { setFormData(prev => ({...prev, tipoConexion: prev.tipoConexion === opt.value ? '' : opt.value})); setShowErrors(false); }}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !tipoConexion} />
+                  <FieldError show={showErrors && !formData.tipoConexion} />
                 </div>
 
                 <div>
@@ -542,16 +525,16 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                   <div className='mt-2 flex gap-2'>
                     <div className='w-1/3'>
                       <CountryCodeSelect
-                        value={whatsappCodigo}
-                        onChange={setWhatsappCodigo}
+                        value={formData.whatsappCodigo}
+                        onChange={(v) => setFormData(prev => ({...prev, whatsappCodigo: v}))}
                         onOpenChange={(v) => { selectOpenRef.current = v; }}
                         placeholder='+54'
                       />
                     </div>
                     <div className='w-2/3'>
                       <AppInput
-                        value={whatsappNumero}
-                        onChange={(e) => { if (NUMBERS_ONLY_REGEX.test(e.target.value)) setWhatsappNumero(e.target.value); }}
+                        value={formData.whatsappNumero}
+                        onChange={(e) => { if (NUMBERS_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, whatsappNumero: e.target.value})); }}
                         placeholder={t('whatsappPlaceholder')}
                       />
                     </div>
