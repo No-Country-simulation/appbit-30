@@ -52,11 +52,11 @@ enum AreaInteresEnum {
 }
 
 enum NivelIdiomaEnum {
-  Nativo
   A1_Basico @map("A1 (Básico)")
+  A2_Elemental @map("A2 (Elemental)")
   B1_Intermedio @map("B1 (Intermedio)")
   B2_Avanzado @map("B2 (Avanzado)")
-  C1_C2_Bilingue @map("C1/C2 (Bilingüe)")
+  C1_Fluido @map("C1 (Fluido)")
 }
 
 enum DisponibilidadEnum {

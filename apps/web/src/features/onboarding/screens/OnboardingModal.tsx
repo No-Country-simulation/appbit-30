@@ -36,7 +36,7 @@ interface FormData {
   nivelEducacion: string[];
   momentoProfesional: string[];
   areasInteres: string[];
-  idiomas: string[];
+  idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
   ubicacionTrabajo: string;
   objetivos: string[];
@@ -98,12 +98,31 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
 
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
 
-  function toggleArray(field: keyof Pick<FormData, 'nivelEducacion' | 'momentoProfesional' | 'areasInteres' | 'idiomas' | 'disponibilidad' | 'objetivos' | 'dispositivos'>, value: string) {
+  function toggleArray(field: keyof Pick<FormData, 'nivelEducacion' | 'momentoProfesional' | 'areasInteres' | 'disponibilidad' | 'objetivos' | 'dispositivos'>, value: string) {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].includes(value)
         ? prev[field].filter(v => v !== value)
         : [...prev[field], value],
+    }));
+    setShowErrors(false);
+  }
+
+  function toggleIdioma(value: string) {
+    setFormData(prev => {
+      const exists = prev.idiomas.find(i => i.idioma === value);
+      if (exists) {
+        return { ...prev, idiomas: prev.idiomas.filter(i => i.idioma !== value) };
+      }
+      return { ...prev, idiomas: [...prev.idiomas, { idioma: value, nivel: '' }] };
+    });
+    setShowErrors(false);
+  }
+
+  function setIdiomaNivel(idioma: string, nivel: string) {
+    setFormData(prev => ({
+      ...prev,
+      idiomas: prev.idiomas.map(i => i.idioma === idioma ? { ...i, nivel } : i),
     }));
     setShowErrors(false);
   }
@@ -118,7 +137,7 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
         d.nivelEducacion.length > 0 &&
         d.momentoProfesional.length > 0 &&
         d.areasInteres.length > 0 &&
-        d.idiomas.length > 0 &&
+        d.idiomas.some(i => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
         !!d.ubicacionTrabajo
       );
@@ -190,14 +209,19 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
     { value: 'Product_Management', label: t('areasInteresOption8') },
   ];
 
-  const idiomasOptions = [
-    { value: 'Espanol_nativo', label: t('idiomasOption1') },
-    { value: 'Ingles_A1', label: t('idiomasOption2') },
-    { value: 'Ingles_B1', label: t('idiomasOption3') },
-    { value: 'Ingles_B2', label: t('idiomasOption4') },
-    { value: 'Ingles_C1_C2', label: t('idiomasOption5') },
-    { value: 'Portugues', label: t('idiomasOption6') },
-    { value: 'Frances', label: t('idiomasOption7') },
+  const idiomasList = [
+    { value: 'Espanol', label: t('idiomasOption1') },
+    { value: 'Ingles', label: t('idiomasOption2') },
+    { value: 'Portugues', label: t('idiomasOption3') },
+    { value: 'Frances', label: t('idiomasOption4') },
+  ];
+
+  const nivelesList = [
+    { value: 'A1', label: t('nivelOption1') },
+    { value: 'A2', label: t('nivelOption2') },
+    { value: 'B1', label: t('nivelOption3') },
+    { value: 'B2', label: t('nivelOption4') },
+    { value: 'C1', label: t('nivelOption5') },
   ];
 
   const disponibilidadOptions = [
@@ -416,16 +440,33 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                     <span className='text-[var(--color-text-muted)] text-xs'>{t('idiomasHint')}</span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
-                    {idiomasOptions.map((opt) => (
+                    {idiomasList.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.idiomas.includes(opt.value)}
-                        onClick={() => toggleArray('idiomas', opt.value)}
+                        selected={formData.idiomas.some(i => i.idioma === opt.value)}
+                        onClick={() => toggleIdioma(opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.idiomas.length === 0} />
+                  {formData.idiomas.map((idioma) => (
+                    <div key={idioma.idioma} className='mt-3'>
+                      <Body className='mb-1.5 text-[var(--color-text-muted)]'>
+                        {idiomasList.find(l => l.value === idioma.idioma)?.label}:
+                      </Body>
+                      <div className='flex flex-wrap gap-2'>
+                        {nivelesList.map((nivel) => (
+                          <ChoiceChip
+                            key={nivel.value}
+                            label={nivel.label}
+                            selected={idioma.nivel === nivel.value}
+                            onClick={() => setIdiomaNivel(idioma.idioma, nivel.value)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <FieldError show={showErrors && !formData.idiomas.some(i => i.idioma && i.nivel)} />
                 </div>
 
                 <div>

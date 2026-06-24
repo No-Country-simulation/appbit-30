@@ -74,7 +74,10 @@ export const onboardingStep2Schema = z.object({
     z.enum(['Desarrollo_software', 'Datos_analisis', 'Diseno_UX_UI', 'Marketing_digital', 'Ciberseguridad', 'Cloud_infraestructura', 'Inteligencia_artificial', 'Gestion_proyectos', 'Soporte_tecnico', 'Otro'] as const)
   ).min(1, { message: 'Seleccioná al menos un área de interés' }),
   idiomas: z.array(
-    z.enum(['Ingles_basico', 'Ingles_intermedio', 'Ingles_avanzado', 'Portugues', 'Espanol', 'Otro'] as const)
+    z.object({
+      idioma: z.enum(['Espanol', 'Ingles', 'Portugues', 'Frances'] as const),
+      nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
+    })
   ).min(1, { message: 'Seleccioná al menos un idioma' }),
   disponibilidad: z.enum(['Inmediata', 'Un_mes', 'Tres_meses', 'Mas_de_tres_meses'] as const),
   ubicacionTrabajo: z.enum(['Remoto', 'Hibrido', 'Presencial'] as const),
