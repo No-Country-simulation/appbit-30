@@ -181,21 +181,23 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
   }
 
   const nivelEducacionOptions = [
-    { value: 'Secundario', label: t('nivelEducacionOption1') },
-    { value: 'Terciario', label: t('nivelEducacionOption2') },
-    { value: 'Universitario', label: t('nivelEducacionOption3') },
-    { value: 'Posgrado', label: t('nivelEducacionOption4') },
-    { value: 'Curso_tecnico_bootcamp', label: t('nivelEducacionOption5') },
-    { value: 'Otro', label: t('nivelEducacionOption6') },
+    { value: 'Secundario_incompleto', label: t('nivelEducacionOption1') },
+    { value: 'Secundario_completo', label: t('nivelEducacionOption2') },
+    { value: 'Universitario_incompleto', label: t('nivelEducacionOption3') },
+    { value: 'Universitario_completo', label: t('nivelEducacionOption4') },
+    { value: 'Licenciatura', label: t('nivelEducacionOption5') },
+    { value: 'Diplomatura', label: t('nivelEducacionOption6') },
+    { value: 'Maestria', label: t('nivelEducacionOption7') },
+    { value: 'Doctorado', label: t('nivelEducacionOption8') },
   ];
 
   const momentoProfesionalOptions = [
-    { value: 'Estudiando', label: t('momentoProfesionalOption1') },
+    { value: 'Estudio_actualmente', label: t('momentoProfesionalOption1') },
     { value: 'Sin_experiencia_laboral', label: t('momentoProfesionalOption2') },
     { value: 'En_busqueda_activa', label: t('momentoProfesionalOption3') },
     { value: 'Trabajando_cambiar', label: t('momentoProfesionalOption4') },
     { value: 'Freelancer', label: t('momentoProfesionalOption5') },
-    { value: 'Emprendedor', label: t('momentoProfesionalOption6') },
+    { value: 'Emprendedor_a', label: t('momentoProfesionalOption6') },
   ];
 
   const areasInteresOptions = [
@@ -204,7 +206,7 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
     { value: 'UX_UI_Design', label: t('areasInteresOption3') },
     { value: 'Ciberseguridad', label: t('areasInteresOption4') },
     { value: 'Cloud_DevOps', label: t('areasInteresOption5') },
-    { value: 'IA', label: t('areasInteresOption6') },
+    { value: 'Inteligencia_Artificial', label: t('areasInteresOption6') },
     { value: 'Marketing_Digital', label: t('areasInteresOption7') },
     { value: 'Product_Management', label: t('areasInteresOption8') },
   ];

@@ -65,13 +65,13 @@ export const onboardingStep1Schema = z.object({
 
 export const onboardingStep2Schema = z.object({
   nivelEducacion: z.array(
-    z.enum(['Secundario', 'Terciario', 'Universitario', 'Posgrado', 'Curso_técnico_Bootcamp', 'Otro'] as const)
+    z.enum(['Secundario_incompleto', 'Secundario_completo', 'Universitario_incompleto', 'Universitario_completo', 'Licenciatura', 'Diplomatura', 'Maestria', 'Doctorado'] as const)
   ).min(1, { message: 'Seleccioná al menos un nivel educativo' }),
-  momentoProfesional: z.enum(
-    ['Estudiando', 'Buscando_trabajo', 'Trabajando_menos_1año', 'Trabajando_mas_1año', 'Transicion_carrera', 'Desempleado'] as const
-  ),
+  momentoProfesional: z.array(
+    z.enum(['Estudio_actualmente', 'Sin_experiencia_laboral', 'En_busqueda_activa', 'Trabajando_cambiar', 'Freelancer', 'Emprendedor_a'] as const)
+  ).min(1, { message: 'Seleccioná al menos un momento profesional' }),
   areasInteres: z.array(
-    z.enum(['Desarrollo_software', 'Datos_analisis', 'Diseno_UX_UI', 'Marketing_digital', 'Ciberseguridad', 'Cloud_infraestructura', 'Inteligencia_artificial', 'Gestion_proyectos', 'Soporte_tecnico', 'Otro'] as const)
+    z.enum(['Data_Analytics', 'Desarrollo_Web', 'UX_UI_Design', 'Ciberseguridad', 'Cloud_DevOps', 'Inteligencia_Artificial', 'Marketing_Digital', 'Product_Management'] as const)
   ).min(1, { message: 'Seleccioná al menos un área de interés' }),
   idiomas: z.array(
     z.object({
@@ -79,18 +79,20 @@ export const onboardingStep2Schema = z.object({
       nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
     })
   ).min(1, { message: 'Seleccioná al menos un idioma' }),
-  disponibilidad: z.enum(['Inmediata', 'Un_mes', 'Tres_meses', 'Mas_de_tres_meses'] as const),
-  ubicacionTrabajo: z.enum(['Remoto', 'Hibrido', 'Presencial'] as const),
+  disponibilidad: z.array(
+    z.enum(['Part_time', 'Full_time', 'Contractor', 'Freelance'] as const)
+  ).min(1, { message: 'Seleccioná al menos una disponibilidad' }),
+  ubicacionTrabajo: z.enum(['Presencial', 'Hibrido', 'Remoto'] as const),
 }).strip();
 
 export const onboardingStep3Schema = z.object({
   objetivos: z.array(
-    z.enum(['Primer_empleo_tech', 'Cambio_area', 'Mejorar_puesto_actual', 'Emprendimiento', 'Nueva_habilidad', 'Certificacion'] as const)
+    z.enum(['Primer_empleo_IT', 'Reconversion_laboral', 'Mejorar_salario', 'Definir_camino', 'Ampliar_red', 'Aprender_tecnologias', 'Estudiar_sin_trabajar', 'Emprender'] as const)
   ).min(1, { message: 'Seleccioná al menos un objetivo' }),
   dispositivos: z.array(
-    z.enum(['Android', 'iPhone', 'PC_Notebook', 'Tablet', 'Solo_celular'] as const)
+    z.enum(['Solo_celular', 'PC_Laptop', 'Tablet'] as const)
   ).min(1, { message: 'Seleccioná al menos un dispositivo' }),
-  tipoConexion: z.enum(['WiFi_casa', 'Datos_4G', 'Datos_5G', 'WiFi_compartido'] as const),
+  tipoConexion: z.enum(['Banda_ancha_estable', 'Datos_moviles', 'Conexion_inestable', 'Sin_conexion_casa'] as const),
   whatsappCodigo: z.string().regex(/^\+\d{1,4}$/, 'Código de país inválido (ej: +54)').optional(),
   whatsappNumero: z.string().regex(/^\d{7,15}$/, 'Número inválido (solo dígitos)').optional(),
 }).strip();
