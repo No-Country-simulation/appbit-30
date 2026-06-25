@@ -52,11 +52,11 @@ enum AreaInteresEnum {
 }
 
 enum NivelIdiomaEnum {
-  Nativo
   A1_Basico @map("A1 (Básico)")
+  A2_Elemental @map("A2 (Elemental)")
   B1_Intermedio @map("B1 (Intermedio)")
   B2_Avanzado @map("B2 (Avanzado)")
-  C1_C2_Bilingue @map("C1/C2 (Bilingüe)")
+  C1_Fluido @map("C1 (Fluido)")
 }
 
 enum DisponibilidadEnum {
@@ -179,6 +179,12 @@ enum JornadaEnum {
   Freelance
 }
 
+enum OnboardingStatusEnum {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
 // ============================================
 // TABLAS
 // ============================================
@@ -191,8 +197,7 @@ model Usuarios {
   provincia_estado    String?                @db.VarChar(100)
   ciudad              String                 @db.VarChar(150)
   zona_residencia     String?                @db.VarChar(255)
-  nivel_educacion     NivelEducacionEnum
-  momento_profesional MomentoProfesionalEnum
+  onboarding_status   OnboardingStatusEnum   @default(PENDING)
   tipo_conexion       TipoConexionEnum
   whatsapp_codigo     String?                @db.VarChar(10)
   whatsapp_numero     String?                @db.VarChar(20)
@@ -216,6 +221,8 @@ model Usuarios {
   usuario_areas_interes UsuarioAreasInteres[]
   usuario_disponibilidad UsuarioDisponibilidad[]
   usuario_ubicacion_trabajo UsuarioUbicacionTrabajo[]
+  usuario_nivel_educacion   UsuarioNivelEducacion[]
+  usuario_momento_profesional UsuarioMomentoProfesional[]
   usuario_habilidades   UsuarioHabilidades[]
   postulaciones         Postulaciones[]
   check_ins             CheckIns[]
@@ -314,6 +321,32 @@ model UsuarioUbicacionTrabajo {
   @@unique([usuario_id, ubicacion])
   @@index([usuario_id], map: "idx_uubic_usuario")
   @@map("usuario_ubicacion_trabajo")
+}
+
+model UsuarioNivelEducacion {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String              @db.Uuid
+  nivel_educacion NivelEducacionEnum
+  creado_en       DateTime            @default(now()) @db.Timestamptz
+
+  usuario         Usuarios            @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, nivel_educacion])
+  @@index([usuario_id], map: "idx_uned_usuario")
+  @@map("usuario_nivel_educacion")
+}
+
+model UsuarioMomentoProfesional {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String                  @db.Uuid
+  momento_profesional MomentoProfesionalEnum
+  creado_en           DateTime                @default(now()) @db.Timestamptz
+
+  usuario             Usuarios                @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, momento_profesional])
+  @@index([usuario_id], map: "idx_umom_usuario")
+  @@map("usuario_momento_profesional")
 }
 
 model HabilidadesMercado {

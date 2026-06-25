@@ -360,54 +360,54 @@ async function main() {
     {
       email: 'carlos.mendoza@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B2_Avanzado },
       ],
     },
     {
       email: 'laura.gomez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B1_Intermedio },
       ],
     },
     {
       email: 'pedro.ramirez@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'ana.martinez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Portugués', nivel: NivelIdiomaEnum.B2_Avanzado },
       ],
     },
     {
       email: 'juan.perez@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'maria.lopez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.A1_Basico },
       ],
     },
     {
       email: 'diego.fernandez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
-        { idioma: 'Inglés', nivel: NivelIdiomaEnum.C1_C2_Bilingue },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
+        { idioma: 'Inglés', nivel: NivelIdiomaEnum.C1_Fluido },
       ],
     },
     {
       email: 'sofia.arias@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'javier.torres@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B2_Avanzado },
         { idioma: 'Francés', nivel: NivelIdiomaEnum.A1_Basico },
       ],
@@ -415,7 +415,7 @@ async function main() {
     {
       email: 'lucia.rivera@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B1_Intermedio },
       ],
     },
