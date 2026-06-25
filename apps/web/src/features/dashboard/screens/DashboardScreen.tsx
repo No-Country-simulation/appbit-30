@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUserState } from '@/src/server/auth/get-current-user-state';
 import { SignOutButton } from '../../auth/components/SignOutButton';
+import { OnboardingModal } from '../../onboarding/screens/OnboardingModal';
 
 type Props = {
   params: Promise<{
@@ -35,17 +36,7 @@ export default async function DashboardScreen({ params, searchParams }: Props) {
           Usuario autenticado: {state.authUser?.email}
         </p>
 
-        {shouldOpenOnboarding && (
-          <div className='mt-6 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-[var(--shadow-md)]'>
-            <h2 className='font-heading text-xl font-bold text-[var(--color-text)]'>
-              Onboarding pendiente
-            </h2>
-
-            <p className='mt-2 font-body text-sm text-[var(--color-text-muted)]'>
-              Acá se debe abrir el modal de onboarding
-            </p>
-          </div>
-        )}
+        {shouldOpenOnboarding && <OnboardingModal defaultOpen locked />}
         <div className='py-8'>
           <SignOutButton />
         </div>
