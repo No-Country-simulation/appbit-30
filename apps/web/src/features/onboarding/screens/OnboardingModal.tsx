@@ -17,12 +17,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { AppButton, AppInput, ChoiceChip, CountryCodeSelect, StepIndicator } from '@/src/components';
+import {
+  AppButton,
+  AppInput,
+  ChoiceChip,
+  CountryCodeSelect,
+  StepIndicator,
+} from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
 import { FieldError } from '@/src/features/onboarding/components';
 import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
 
-const SELECT_TRIGGER_CLASSES = 'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
+const SELECT_TRIGGER_CLASSES =
+  'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
 const NUMBERS_ONLY_REGEX = /^\d*$/;
 
@@ -100,31 +107,50 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  function toggleArray(field: keyof Pick<FormData, 'nivelEducacion' | 'momentoProfesional' | 'areasInteres' | 'disponibilidad' | 'objetivos' | 'dispositivos'>, value: string) {
-    setFormData(prev => ({
+  function toggleArray(
+    field: keyof Pick<
+      FormData,
+      | 'nivelEducacion'
+      | 'momentoProfesional'
+      | 'areasInteres'
+      | 'disponibilidad'
+      | 'objetivos'
+      | 'dispositivos'
+    >,
+    value: string,
+  ) {
+    setFormData((prev) => ({
       ...prev,
       [field]: prev[field].includes(value)
-        ? prev[field].filter(v => v !== value)
+        ? prev[field].filter((v) => v !== value)
         : [...prev[field], value],
     }));
     setShowErrors(false);
   }
 
   function toggleIdioma(value: string) {
-    setFormData(prev => {
-      const exists = prev.idiomas.find(i => i.idioma === value);
+    setFormData((prev) => {
+      const exists = prev.idiomas.find((i) => i.idioma === value);
       if (exists) {
-        return { ...prev, idiomas: prev.idiomas.filter(i => i.idioma !== value) };
+        return {
+          ...prev,
+          idiomas: prev.idiomas.filter((i) => i.idioma !== value),
+        };
       }
-      return { ...prev, idiomas: [...prev.idiomas, { idioma: value, nivel: '' }] };
+      return {
+        ...prev,
+        idiomas: [...prev.idiomas, { idioma: value, nivel: '' }],
+      };
     });
     setShowErrors(false);
   }
 
   function setIdiomaNivel(idioma: string, nivel: string) {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      idiomas: prev.idiomas.map(i => i.idioma === idioma ? { ...i, nivel } : i),
+      idiomas: prev.idiomas.map((i) =>
+        i.idioma === idioma ? { ...i, nivel } : i,
+      ),
     }));
     setShowErrors(false);
   }
@@ -139,12 +165,14 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
         d.nivelEducacion.length > 0 &&
         d.momentoProfesional.length > 0 &&
         d.areasInteres.length > 0 &&
-        d.idiomas.some(i => i.idioma && i.nivel) &&
+        d.idiomas.some((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
         !!d.ubicacionTrabajo
       );
     }
-    return d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion;
+    return (
+      d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
+    );
   }
 
   function handleNext() {
@@ -184,7 +212,8 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
     })
       .then(async (res) => {
         const json = await res.json();
-        if (!res.ok) throw new Error(json.message || 'Error al completar onboarding');
+        if (!res.ok)
+          throw new Error(json.message || 'Error al completar onboarding');
         setOpen(false);
         resetForm();
       })
@@ -288,19 +317,43 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
   ];
 
   const currentGreeting =
-    step === 1 ? t('step1Greeting') : step === 2 ? t('step2Greeting') : t('step3Greeting');
+    step === 1
+      ? t('step1Greeting')
+      : step === 2
+        ? t('step2Greeting')
+        : t('step3Greeting');
   const currentSubtitle =
-    step === 1 ? t('step1Subtitle') : step === 2 ? t('step2Subtitle') : t('step3Subtitle');
+    step === 1
+      ? t('step1Subtitle')
+      : step === 2
+        ? t('step2Subtitle')
+        : t('step3Subtitle');
 
   return (
     <>
       <span onClick={() => setOpen(true)} className='cursor-pointer'>
         {children}
       </span>
-      <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
-        <DialogContent ref={scrollRef} showCloseButton={false} className='sm:max-w-lg' onPointerDownOutside={handlePointerDownOutside}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) resetForm();
+          setOpen(v);
+        }}
+      >
+        <DialogContent
+          ref={scrollRef}
+          showCloseButton={false}
+          className='sm:max-w-lg'
+          onPointerDownOutside={handlePointerDownOutside}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <div className='py-2'>
-            <StepIndicator currentStep={step} totalSteps={3} labels={STEP_LABELS} />
+            <StepIndicator
+              currentStep={step}
+              totalSteps={3}
+              labels={STEP_LABELS}
+            />
           </div>
 
           <DialogHeader>
@@ -318,23 +371,48 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                     <AppInput
                       type='date'
                       value={formData.fechaNacimiento}
-                      onChange={(e) => { setFormData(prev => ({...prev, fechaNacimiento: e.target.value})); setShowErrors(false); }}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          fechaNacimiento: e.target.value,
+                        }));
+                        setShowErrors(false);
+                      }}
                       max={new Date().toISOString().split('T')[0]}
                     />
-                    <FieldError show={showErrors && !formData.fechaNacimiento} />
+                    <FieldError
+                      show={showErrors && !formData.fechaNacimiento}
+                    />
                   </div>
 
                   <div>
                     <Body>{t('generoLabel')}</Body>
-                    <Select value={formData.genero} onValueChange={(v) => { setFormData(prev => ({...prev, genero: v})); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
+                    <Select
+                      value={formData.genero}
+                      onValueChange={(v) => {
+                        setFormData((prev) => ({ ...prev, genero: v }));
+                        setShowErrors(false);
+                      }}
+                      onOpenChange={(v) => {
+                        selectOpenRef.current = v;
+                      }}
+                    >
                       <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                         <SelectValue placeholder={t('generoPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='Masculino'>{t('generoOption1')}</SelectItem>
-                        <SelectItem value='Femenino'>{t('generoOption2')}</SelectItem>
-                        <SelectItem value='No_binario'>{t('generoOption3')}</SelectItem>
-                        <SelectItem value='Prefiero_no_decir'>{t('generoOption4')}</SelectItem>
+                        <SelectItem value='Masculino'>
+                          {t('generoOption1')}
+                        </SelectItem>
+                        <SelectItem value='Femenino'>
+                          {t('generoOption2')}
+                        </SelectItem>
+                        <SelectItem value='No_binario'>
+                          {t('generoOption3')}
+                        </SelectItem>
+                        <SelectItem value='Prefiero_no_decir'>
+                          {t('generoOption4')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FieldError show={showErrors && !formData.genero} />
@@ -343,7 +421,16 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                   <div className='grid grid-cols-2 gap-4'>
                     <div>
                       <Body>{t('paisLabel')}</Body>
-                      <Select value={formData.pais} onValueChange={(v) => { setFormData(prev => ({...prev, pais: v})); setShowErrors(false); }} onOpenChange={(v) => { selectOpenRef.current = v; }}>
+                      <Select
+                        value={formData.pais}
+                        onValueChange={(v) => {
+                          setFormData((prev) => ({ ...prev, pais: v }));
+                          setShowErrors(false);
+                        }}
+                        onOpenChange={(v) => {
+                          selectOpenRef.current = v;
+                        }}
+                      >
                         <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                           <SelectValue placeholder={t('paisPlaceholder')} />
                         </SelectTrigger>
@@ -365,7 +452,13 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       <Body>{t('provinciaEstadoLabel')}</Body>
                       <AppInput
                         value={formData.provinciaEstado}
-                        onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, provinciaEstado: e.target.value})); }}
+                        onChange={(e) => {
+                          if (TEXT_ONLY_REGEX.test(e.target.value))
+                            setFormData((prev) => ({
+                              ...prev,
+                              provinciaEstado: e.target.value,
+                            }));
+                        }}
                         placeholder={t('provinciaEstadoPlaceholder')}
                       />
                     </div>
@@ -375,7 +468,15 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                     <Body>{t('ciudadLabel')}</Body>
                     <AppInput
                       value={formData.ciudad}
-                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) { setFormData(prev => ({...prev, ciudad: e.target.value})); setShowErrors(false); } }}
+                      onChange={(e) => {
+                        if (TEXT_ONLY_REGEX.test(e.target.value)) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            ciudad: e.target.value,
+                          }));
+                          setShowErrors(false);
+                        }
+                      }}
                       placeholder={t('ciudadPlaceholder')}
                     />
                     <FieldError show={showErrors && !formData.ciudad} />
@@ -384,16 +485,24 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                   <div>
                     <Body>
                       {t('zonaResidenciaLabel')}{' '}
-                      <span className='text-[var(--color-text-muted)] text-xs'>{t('zonaResidenciaOptional')}</span>
+                      <span className='text-[var(--color-text-muted)] text-xs'>
+                        {t('zonaResidenciaOptional')}
+                      </span>
                     </Body>
                     <AppInput
                       value={formData.zonaResidencia}
-                      onChange={(e) => { if (TEXT_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, zonaResidencia: e.target.value})); }}
+                      onChange={(e) => {
+                        if (TEXT_ONLY_REGEX.test(e.target.value))
+                          setFormData((prev) => ({
+                            ...prev,
+                            zonaResidencia: e.target.value,
+                          }));
+                      }}
                       placeholder={t('zonaResidenciaPlaceholder')}
                     />
                   </div>
 
-                  <div className='flex items-start gap-2 rounded-lg border border-[var(--color-success)] bg-[var(--color-success-bg)] p-3'>
+                  <div className='flex items-start gap-2 rounded-lg border border-[var(--color-success)] bg-[var(--color-success-bg)] p-3 mb-6'>
                     <ShieldCheckIcon className='size-5 shrink-0 text-[var(--color-success)] mt-0.5' />
                     <Caption className='text-[var(--color-success-text)]'>
                       {t('zonaResidenciaInfo')}
@@ -409,7 +518,9 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                 <div>
                   <Body>
                     {t('nivelEducacionLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('nivelEducacionHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('nivelEducacionHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {nivelEducacionOptions.map((opt) => (
@@ -421,31 +532,45 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.nivelEducacion.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.nivelEducacion.length === 0}
+                  />
                 </div>
 
                 <div>
                   <Body>
                     {t('momentoProfesionalLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('momentoProfesionalHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('momentoProfesionalHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {momentoProfesionalOptions.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.momentoProfesional.includes(opt.value)}
-                        onClick={() => toggleArray('momentoProfesional', opt.value)}
+                        selected={formData.momentoProfesional.includes(
+                          opt.value,
+                        )}
+                        onClick={() =>
+                          toggleArray('momentoProfesional', opt.value)
+                        }
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.momentoProfesional.length === 0} />
+                  <FieldError
+                    show={
+                      showErrors && formData.momentoProfesional.length === 0
+                    }
+                  />
                 </div>
 
                 <div>
                   <Body>
                     {t('areasInteresLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('areasInteresHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('areasInteresHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {areasInteresOptions.map((opt) => (
@@ -457,20 +582,26 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.areasInteres.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.areasInteres.length === 0}
+                  />
                 </div>
 
                 <div>
                   <Body>
                     {t('idiomasLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('idiomasHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('idiomasHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {idiomasList.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.idiomas.some(i => i.idioma === opt.value)}
+                        selected={formData.idiomas.some(
+                          (i) => i.idioma === opt.value,
+                        )}
                         onClick={() => toggleIdioma(opt.value)}
                       />
                     ))}
@@ -478,7 +609,11 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                   {formData.idiomas.map((idioma) => (
                     <div key={idioma.idioma} className='mt-3'>
                       <Body className='mb-1.5 text-[var(--color-text-muted)]'>
-                        {idiomasList.find(l => l.value === idioma.idioma)?.label}:
+                        {
+                          idiomasList.find((l) => l.value === idioma.idioma)
+                            ?.label
+                        }
+                        :
                       </Body>
                       <div className='flex flex-wrap gap-2'>
                         {nivelesList.map((nivel) => (
@@ -486,19 +621,28 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                             key={nivel.value}
                             label={nivel.label}
                             selected={idioma.nivel === nivel.value}
-                            onClick={() => setIdiomaNivel(idioma.idioma, nivel.value)}
+                            onClick={() =>
+                              setIdiomaNivel(idioma.idioma, nivel.value)
+                            }
                           />
                         ))}
                       </div>
                     </div>
                   ))}
-                  <FieldError show={showErrors && !formData.idiomas.some(i => i.idioma && i.nivel)} />
+                  <FieldError
+                    show={
+                      showErrors &&
+                      !formData.idiomas.some((i) => i.idioma && i.nivel)
+                    }
+                  />
                 </div>
 
                 <div>
                   <Body>
                     {t('disponibilidadLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('disponibilidadHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('disponibilidadHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {disponibilidadOptions.map((opt) => (
@@ -510,18 +654,29 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.disponibilidad.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.disponibilidad.length === 0}
+                  />
                 </div>
 
                 <div>
                   <Body>{t('ubicacionTrabajoLabel')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2'>
+                  <div className='mt-2 flex flex-wrap gap-2 mb-6'>
                     {ubicacionTrabajoOptions.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
                         selected={formData.ubicacionTrabajo === opt.value}
-                        onClick={() => { setFormData(prev => ({...prev, ubicacionTrabajo: prev.ubicacionTrabajo === opt.value ? '' : opt.value})); setShowErrors(false); }}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            ubicacionTrabajo:
+                              prev.ubicacionTrabajo === opt.value
+                                ? ''
+                                : opt.value,
+                          }));
+                          setShowErrors(false);
+                        }}
                       />
                     ))}
                   </div>
@@ -536,7 +691,9 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                 <div>
                   <Body>
                     {t('objetivosLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('objetivosHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('objetivosHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {objetivosOptions.map((opt) => (
@@ -548,13 +705,17 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.objetivos.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.objetivos.length === 0}
+                  />
                 </div>
 
                 <div>
                   <Body>
                     {t('dispositivosLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('dispositivosHint')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('dispositivosHint')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex flex-wrap gap-2'>
                     {dispositivosOptions.map((opt) => (
@@ -566,7 +727,9 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.dispositivos.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.dispositivos.length === 0}
+                  />
                 </div>
 
                 <div>
@@ -577,7 +740,14 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                         key={opt.value}
                         label={opt.label}
                         selected={formData.tipoConexion === opt.value}
-                        onClick={() => { setFormData(prev => ({...prev, tipoConexion: prev.tipoConexion === opt.value ? '' : opt.value})); setShowErrors(false); }}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            tipoConexion:
+                              prev.tipoConexion === opt.value ? '' : opt.value,
+                          }));
+                          setShowErrors(false);
+                        }}
                       />
                     ))}
                   </div>
@@ -587,26 +757,41 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
                 <div>
                   <Body>
                     {t('whatsappLabel')}{' '}
-                    <span className='text-[var(--color-text-muted)] text-xs'>{t('whatsappOptional')}</span>
+                    <span className='text-[var(--color-text-muted)] text-xs'>
+                      {t('whatsappOptional')}
+                    </span>
                   </Body>
                   <div className='mt-2 flex gap-2'>
                     <div className='w-1/3'>
                       <CountryCodeSelect
                         value={formData.whatsappCodigo}
-                        onChange={(v) => setFormData(prev => ({...prev, whatsappCodigo: v}))}
-                        onOpenChange={(v) => { selectOpenRef.current = v; }}
-                        placeholder='+54'
+                        onChange={(v) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            whatsappCodigo: v,
+                          }))
+                        }
+                        onOpenChange={(v) => {
+                          selectOpenRef.current = v;
+                        }}
+                        placeholder={t('countryCodePlaceHolder')}
                       />
                     </div>
                     <div className='w-2/3'>
                       <AppInput
                         value={formData.whatsappNumero}
-                        onChange={(e) => { if (NUMBERS_ONLY_REGEX.test(e.target.value)) setFormData(prev => ({...prev, whatsappNumero: e.target.value})); }}
+                        onChange={(e) => {
+                          if (NUMBERS_ONLY_REGEX.test(e.target.value))
+                            setFormData((prev) => ({
+                              ...prev,
+                              whatsappNumero: e.target.value,
+                            }));
+                        }}
                         placeholder={t('whatsappPlaceholder')}
                       />
                     </div>
                   </div>
-                  <div className='mt-3 flex items-center gap-1.5'>
+                  <div className='mt-3 flex items-center gap-1.5 mb-6'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>
                       {t('whatsappInfo')}
@@ -617,16 +802,14 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className='relative'>
             {step > 1 && (
               <AppButton variant='outline' onClick={handleBack}>
                 {t('backButton')}
               </AppButton>
             )}
             {step < 3 ? (
-              <AppButton onClick={handleNext}>
-                {t('nextButton')} →
-              </AppButton>
+              <AppButton onClick={handleNext}>{t('nextButton')} →</AppButton>
             ) : (
               <AppButton onClick={handleFinish} disabled={isLoading}>
                 {isLoading ? t('savingButton') : t('finishButton')}
