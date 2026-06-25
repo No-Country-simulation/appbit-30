@@ -27,14 +27,7 @@ export async function getCurrentUserState() {
   const usuario = await dbClient.usuarios.findFirst({
     where: authUser.email
       ? {
-          OR: [
-            {
-              auth_uid: authUser.id,
-            },
-            {
-              email: authUser.email,
-            },
-          ],
+          OR: [{ auth_uid: authUser.id }, { email: authUser.email }],
         }
       : {
           auth_uid: authUser.id,
@@ -61,7 +54,7 @@ export async function getCurrentUserState() {
       : usuario;
 
   const hasCompletedOnboarding =
-    Boolean(linkedUsuario) && linkedUsuario!.onboarding_status === 'COMPLETED';
+    linkedUsuario?.onboarding_status === 'COMPLETED';
 
   return {
     authUser,
