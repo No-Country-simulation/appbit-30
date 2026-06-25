@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ButtonHTMLAttributes } from 'react';
+import { ButtonHTMLAttributes, forwardRef } from 'react';
 
 export type ButtonVariant = 'primary' | 'outline';
 
@@ -7,11 +7,13 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
 }
 
-export function AppButton({ variant = 'primary', className, ...props }: Props) {
-  return (
-    <button
-      {...props}
-      className={cn(
+export const AppButton = forwardRef<HTMLButtonElement, Props>(
+  function AppButton({ variant = 'primary', className, ...props }, ref) {
+    return (
+      <button
+        ref={ref}
+        {...props}
+        className={cn(
         'px-6 py-3',
         'font-medium',
         'rounded-[var(--radius-md)]',
@@ -41,4 +43,4 @@ export function AppButton({ variant = 'primary', className, ...props }: Props) {
       )}
     />
   );
-}
+});

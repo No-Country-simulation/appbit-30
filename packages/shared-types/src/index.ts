@@ -1,11 +1,8 @@
-import {
-  wellbeingRequestSchema,
-  wellbeingResponseSchema,
-} from '../../shared-schemas/src';
+import { wellbeingRequestSchema, wellbeingResponseSchema, onboardingSchema } from '../../shared-schemas/src';
 
 export type WellbeingRequest = typeof wellbeingRequestSchema;
 export type WellbeingResponse = typeof wellbeingResponseSchema;
-export * from './wellbeing';
+export type OnboardingRequest = typeof onboardingSchema;
 
 export interface OrientationRequest {
   userId: string;

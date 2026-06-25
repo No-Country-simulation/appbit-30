@@ -1,14 +1,16 @@
+// apps/web/src/server/clients/db.client.ts
+import { PrismaClient } from '../../../src/server/generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@/src/server/generated/prisma';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-});
+// En Prisma v7 se requiere adapter explícito con el engine "client"
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL!;
+const adapter = new PrismaPg(connectionString);
 
+// Evita que Next.js cree múltiples conexiones a la base de datos cada vez que recarga el código en desarrollo
 export const dbClient =
   globalForPrisma.prisma ??
   new PrismaClient({
