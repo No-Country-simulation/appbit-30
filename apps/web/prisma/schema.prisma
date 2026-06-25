@@ -1,5 +1,3 @@
-// apps/web/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/server/generated/prisma"
@@ -9,9 +7,19 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================
-// ENUMS 
-// ============================================
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model staging_assinantes {
+  assinante_hash   String?
+  home_cluster     String?
+  home_municipio   String?
+  income_cluster   String?
+  age_group        String?
+  mobility_pattern String?
+  flag_flagship    String?
+
+  @@ignore
+}
 
 enum GeneroEnum {
   Masculino
@@ -21,8 +29,8 @@ enum GeneroEnum {
 }
 
 enum NivelEducacionEnum {
-  Secundario_incompleto   @map("Secundario incompleto")
-  Secundario_completo     @map("Secundario completo")
+  Secundario_incompleto    @map("Secundario incompleto")
+  Secundario_completo      @map("Secundario completo")
   Universitario_incompleto @map("Universitario incompleto")
   Universitario_completo   @map("Universitario completo")
   Licenciatura
@@ -60,23 +68,23 @@ enum NivelIdiomaEnum {
 }
 
 enum DisponibilidadEnum {
-  Part_time   @map("Part time")
-  Full_time   @map("Full time")
+  Part_time  @map("Part time")
+  Full_time  @map("Full time")
   Contractor
   Freelance
 }
 
 enum UbicacionTrabajoEnum {
   Presencial
-  Hibrido  @map("Híbrido")
-  Remoto   @map("100% Remoto")
+  Hibrido    @map("Híbrido")
+  Remoto     @map("100% Remoto")
 }
 
 enum TipoConexionEnum {
-  Banda_ancha_estable  @map("Banda ancha estable")
-  Datos_moviles        @map("Datos móviles")
-  Conexion_inestable   @map("Conexión inestable")
-  Sin_conexion_casa    @map("Sin conexión en casa")
+  Banda_ancha_estable @map("Banda ancha estable")
+  Datos_moviles       @map("Datos móviles")
+  Conexion_inestable  @map("Conexión inestable")
+  Sin_conexion_casa   @map("Sin conexión en casa")
 }
 
 enum DispositivoEnum {
@@ -132,9 +140,9 @@ enum EstadoLeccionEnum {
 }
 
 enum PrioridadPlanEnum {
-  Alta_prioridad @map("Alta prioridad")
+  Alta_prioridad  @map("Alta prioridad")
   Media_prioridad @map("Media prioridad")
-  Baja_prioridad @map("Baja prioridad")
+  Baja_prioridad  @map("Baja prioridad")
 }
 
 enum TipoRecursoEnum {
@@ -162,8 +170,8 @@ enum IncomeClusterEnum {
 
 enum ModalidadVacanteEnum {
   Presencial
-  Hibrido  @map("Híbrido")
-  Remoto   @map("100% Remoto")
+  Hibrido    @map("Híbrido")
+  Remoto     @map("100% Remoto")
 }
 
 enum NivelVacanteEnum {
@@ -173,9 +181,9 @@ enum NivelVacanteEnum {
 }
 
 enum JornadaEnum {
-  Jornada_completa      @map("Jornada completa")
-  Media_jornada         @map("Media jornada")
-  Relacion_dependencia  @map("Relación de dependencia")
+  Jornada_completa     @map("Jornada completa")
+  Media_jornada        @map("Media jornada")
+  Relacion_dependencia @map("Relación de dependencia")
   Freelance
 }
 
