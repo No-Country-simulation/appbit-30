@@ -20,10 +20,19 @@ export async function POST(request: Request) {
     const email = rawBody.email as string | undefined;
     const nombreCompleto = rawBody.nombreCompleto as string | undefined;
 
+    if (rawBody.whatsappCodigo === '' && rawBody.whatsappNumero === '') {
+      rawBody.whatsappCodigo = undefined;
+      rawBody.whatsappNumero = undefined;
+    }
+
     const parsed = onboardingSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'Datos inválidos', errors: parsed.error.flatten().fieldErrors },
+        {
+          success: false,
+          message: 'Datos inválidos',
+          errors: parsed.error.flatten().fieldErrors,
+        },
         { status: 400 },
       );
     }
@@ -33,7 +42,9 @@ export async function POST(request: Request) {
     const result = await dbClient.$transaction(async (tx) => {
       let usuario;
       if (authUid) {
-        usuario = await tx.usuarios.findUnique({ where: { auth_uid: authUid } });
+        usuario = await tx.usuarios.findUnique({
+          where: { auth_uid: authUid },
+        });
       }
       if (!usuario && email) {
         usuario = await tx.usuarios.findUnique({ where: { email } });
@@ -55,7 +66,10 @@ export async function POST(request: Request) {
       if (usuario) {
         usuario = await tx.usuarios.update({
           where: { usuario_id: usuario.usuario_id },
-          data: { ...baseData, nombre_completo: nombreCompleto ?? usuario.nombre_completo },
+          data: {
+            ...baseData,
+            nombre_completo: nombreCompleto ?? usuario.nombre_completo,
+          },
         });
       } else {
         usuario = await tx.usuarios.create({
@@ -70,24 +84,39 @@ export async function POST(request: Request) {
 
       const usuarioId = usuario.usuario_id;
 
-      await tx.usuarioNivelEducacion.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioNivelEducacion.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.nivelEducacion.length > 0) {
         await tx.usuarioNivelEducacion.createMany({
-          data: data.nivelEducacion.map((nivel) => ({ usuario_id: usuarioId, nivel_educacion: nivel })),
+          data: data.nivelEducacion.map((nivel) => ({
+            usuario_id: usuarioId,
+            nivel_educacion: nivel,
+          })),
         });
       }
 
-      await tx.usuarioMomentoProfesional.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioMomentoProfesional.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.momentoProfesional.length > 0) {
         await tx.usuarioMomentoProfesional.createMany({
-          data: data.momentoProfesional.map((momento) => ({ usuario_id: usuarioId, momento_profesional: momento })),
+          data: data.momentoProfesional.map((momento) => ({
+            usuario_id: usuarioId,
+            momento_profesional: momento,
+          })),
         });
       }
 
-      await tx.usuarioAreasInteres.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioAreasInteres.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.areasInteres.length > 0) {
         await tx.usuarioAreasInteres.createMany({
-          data: data.areasInteres.map((area) => ({ usuario_id: usuarioId, area })),
+          data: data.areasInteres.map((area) => ({
+            usuario_id: usuarioId,
+            area,
+          })),
         });
       }
 
@@ -102,29 +131,46 @@ export async function POST(request: Request) {
         });
       }
 
-      await tx.usuarioDisponibilidad.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioDisponibilidad.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.disponibilidad.length > 0) {
         await tx.usuarioDisponibilidad.createMany({
-          data: data.disponibilidad.map((disp) => ({ usuario_id: usuarioId, disponibilidad: disp })),
+          data: data.disponibilidad.map((disp) => ({
+            usuario_id: usuarioId,
+            disponibilidad: disp,
+          })),
         });
       }
 
-      await tx.usuarioUbicacionTrabajo.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioUbicacionTrabajo.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       await tx.usuarioUbicacionTrabajo.create({
         data: { usuario_id: usuarioId, ubicacion: data.ubicacionTrabajo },
       });
 
-      await tx.usuarioObjetivos.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioObjetivos.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.objetivos.length > 0) {
         await tx.usuarioObjetivos.createMany({
-          data: data.objetivos.map((objetivo) => ({ usuario_id: usuarioId, objetivo })),
+          data: data.objetivos.map((objetivo) => ({
+            usuario_id: usuarioId,
+            objetivo,
+          })),
         });
       }
 
-      await tx.usuarioDispositivos.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioDispositivos.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
       if (data.dispositivos.length > 0) {
         await tx.usuarioDispositivos.createMany({
-          data: data.dispositivos.map((dispositivo) => ({ usuario_id: usuarioId, dispositivo })),
+          data: data.dispositivos.map((dispositivo) => ({
+            usuario_id: usuarioId,
+            dispositivo,
+          })),
         });
       }
 
@@ -151,7 +197,9 @@ export async function POST(request: Request) {
           signal: AbortSignal.timeout(10000),
         });
       } catch {
-        console.warn('ai-service no disponible, onboarding completado sin recomendaciones');
+        console.warn(
+          'ai-service no disponible, onboarding completado sin recomendaciones',
+        );
       }
     }
 
@@ -166,7 +214,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Error interno del servidor',
+        message:
+          error instanceof Error ? error.message : 'Error interno del servidor',
       },
       { status: 500 },
     );
