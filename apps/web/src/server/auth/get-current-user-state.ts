@@ -8,7 +8,7 @@ const usuarioSelect = {
   nombre_completo: true,
   avatar_url: true,
   idioma_app: true,
-  perfil_completado: true,
+  onboarding_status: true,
 } as const;
 
 export async function getCurrentUserState() {
@@ -61,7 +61,7 @@ export async function getCurrentUserState() {
       : usuario;
 
   const hasCompletedOnboarding =
-    Boolean(linkedUsuario) && linkedUsuario!.perfil_completado >= 100;
+    Boolean(linkedUsuario) && linkedUsuario!.onboarding_status === 'COMPLETED';
 
   return {
     authUser,
