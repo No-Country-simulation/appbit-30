@@ -2,23 +2,81 @@ import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
 import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
+import { IdiomaAppEnum } from '../../../server/generated/prisma';
+import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
-const NIVEL_IDIOMA_MAP: Record<string, NivelIdiomaEnum> = {
+const NIVEL_IDIOMA_MAP = {
   A1: 'A1_Basico' as NivelIdiomaEnum,
   A2: 'A2_Elemental' as NivelIdiomaEnum,
   B1: 'B1_Intermedio' as NivelIdiomaEnum,
   B2: 'B2_Avanzado' as NivelIdiomaEnum,
   C1: 'C1_Fluido' as NivelIdiomaEnum,
-};
+} satisfies Record<string, NivelIdiomaEnum>;
+
+function getAuthDisplayName(authUser: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+}) {
+  const metadata = authUser.user_metadata ?? {};
+
+  const fullName =
+    typeof metadata.full_name === 'string'
+      ? metadata.full_name
+      : typeof metadata.name === 'string'
+        ? metadata.name
+        : null;
+
+  if (fullName && fullName.trim().length >= 2) {
+    return fullName.trim();
+  }
+
+  if (authUser.email) {
+    return authUser.email.split('@')[0];
+  }
+
+  return 'Usuario BiT';
+}
+
+function getAvatarUrl(authUser: { user_metadata?: Record<string, unknown> }) {
+  const avatarUrl = authUser.user_metadata?.avatar_url;
+
+  return typeof avatarUrl === 'string' ? avatarUrl : null;
+}
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const authUser = await getCurrentAuthUser();
+
+    if (!authUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unauthorized',
+        },
+        { status: 401 },
+      );
+    }
+
+    if (!authUser.email) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'El usuario autenticado no tiene email.',
+        },
+        { status: 400 },
+      );
+    }
+
     const rawBody: Record<string, unknown> = await request.json();
-    const authUid = rawBody.authUid as string | undefined;
-    const email = rawBody.email as string | undefined;
-    const nombreCompleto = rawBody.nombreCompleto as string | undefined;
+
+    const authUid = authUser.id;
+    const email = authUser.email;
+    const nombreCompleto = getAuthDisplayName(authUser);
+    const avatarUrl = getAvatarUrl(authUser);
+    const idiomaApp =
+      rawBody.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es;
 
     if (rawBody.whatsappCodigo === '' && rawBody.whatsappNumero === '') {
       rawBody.whatsappCodigo = undefined;
@@ -26,6 +84,7 @@ export async function POST(request: Request) {
     }
 
     const parsed = onboardingSchema.safeParse(rawBody);
+
     if (!parsed.success) {
       return NextResponse.json(
         {
@@ -40,14 +99,14 @@ export async function POST(request: Request) {
     const data = parsed.data;
 
     const result = await dbClient.$transaction(async (tx) => {
-      let usuario;
-      if (authUid) {
+      let usuario = await tx.usuarios.findUnique({
+        where: { auth_uid: authUid },
+      });
+
+      if (!usuario) {
         usuario = await tx.usuarios.findUnique({
-          where: { auth_uid: authUid },
+          where: { email },
         });
-      }
-      if (!usuario && email) {
-        usuario = await tx.usuarios.findUnique({ where: { email } });
       }
 
       const baseData = {
@@ -60,7 +119,11 @@ export async function POST(request: Request) {
         tipo_conexion: data.tipoConexion,
         whatsapp_codigo: data.whatsappCodigo ?? null,
         whatsapp_numero: data.whatsappNumero ?? null,
+        idioma_app: idiomaApp,
+        avatar_url: avatarUrl,
+        perfil_completado: 100,
         onboarding_status: 'COMPLETED' as const,
+        actualizado_en: new Date(),
       };
 
       if (usuario) {
@@ -68,16 +131,18 @@ export async function POST(request: Request) {
           where: { usuario_id: usuario.usuario_id },
           data: {
             ...baseData,
-            nombre_completo: nombreCompleto ?? usuario.nombre_completo,
+            auth_uid: authUid,
+            email,
+            nombre_completo: nombreCompleto,
           },
         });
       } else {
         usuario = await tx.usuarios.create({
           data: {
             ...baseData,
-            auth_uid: authUid ?? null,
-            email: email ?? 'unknown@email.com',
-            nombre_completo: nombreCompleto ?? 'Usuario',
+            auth_uid: authUid,
+            email,
+            nombre_completo: nombreCompleto,
           },
         });
       }
@@ -87,6 +152,7 @@ export async function POST(request: Request) {
       await tx.usuarioNivelEducacion.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.nivelEducacion.length > 0) {
         await tx.usuarioNivelEducacion.createMany({
           data: data.nivelEducacion.map((nivel) => ({
@@ -99,6 +165,7 @@ export async function POST(request: Request) {
       await tx.usuarioMomentoProfesional.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.momentoProfesional.length > 0) {
         await tx.usuarioMomentoProfesional.createMany({
           data: data.momentoProfesional.map((momento) => ({
@@ -111,6 +178,7 @@ export async function POST(request: Request) {
       await tx.usuarioAreasInteres.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.areasInteres.length > 0) {
         await tx.usuarioAreasInteres.createMany({
           data: data.areasInteres.map((area) => ({
@@ -120,7 +188,10 @@ export async function POST(request: Request) {
         });
       }
 
-      await tx.usuarioIdiomas.deleteMany({ where: { usuario_id: usuarioId } });
+      await tx.usuarioIdiomas.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
+
       if (data.idiomas.length > 0) {
         await tx.usuarioIdiomas.createMany({
           data: data.idiomas.map(({ idioma, nivel }) => ({
@@ -134,6 +205,7 @@ export async function POST(request: Request) {
       await tx.usuarioDisponibilidad.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.disponibilidad.length > 0) {
         await tx.usuarioDisponibilidad.createMany({
           data: data.disponibilidad.map((disp) => ({
@@ -146,13 +218,18 @@ export async function POST(request: Request) {
       await tx.usuarioUbicacionTrabajo.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       await tx.usuarioUbicacionTrabajo.create({
-        data: { usuario_id: usuarioId, ubicacion: data.ubicacionTrabajo },
+        data: {
+          usuario_id: usuarioId,
+          ubicacion: data.ubicacionTrabajo,
+        },
       });
 
       await tx.usuarioObjetivos.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.objetivos.length > 0) {
         await tx.usuarioObjetivos.createMany({
           data: data.objetivos.map((objetivo) => ({
@@ -165,6 +242,7 @@ export async function POST(request: Request) {
       await tx.usuarioDispositivos.deleteMany({
         where: { usuario_id: usuarioId },
       });
+
       if (data.dispositivos.length > 0) {
         await tx.usuarioDispositivos.createMany({
           data: data.dispositivos.map((dispositivo) => ({
@@ -177,6 +255,7 @@ export async function POST(request: Request) {
       const perfilMovilidad = await tx.perfilMovilidad.findFirst({
         where: { usuario_id: null },
       });
+
       if (perfilMovilidad) {
         await tx.perfilMovilidad.update({
           where: { id: perfilMovilidad.id },
@@ -184,16 +263,23 @@ export async function POST(request: Request) {
         });
       }
 
-      return { usuarioId, onboardingCompleted: true };
+      return {
+        usuarioId,
+        onboardingCompleted: true,
+      };
     });
 
     const aiServiceUrl = process.env.AI_SERVICE_URL;
+
     if (aiServiceUrl) {
       try {
         await fetch(`${aiServiceUrl}/api/onboarding`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuarioId: result.usuarioId, ...data }),
+          body: JSON.stringify({
+            usuarioId: result.usuarioId,
+            ...data,
+          }),
           signal: AbortSignal.timeout(10000),
         });
       } catch {
@@ -211,6 +297,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error en onboarding:', error);
+
     return NextResponse.json(
       {
         success: false,
