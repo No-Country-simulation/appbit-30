@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from '@/src/i18n/navigation';
 import {
   Dialog,
   DialogContent,
@@ -86,16 +87,24 @@ type Step = 1 | 2 | 3;
 const STEP_LABELS = ['Personales', 'Educación', 'Objetivos'];
 
 interface OnboardingModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  defaultOpen?: boolean;
+  locked?: boolean;
 }
 
-export function OnboardingModal({ children }: OnboardingModalProps) {
+export function OnboardingModal({
+  children,
+  defaultOpen = false,
+  locked = false,
+}: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [step, setStep] = useState<Step>(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectOpenRef = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
+  const locale = useLocale();
+  const router = useRouter();
 
   const handlePointerDownOutside = useCallback((e: Event) => {
     if (selectOpenRef.current) {
@@ -200,22 +209,31 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
       setShowErrors(true);
       return;
     }
+
     setShowErrors(false);
     setIsLoading(true);
     setSubmitError(null);
 
-    // TODO(Franco): agregar authUid, email, nombreCompleto desde la sesión de Supabase
     fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({
+        ...formData,
+        locale,
+      }),
     })
       .then(async (res) => {
         const json = await res.json();
-        if (!res.ok)
+
+        if (!res.ok) {
           throw new Error(json.message || 'Error al completar onboarding');
+        }
+
         setOpen(false);
         resetForm();
+
+        router.replace('/dashboard', { locale });
+        router.refresh();
       })
       .catch((err) => {
         setSubmitError(err.message);
@@ -331,14 +349,23 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
 
   return (
     <>
-      <span onClick={() => setOpen(true)} className='cursor-pointer'>
-        {children}
-      </span>
+      {children && (
+        <span onClick={() => setOpen(true)} className='cursor-pointer'>
+          {children}
+        </span>
+      )}
       <Dialog
         open={open}
-        onOpenChange={(v) => {
-          if (!v) resetForm();
-          setOpen(v);
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && locked) {
+            return;
+          }
+
+          if (!nextOpen) {
+            resetForm();
+          }
+
+          setOpen(nextOpen);
         }}
       >
         <DialogContent
@@ -347,6 +374,11 @@ export function OnboardingModal({ children }: OnboardingModalProps) {
           className='sm:max-w-lg'
           onPointerDownOutside={handlePointerDownOutside}
           onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            if (locked) {
+              e.preventDefault();
+            }
+          }}
         >
           <div className='py-2'>
             <StepIndicator
