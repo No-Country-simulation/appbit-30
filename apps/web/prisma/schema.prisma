@@ -1,5 +1,3 @@
-// apps/web/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/server/generated/prisma"
@@ -9,9 +7,513 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================
-// ENUMS 
-// ============================================
+model Usuarios {
+  usuario_id                  String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fecha_nacimiento            DateTime                    @db.Date
+  genero                      GeneroEnum
+  pais                        String                      @db.VarChar(100)
+  provincia_estado            String?                     @db.VarChar(100)
+  ciudad                      String                      @db.VarChar(150)
+  zona_residencia             String?                     @db.VarChar(255)
+  tipo_conexion               TipoConexionEnum
+  whatsapp_codigo             String?                     @db.VarChar(10)
+  whatsapp_numero             String?                     @db.VarChar(20)
+  idioma_app                  IdiomaAppEnum               @default(es)
+  perfil_completado           Int                         @default(0) @db.SmallInt
+  lat                         Decimal?                    @db.Decimal(10, 7)
+  lng                         Decimal?                    @db.Decimal(10, 7)
+  confianza                   Decimal?                    @db.Decimal(3, 2)
+  auth_uid                    String?                     @unique @db.Uuid
+  email                       String                      @unique @db.VarChar(255)
+  nombre_completo             String                      @db.VarChar(255)
+  avatar_url                  String?
+  creado_en                   DateTime                    @default(now()) @db.Timestamptz(6)
+  actualizado_en              DateTime                    @default(now()) @db.Timestamptz(6)
+  home_cluster                String?                     @db.VarChar(100)
+  onboarding_status           OnboardingStatusEnum        @default(PENDING)
+  usuario_momento_profesional UsuarioMomentoProfesional[]
+  usuario_nivel_educacion     UsuarioNivelEducacion[]
+
+  @@index([pais], map: "idx_usuarios_pais")
+  @@index([ciudad], map: "idx_usuarios_ciudad")
+  @@index([email], map: "idx_usuarios_email")
+  @@index([home_cluster], map: "idx_usuarios_home_cluster")
+  @@index([lat, lng], map: "idx_usuarios_coords")
+  @@map("usuarios")
+}
+
+model UsuarioObjetivos {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String              @db.Uuid
+  objetivo   ObjetivoUsuarioEnum
+  creado_en  DateTime            @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, objetivo])
+  @@index([usuario_id], map: "idx_uobj_usuario")
+  @@map("usuario_objetivos")
+}
+
+model UsuarioDispositivos {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String          @db.Uuid
+  dispositivo DispositivoEnum
+  creado_en   DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, dispositivo])
+  @@index([usuario_id], map: "idx_udis_usuario")
+  @@map("usuario_dispositivos")
+}
+
+model UsuarioIdiomas {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String          @db.Uuid
+  idioma     String          @db.VarChar(50)
+  nivel      NivelIdiomaEnum
+  creado_en  DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, idioma])
+  @@index([usuario_id], map: "idx_uidi_usuario")
+  @@map("usuario_idiomas")
+}
+
+model UsuarioAreasInteres {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String          @db.Uuid
+  area       AreaInteresEnum
+  creado_en  DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, area])
+  @@index([usuario_id], map: "idx_uarea_usuario")
+  @@map("usuario_areas_interes")
+}
+
+model UsuarioDisponibilidad {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String             @db.Uuid
+  disponibilidad DisponibilidadEnum
+  creado_en      DateTime           @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, disponibilidad])
+  @@index([usuario_id], map: "idx_udisp_usuario")
+  @@map("usuario_disponibilidad")
+}
+
+model UsuarioUbicacionTrabajo {
+  id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String               @db.Uuid
+  ubicacion  UbicacionTrabajoEnum
+  creado_en  DateTime             @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, ubicacion])
+  @@index([usuario_id], map: "idx_uubic_usuario")
+  @@map("usuario_ubicacion_trabajo")
+}
+
+model UsuarioNivelEducacion {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String             @db.Uuid
+  nivel_educacion NivelEducacionEnum
+  creado_en       DateTime           @default(now()) @db.Timestamptz(6)
+  usuario         Usuarios           @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, nivel_educacion])
+  @@index([usuario_id], map: "idx_uned_usuario")
+  @@map("usuario_nivel_educacion")
+}
+
+model UsuarioMomentoProfesional {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String                 @db.Uuid
+  momento_profesional MomentoProfesionalEnum
+  creado_en           DateTime               @default(now()) @db.Timestamptz(6)
+  usuario             Usuarios               @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, momento_profesional])
+  @@index([usuario_id], map: "idx_umom_usuario")
+  @@map("usuario_momento_profesional")
+}
+
+model HabilidadesMercado {
+  habilidad_id   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre         String           @unique @db.VarChar(255)
+  categoria      String?          @db.VarChar(100)
+  area_principal AreaInteresEnum?
+  creado_en      DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@index([nombre], map: "idx_hab_nombre")
+  @@index([area_principal], map: "idx_hab_area")
+  @@map("habilidades_mercado")
+}
+
+model UsuarioHabilidades {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String              @db.Uuid
+  habilidad_id   String              @db.Uuid
+  estado         EstadoHabilidadEnum @default(Faltante)
+  actualizado_en DateTime            @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, habilidad_id])
+  @@index([usuario_id], map: "idx_uhab_usuario")
+  @@index([estado], map: "idx_uhab_estado")
+  @@map("usuario_habilidades")
+}
+
+model Empresas {
+  empresa_id  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String   @unique @db.VarChar(255)
+  descripcion String?
+  sector      String?  @db.VarChar(100)
+  tamanio     String?  @db.VarChar(50)
+  logo_url    String?
+  creado_en   DateTime @default(now()) @db.Timestamptz(6)
+  cluster     String?  @db.VarChar(100)
+
+  @@index([nombre], map: "idx_empresa_nombre")
+  @@index([cluster], map: "idx_empresas_cluster")
+  @@map("empresas")
+}
+
+model Vacantes {
+  vacante_id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  empresa_id             String               @db.Uuid
+  titulo                 String               @db.VarChar(255)
+  area                   AreaInteresEnum
+  nivel                  NivelVacanteEnum     @default(Jr_Entry_Level)
+  descripcion            String?
+  educacion_requerida    String?              @db.VarChar(255)
+  experiencia_solicitada String?              @db.VarChar(255)
+  jornada                JornadaEnum?
+  modalidad              ModalidadVacanteEnum @default(Hibrido)
+  pais                   String               @db.VarChar(100)
+  ciudad                 String?              @db.VarChar(150)
+  detalle_modalidad      String?              @db.VarChar(255)
+  distancia_zona         String?              @db.VarChar(100)
+  idiomas_requeridos     Json?                @default("[]")
+  activa                 Boolean              @default(true)
+  fecha_publicacion      DateTime             @default(dbgenerated("CURRENT_DATE")) @db.Date
+  creado_en              DateTime             @default(now()) @db.Timestamptz(6)
+
+  @@index([area], map: "idx_vac_area")
+  @@index([pais], map: "idx_vac_pais")
+  @@index([activa], map: "idx_vac_activa")
+  @@index([empresa_id], map: "idx_vac_empresa")
+  @@map("vacantes")
+}
+
+model RequisitosVacante {
+  requisito_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacante_id   String   @db.Uuid
+  habilidad_id String   @db.Uuid
+  prioridad    Int      @default(1) @db.SmallInt
+  creado_en    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([vacante_id], map: "idx_req_vacante")
+  @@index([habilidad_id], map: "idx_req_habilidad")
+  @@map("requisitos_vacante")
+}
+
+model Postulaciones {
+  postulacion_id     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id         String                @db.Uuid
+  vacante_id         String                @db.Uuid
+  mensaje_motivacion String?
+  usar_cv_guardado   Boolean               @default(true)
+  cv_url             String?
+  match_porcentaje   Decimal?              @db.Decimal(5, 2)
+  estado             EstadoPostulacionEnum @default(Enviada)
+  creado_en          DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@unique([usuario_id, vacante_id])
+  @@index([usuario_id], map: "idx_post_usuario")
+  @@index([vacante_id], map: "idx_post_vacante")
+  @@index([estado], map: "idx_post_estado")
+  @@map("postulaciones")
+}
+
+model CheckIns {
+  checkin_id  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String                 @db.Uuid
+  emoji       EstadoCheckinEmojiEnum
+  nota_diaria Decimal                @db.Decimal(4, 2)
+  creado_en   DateTime               @default(now()) @db.Timestamptz(6)
+
+  @@index([usuario_id], map: "idx_chk_usuario")
+  @@index([creado_en], map: "idx_chk_fecha")
+  @@index([nota_diaria], map: "idx_chk_nota")
+  @@map("check_ins")
+}
+
+model CheckInMotivos {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checkin_id String   @db.Uuid
+  motivo     String   @db.VarChar(255)
+  creado_en  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("check_in_motivos")
+}
+
+model CheckInContexto {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checkin_id String   @db.Uuid
+  contexto   String
+  creado_en  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("check_in_contexto")
+}
+
+model RespuestasSalud {
+  respuesta_id    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String   @db.Uuid
+  checkin_id      String?  @db.Uuid
+  nota_semanal    Decimal  @db.Decimal(4, 2)
+  nota_actual     Decimal  @db.Decimal(4, 2)
+  mensaje         String
+  accion_sugerida String
+  derivar_cvv     Boolean  @default(false)
+  alerta          Boolean  @default(false)
+  creado_en       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("respuestas_salud")
+}
+
+model Orientaciones {
+  orientacion_id       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id           String        @db.Uuid
+  gap_porcentual       Decimal       @db.Decimal(5, 2)
+  gap_items            Json          @default("[]")
+  trayectoria_sugerida Json          @default("[]")
+  vacantes_compatibles Json          @default("[]")
+  confianza            Decimal       @db.Decimal(3, 2)
+  idioma_respuesta     IdiomaAppEnum @default(es)
+  creado_en            DateTime      @default(now()) @db.Timestamptz(6)
+
+  @@map("orientaciones")
+}
+
+model Cursos {
+  curso_id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo                 String          @db.VarChar(255)
+  subtitulo              String?         @db.VarChar(255)
+  descripcion            String?
+  area                   AreaInteresEnum
+  tipo                   TipoRecursoEnum @default(Gratuito)
+  plataforma             String?         @db.VarChar(255)
+  url_externa            String?
+  duracion_estimada_dias Int?
+  imagen_portada_url     String?
+  habilidad_principal    String?         @db.Uuid
+  activo                 Boolean         @default(true)
+  creado_en              DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@map("cursos")
+}
+
+model Modulos {
+  modulo_id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  curso_id        String   @db.Uuid
+  titulo          String   @db.VarChar(255)
+  orden           Int      @db.SmallInt
+  total_lecciones Int      @default(0) @db.SmallInt
+  creado_en       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("modulos")
+}
+
+model Lecciones {
+  leccion_id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  modulo_id        String   @db.Uuid
+  titulo           String   @db.VarChar(255)
+  orden            Int      @db.SmallInt
+  tipo             String?  @default("Video") @db.VarChar(50)
+  duracion_minutos Decimal? @db.Decimal(6, 2)
+  video_url        String?
+  creado_en        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("lecciones")
+}
+
+model InscripcionesCurso {
+  inscripcion_id      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String                @db.Uuid
+  curso_id            String                @db.Uuid
+  estado              EstadoInscripcionEnum @default(Inscrito)
+  progreso_porcentaje Int                   @default(0) @db.SmallInt
+  fecha_inicio        DateTime              @default(now()) @db.Timestamptz(6)
+  fecha_completado    DateTime?             @db.Timestamptz(6)
+  creado_en           DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@map("inscripciones_curso")
+}
+
+model ProgresoLeccion {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id       String            @db.Uuid
+  leccion_id       String            @db.Uuid
+  estado           EstadoLeccionEnum @default(No_iniciada)
+  tiempo_visto_seg Int?              @default(0)
+  completado_en    DateTime?         @db.Timestamptz(6)
+
+  @@map("progreso_leccion")
+}
+
+model RecursosDescarga {
+  recurso_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  curso_id     String   @db.Uuid
+  titulo       String   @db.VarChar(255)
+  tipo         String?  @db.VarChar(50)
+  tamanio_mb   Decimal? @db.Decimal(8, 2)
+  url_descarga String
+  creado_en    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("recursos_descarga")
+}
+
+model DescargasOffline {
+  descarga_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String   @db.Uuid
+  recurso_id    String   @db.Uuid
+  descargado_en DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("descargas_offline")
+}
+
+model PlanAccion {
+  plan_item_id       String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id         String            @db.Uuid
+  titulo             String            @db.VarChar(255)
+  prioridad          PrioridadPlanEnum
+  curso_vinculado_id String?           @db.Uuid
+  accion_label       String?           @db.VarChar(100)
+  completado         Boolean           @default(false)
+  orden              Int               @default(0) @db.SmallInt
+  creado_en          DateTime          @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime          @default(now()) @db.Timestamptz(6)
+
+  @@map("plan_accion")
+}
+
+model PerfilMovilidad {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id       String?              @db.Uuid
+  assinante_hash   String               @db.VarChar(255)
+  home_cluster     String?              @db.VarChar(100)
+  home_municipio   String?              @db.VarChar(100)
+  income_cluster   IncomeClusterEnum?
+  age_group        String?              @db.VarChar(20)
+  mobility_pattern MobilityPatternEnum?
+  flag_flagship    Boolean?             @default(false)
+  creado_en        DateTime             @default(now()) @db.Timestamptz(6)
+
+  @@map("perfil_movilidad")
+}
+
+model CalidadRedZona {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ecgi                   String   @db.VarChar(50)
+  cluster                String   @db.VarChar(100)
+  municipio              String?  @db.VarChar(100)
+  day_date               DateTime @db.Date
+  periodo                String?  @db.VarChar(20)
+  n_usuarios             Int?
+  n_sessoes              Int?
+  download_bytes         BigInt?
+  upload_bytes           BigInt?
+  dur_media_s            Decimal? @db.Decimal(10, 2)
+  drop_pct_medio         Decimal? @db.Decimal(5, 4)
+  congestionamento_medio Decimal? @db.Decimal(5, 4)
+  lat                    Decimal? @db.Decimal(10, 7)
+  lon                    Decimal? @db.Decimal(10, 7)
+  creado_en              DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("calidad_red_zona")
+}
+
+model AlertasOffline {
+  alerta_id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id         String   @db.Uuid
+  cluster_detectado  String?  @db.VarChar(100)
+  drop_pct_detectado Decimal? @db.Decimal(5, 4)
+  congestionamiento  Decimal? @db.Decimal(5, 4)
+  mensaje            String
+  curso_sugerido_id  String?  @db.Uuid
+  vista              Boolean  @default(false)
+  creado_en          DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("alertas_offline")
+}
+
+model NotificacionesRadar {
+  notificacion_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String   @db.Uuid
+  tipo            String   @db.VarChar(50)
+  titulo          String   @db.VarChar(255)
+  mensaje         String
+  datos           Json     @default("{}")
+  leida           Boolean  @default(false)
+  creado_en       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("notificaciones_radar")
+}
+
+model Antenas {
+  ecgi      String   @id @db.VarChar(50)
+  lat       Decimal  @db.Decimal(10, 7)
+  lon       Decimal  @db.Decimal(10, 7)
+  cluster   String   @db.VarChar(100)
+  municipio String?  @db.VarChar(100)
+  creado_en DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([cluster], map: "idx_antenas_cluster")
+  @@index([lat, lon], map: "idx_antenas_coords")
+  @@map("antenas")
+}
+
+model DistanciasCluster {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cluster_origem       String   @db.VarChar(100)
+  cluster_destino      String   @db.VarChar(100)
+  dist_media_km        Decimal  @db.Decimal(10, 4)
+  dist_p25_km          Decimal? @db.Decimal(10, 4)
+  dist_p75_km          Decimal? @db.Decimal(10, 4)
+  periodo_predominante String?  @db.VarChar(20)
+  n_amostras           Int?
+  creado_en            DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([cluster_origem, cluster_destino])
+  @@index([cluster_origem], map: "idx_dist_cluster_origem")
+  @@index([cluster_destino], map: "idx_dist_cluster_destino")
+  @@map("distancias_cluster")
+}
+
+model OrigenDestino {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cluster_origem       String   @db.VarChar(100)
+  cluster_destino      String   @db.VarChar(100)
+  periodo_predominante String?  @db.VarChar(20)
+  n_viagens_estimado   Int?
+  dist_media_km        Decimal? @db.Decimal(10, 4)
+  mesmo_cluster        Int?     @db.SmallInt
+
+  @@unique([cluster_origem, cluster_destino])
+  @@index([cluster_origem], map: "idx_od_origem")
+  @@index([cluster_destino], map: "idx_od_destino")
+  @@map("origen_destino")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model staging_assinantes {
+  assinante_hash   String?
+  home_cluster     String?
+  home_municipio   String?
+  income_cluster   String?
+  age_group        String?
+  mobility_pattern String?
+  flag_flagship    String?
+
+  @@ignore
+}
 
 enum GeneroEnum {
   Masculino
@@ -21,8 +523,8 @@ enum GeneroEnum {
 }
 
 enum NivelEducacionEnum {
-  Secundario_incompleto   @map("Secundario incompleto")
-  Secundario_completo     @map("Secundario completo")
+  Secundario_incompleto    @map("Secundario incompleto")
+  Secundario_completo      @map("Secundario completo")
   Universitario_incompleto @map("Universitario incompleto")
   Universitario_completo   @map("Universitario completo")
   Licenciatura
@@ -52,31 +554,31 @@ enum AreaInteresEnum {
 }
 
 enum NivelIdiomaEnum {
-  Nativo
-  A1_Basico @map("A1 (Básico)")
-  B1_Intermedio @map("B1 (Intermedio)")
-  B2_Avanzado @map("B2 (Avanzado)")
-  C1_C2_Bilingue @map("C1/C2 (Bilingüe)")
+  A1_Basico      @map("A1 (Básico)")
+  A2__Elemental_ @map("A2 (Elemental)")
+  B1_Intermedio  @map("B1 (Intermedio)")
+  B2_Avanzado    @map("B2 (Avanzado)")
+  C1__Fluido_    @map("C1 (Fluido)")
 }
 
 enum DisponibilidadEnum {
-  Part_time   @map("Part time")
-  Full_time   @map("Full time")
+  Part_time  @map("Part time")
+  Full_time  @map("Full time")
   Contractor
   Freelance
 }
 
 enum UbicacionTrabajoEnum {
   Presencial
-  Hibrido  @map("Híbrido")
-  Remoto   @map("100% Remoto")
+  Hibrido    @map("Híbrido")
+  Remoto     @map("100% Remoto")
 }
 
 enum TipoConexionEnum {
-  Banda_ancha_estable  @map("Banda ancha estable")
-  Datos_moviles        @map("Datos móviles")
-  Conexion_inestable   @map("Conexión inestable")
-  Sin_conexion_casa    @map("Sin conexión en casa")
+  Banda_ancha_estable @map("Banda ancha estable")
+  Datos_moviles       @map("Datos móviles")
+  Conexion_inestable  @map("Conexión inestable")
+  Sin_conexion_casa   @map("Sin conexión en casa")
 }
 
 enum DispositivoEnum {
@@ -132,9 +634,9 @@ enum EstadoLeccionEnum {
 }
 
 enum PrioridadPlanEnum {
-  Alta_prioridad @map("Alta prioridad")
+  Alta_prioridad  @map("Alta prioridad")
   Media_prioridad @map("Media prioridad")
-  Baja_prioridad @map("Baja prioridad")
+  Baja_prioridad  @map("Baja prioridad")
 }
 
 enum TipoRecursoEnum {
@@ -162,8 +664,8 @@ enum IncomeClusterEnum {
 
 enum ModalidadVacanteEnum {
   Presencial
-  Hibrido  @map("Híbrido")
-  Remoto   @map("100% Remoto")
+  Hibrido    @map("Híbrido")
+  Remoto     @map("100% Remoto")
 }
 
 enum NivelVacanteEnum {
@@ -173,614 +675,14 @@ enum NivelVacanteEnum {
 }
 
 enum JornadaEnum {
-  Jornada_completa      @map("Jornada completa")
-  Media_jornada         @map("Media jornada")
-  Relacion_dependencia  @map("Relación de dependencia")
+  Jornada_completa     @map("Jornada completa")
+  Media_jornada        @map("Media jornada")
+  Relacion_dependencia @map("Relación de dependencia")
   Freelance
 }
 
-// ============================================
-// TABLAS
-// ============================================
-
-model Usuarios {
-  usuario_id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fecha_nacimiento    DateTime               @db.Date
-  genero              GeneroEnum
-  pais                String                 @db.VarChar(100)
-  provincia_estado    String?                @db.VarChar(100)
-  ciudad              String                 @db.VarChar(150)
-  zona_residencia     String?                @db.VarChar(255)
-  nivel_educacion     NivelEducacionEnum
-  momento_profesional MomentoProfesionalEnum
-  tipo_conexion       TipoConexionEnum
-  whatsapp_codigo     String?                @db.VarChar(10)
-  whatsapp_numero     String?                @db.VarChar(20)
-  idioma_app          IdiomaAppEnum          @default(es)
-  perfil_completado   Int                    @default(0) @db.SmallInt
-  lat                 Decimal?               @db.Decimal(10, 7)
-  lng                 Decimal?               @db.Decimal(10, 7)
-  confianza           Decimal?               @db.Decimal(3, 2)
-  auth_uid            String?                @unique @db.Uuid
-  email               String                 @unique @db.VarChar(255)
-  nombre_completo     String                 @db.VarChar(255)
-  avatar_url          String?                @db.Text
-  creado_en           DateTime               @default(now()) @db.Timestamptz
-  actualizado_en      DateTime               @default(now()) @db.Timestamptz
-  home_cluster        String?                @db.VarChar(100)
-
-  // Relaciones
-  usuario_objetivos     UsuarioObjetivos[]
-  usuario_dispositivos  UsuarioDispositivos[]
-  usuario_idiomas       UsuarioIdiomas[]
-  usuario_areas_interes UsuarioAreasInteres[]
-  usuario_disponibilidad UsuarioDisponibilidad[]
-  usuario_ubicacion_trabajo UsuarioUbicacionTrabajo[]
-  usuario_habilidades   UsuarioHabilidades[]
-  postulaciones         Postulaciones[]
-  check_ins             CheckIns[]
-  respuestas_salud      RespuestasSalud[]
-  orientaciones         Orientaciones[]
-  inscripciones_curso   InscripcionesCurso[]
-  progreso_leccion      ProgresoLeccion[]
-  descargas_offline     DescargasOffline[]
-  plan_accion           PlanAccion[]
-  perfil_movilidad      PerfilMovilidad?
-  alertas_offline       AlertasOffline[]
-  notificaciones_radar  NotificacionesRadar[]
-
-  @@map("usuarios")
-  @@index([pais], map: "idx_usuarios_pais")
-  @@index([ciudad], map: "idx_usuarios_ciudad")
-  @@index([email], map: "idx_usuarios_email")
-  @@index([home_cluster], map: "idx_usuarios_home_cluster")
-  @@index([lat, lng], map: "idx_usuarios_coords") 
-}
-
-model UsuarioObjetivos {
-  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String               @db.Uuid
-  objetivo    ObjetivoUsuarioEnum
-  creado_en   DateTime             @default(now()) @db.Timestamptz
-
-  usuario     Usuarios             @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, objetivo])
-  @@index([usuario_id], map: "idx_uobj_usuario")
-  @@map("usuario_objetivos")
-}
-
-model UsuarioDispositivos {
-  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String           @db.Uuid
-  dispositivo DispositivoEnum
-  creado_en   DateTime         @default(now()) @db.Timestamptz
-
-  usuario     Usuarios         @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, dispositivo])
-  @@index([usuario_id], map: "idx_udis_usuario")
-  @@map("usuario_dispositivos")
-}
-
-model UsuarioIdiomas {
-  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String           @db.Uuid
-  idioma      String           @db.VarChar(50)
-  nivel       NivelIdiomaEnum
-  creado_en   DateTime         @default(now()) @db.Timestamptz
-
-  usuario     Usuarios         @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, idioma])
-  @@index([usuario_id], map: "idx_uidi_usuario")
-  @@map("usuario_idiomas")
-}
-
-model UsuarioAreasInteres {
-  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String           @db.Uuid
-  area        AreaInteresEnum
-  creado_en   DateTime         @default(now()) @db.Timestamptz
-
-  usuario     Usuarios         @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, area])
-  @@index([usuario_id], map: "idx_uarea_usuario")
-  @@map("usuario_areas_interes")
-}
-
-model UsuarioDisponibilidad {
-  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String             @db.Uuid
-  disponibilidad  DisponibilidadEnum
-  creado_en       DateTime           @default(now()) @db.Timestamptz
-
-  usuario         Usuarios           @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, disponibilidad])
-  @@index([usuario_id], map: "idx_udisp_usuario")
-  @@map("usuario_disponibilidad")
-}
-
-model UsuarioUbicacionTrabajo {
-  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String                @db.Uuid
-  ubicacion   UbicacionTrabajoEnum
-  creado_en   DateTime              @default(now()) @db.Timestamptz
-
-  usuario     Usuarios              @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, ubicacion])
-  @@index([usuario_id], map: "idx_uubic_usuario")
-  @@map("usuario_ubicacion_trabajo")
-}
-
-model HabilidadesMercado {
-  habilidad_id   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre         String           @unique @db.VarChar(255)
-  categoria      String?          @db.VarChar(100)
-  area_principal AreaInteresEnum?
-  creado_en      DateTime         @default(now()) @db.Timestamptz
-
-  usuario_habilidades UsuarioHabilidades[]
-  requisitos_vacante  RequisitosVacante[]
-  cursos              Cursos[]          // cursos que tienen esta habilidad como principal
-
-  @@index([nombre], map: "idx_hab_nombre")
-  @@index([area_principal], map: "idx_hab_area")
-  @@map("habilidades_mercado")
-}
-
-model UsuarioHabilidades {
-  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String               @db.Uuid
-  habilidad_id    String               @db.Uuid
-  estado          EstadoHabilidadEnum  @default(Faltante)
-  actualizado_en  DateTime             @default(now()) @db.Timestamptz
-
-  usuario         Usuarios             @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  habilidad       HabilidadesMercado   @relation(fields: [habilidad_id], references: [habilidad_id])
-
-  @@unique([usuario_id, habilidad_id])
-  @@index([usuario_id], map: "idx_uhab_usuario")
-  @@index([estado], map: "idx_uhab_estado")
-  @@map("usuario_habilidades")
-}
-
-model Empresas {
-  empresa_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre       String    @unique @db.VarChar(255)
-  descripcion  String?   @db.Text
-  sector       String?   @db.VarChar(100)
-  tamanio      String?   @db.VarChar(50)
-  logo_url     String?   @db.Text
-  creado_en    DateTime  @default(now()) @db.Timestamptz
-  cluster      String?   @db.VarChar(100)  
-
-
-  vacantes     Vacantes[]
-
-  @@index([nombre], map: "idx_empresa_nombre")
-  @@map("empresas")
-  @@index([cluster], map: "idx_empresas_cluster")
-}
-
-model Vacantes {
-  vacante_id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  empresa_id          String                @db.Uuid
-  titulo              String                @db.VarChar(255)
-  area                AreaInteresEnum
-  nivel               NivelVacanteEnum      @default(Jr_Entry_Level)
-  descripcion         String?               @db.Text
-  educacion_requerida String?               @db.VarChar(255)
-  experiencia_solicitada String?            @db.VarChar(255)
-  jornada             JornadaEnum?
-  modalidad           ModalidadVacanteEnum  @default(Hibrido)
-  pais                String                @db.VarChar(100)
-  ciudad              String?               @db.VarChar(150)
-  detalle_modalidad   String?               @db.VarChar(255)
-  distancia_zona      String?               @db.VarChar(100)
-  idiomas_requeridos  Json?                 @default("[]") @db.JsonB
-  activa              Boolean               @default(true)
-  fecha_publicacion   DateTime              @default(dbgenerated("CURRENT_DATE")) @db.Date
-  creado_en           DateTime              @default(now()) @db.Timestamptz
-
-  empresa             Empresas              @relation(fields: [empresa_id], references: [empresa_id])
-  requisitos          RequisitosVacante[]
-  postulaciones       Postulaciones[]
-
-  @@index([area], map: "idx_vac_area")
-  @@index([pais], map: "idx_vac_pais")
-  @@index([activa], map: "idx_vac_activa")
-  @@index([empresa_id], map: "idx_vac_empresa")
-  @@map("vacantes")
-}
-
-model RequisitosVacante {
-  requisito_id String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vacante_id   String          @db.Uuid
-  habilidad_id String          @db.Uuid
-  prioridad    Int             @default(1) @db.SmallInt
-  creado_en    DateTime        @default(now()) @db.Timestamptz
-
-  vacante      Vacantes        @relation(fields: [vacante_id], references: [vacante_id], onDelete: Cascade)
-  habilidad    HabilidadesMercado @relation(fields: [habilidad_id], references: [habilidad_id])
-
-  @@index([vacante_id], map: "idx_req_vacante")
-  @@index([habilidad_id], map: "idx_req_habilidad")
-  @@map("requisitos_vacante")
-}
-
-model Postulaciones {
-  postulacion_id     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id         String               @db.Uuid
-  vacante_id         String               @db.Uuid
-  mensaje_motivacion String?              @db.Text
-  usar_cv_guardado   Boolean              @default(true)
-  cv_url             String?              @db.Text
-  match_porcentaje   Decimal?             @db.Decimal(5, 2)
-  estado             EstadoPostulacionEnum @default(Enviada)
-  creado_en          DateTime             @default(now()) @db.Timestamptz
-  actualizado_en     DateTime             @default(now()) @db.Timestamptz
-
-  usuario            Usuarios             @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  vacante            Vacantes             @relation(fields: [vacante_id], references: [vacante_id])
-
-  @@unique([usuario_id, vacante_id])
-  @@index([usuario_id], map: "idx_post_usuario")
-  @@index([vacante_id], map: "idx_post_vacante")
-  @@index([estado], map: "idx_post_estado")
-  @@map("postulaciones")
-}
-
-model CheckIns {
-  checkin_id   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id   String                  @db.Uuid
-  emoji        EstadoCheckinEmojiEnum
-  nota_diaria  Decimal                 @db.Decimal(4, 2)
-  creado_en    DateTime                @default(now()) @db.Timestamptz
-
-  usuario      Usuarios                @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  motivos      CheckInMotivos[]
-  contextos    CheckInContexto[]
-  respuestas_salud RespuestasSalud[]
-
-  @@index([usuario_id], map: "idx_chk_usuario")
-  @@index([creado_en], map: "idx_chk_fecha")
-  @@index([nota_diaria], map: "idx_chk_nota")
-  @@map("check_ins") 
-}
-
-model CheckInMotivos {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  checkin_id  String    @db.Uuid
-  motivo      String    @db.VarChar(255)
-  creado_en   DateTime  @default(now()) @db.Timestamptz
-
-  checkin     CheckIns  @relation(fields: [checkin_id], references: [checkin_id], onDelete: Cascade)
-
-  @@index([checkin_id], map: "idx_chkmot_checkin")
-  @@map("check_in_motivos")
-}
-
-model CheckInContexto {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  checkin_id  String    @db.Uuid
-  contexto    String    @db.Text
-  creado_en   DateTime  @default(now()) @db.Timestamptz
-
-  checkin     CheckIns  @relation(fields: [checkin_id], references: [checkin_id], onDelete: Cascade)
-
-  @@index([checkin_id], map: "idx_chkctx_checkin")
-  @@map("check_in_contexto")
-}
-
-model RespuestasSalud {
-  respuesta_id  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id    String    @db.Uuid
-  checkin_id    String?   @db.Uuid
-  nota_semanal  Decimal   @db.Decimal(4, 2)
-  nota_actual   Decimal   @db.Decimal(4, 2)
-  mensaje       String    @db.Text
-  accion_sugerida String  @db.Text
-  derivar_cvv   Boolean   @default(false)
-  alerta        Boolean   @default(false)
-  creado_en     DateTime  @default(now()) @db.Timestamptz
-
-  usuario       Usuarios  @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  checkin       CheckIns? @relation(fields: [checkin_id], references: [checkin_id])
-
-  @@index([usuario_id], map: "idx_rsalud_usuario")
-  @@index([derivar_cvv], map: "idx_rsalud_cvv")
-  @@index([creado_en], map: "idx_rsalud_fecha")
-  @@map("respuestas_salud")
-}
-
-model Orientaciones {
-  orientacion_id      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id          String        @db.Uuid
-  gap_porcentual      Decimal       @db.Decimal(5, 2)
-  gap_items           Json          @default("[]") @db.JsonB
-  trayectoria_sugerida Json         @default("[]") @db.JsonB
-  vacantes_compatibles Json         @default("[]") @db.JsonB
-  confianza           Decimal       @db.Decimal(3, 2)
-  idioma_respuesta    IdiomaAppEnum @default(es)
-  creado_en           DateTime      @default(now()) @db.Timestamptz
-
-  usuario             Usuarios      @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@index([usuario_id], map: "idx_orient_usuario")
-  @@index([creado_en], map: "idx_orient_fecha")
-  @@map("orientaciones")
-}
-
-model Cursos {
-  curso_id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  titulo                String          @db.VarChar(255)
-  subtitulo             String?         @db.VarChar(255)
-  descripcion           String?         @db.Text
-  area                  AreaInteresEnum
-  tipo                  TipoRecursoEnum @default(Gratuito)
-  plataforma            String?         @db.VarChar(255)
-  url_externa           String?         @db.Text
-  duracion_estimada_dias Int?
-  imagen_portada_url    String?         @db.Text
-  habilidad_principal   String?         @db.Uuid  // FK a HabilidadesMercado
-  activo                Boolean         @default(true)
-  creado_en             DateTime        @default(now()) @db.Timestamptz
-
-  habilidad             HabilidadesMercado? @relation(fields: [habilidad_principal], references: [habilidad_id])
-  modulos               Modulos[]
-  inscripciones         InscripcionesCurso[]
-  plan_accion           PlanAccion[]
-  alertas_offline       AlertasOffline[]
-  recursos_descarga     RecursosDescarga[]
-
-  @@index([area], map: "idx_curso_area")
-  @@index([activo], map: "idx_curso_activo")
-  @@map("cursos")
-}
-
-model Modulos {
-  modulo_id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  curso_id        String    @db.Uuid
-  titulo          String    @db.VarChar(255)
-  orden           Int       @db.SmallInt
-  total_lecciones Int       @default(0) @db.SmallInt
-  creado_en       DateTime  @default(now()) @db.Timestamptz
-
-  curso           Cursos    @relation(fields: [curso_id], references: [curso_id], onDelete: Cascade)
-  lecciones       Lecciones[]
-
-  @@index([curso_id], map: "idx_mod_curso")
-  @@map("modulos")
-}
-
-model Lecciones {
-  leccion_id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  modulo_id        String    @db.Uuid
-  titulo           String    @db.VarChar(255)
-  orden            Int       @db.SmallInt
-  tipo             String?   @default("Video") @db.VarChar(50)
-  duracion_minutos Decimal?  @db.Decimal(6, 2)
-  video_url        String?   @db.Text
-  creado_en        DateTime  @default(now()) @db.Timestamptz
-
-  modulo           Modulos   @relation(fields: [modulo_id], references: [modulo_id], onDelete: Cascade)
-  progreso         ProgresoLeccion[]
-
-  @@index([modulo_id], map: "idx_lec_modulo")
-  @@map("lecciones")
-}
-
-model InscripcionesCurso {
-  inscripcion_id      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id          String             @db.Uuid
-  curso_id            String             @db.Uuid
-  estado              EstadoInscripcionEnum @default(Inscrito)
-  progreso_porcentaje Int                @default(0) @db.SmallInt
-  fecha_inicio        DateTime           @default(now()) @db.Timestamptz
-  fecha_completado    DateTime?          @db.Timestamptz
-  creado_en           DateTime           @default(now()) @db.Timestamptz
-
-  usuario             Usuarios           @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  curso               Cursos             @relation(fields: [curso_id], references: [curso_id])
-
-  @@unique([usuario_id, curso_id])
-  @@index([usuario_id], map: "idx_insc_usuario")
-  @@index([curso_id], map: "idx_insc_curso")
-  @@index([estado], map: "idx_insc_estado")
-  @@map("inscripciones_curso")
-}
-
-model ProgresoLeccion {
-  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id     String            @db.Uuid
-  leccion_id     String            @db.Uuid
-  estado         EstadoLeccionEnum @default(No_iniciada)
-  tiempo_visto_seg Int?            @default(0)
-  completado_en  DateTime?         @db.Timestamptz
-
-  usuario        Usuarios          @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  leccion        Lecciones         @relation(fields: [leccion_id], references: [leccion_id])
-
-  @@unique([usuario_id, leccion_id])
-  @@index([usuario_id], map: "idx_prog_usuario")
-  @@index([leccion_id], map: "idx_prog_leccion")
-  @@map("progreso_leccion")
-}
-
-model RecursosDescarga {
-  recurso_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  curso_id     String    @db.Uuid
-  titulo       String    @db.VarChar(255)
-  tipo         String?   @db.VarChar(50)
-  tamanio_mb   Decimal?  @db.Decimal(8, 2)
-  url_descarga String    @db.Text
-  creado_en    DateTime  @default(now()) @db.Timestamptz
-
-  curso        Cursos    @relation(fields: [curso_id], references: [curso_id], onDelete: Cascade)
-  descargas    DescargasOffline[]
-
-  @@index([curso_id], map: "idx_recdesc_curso")
-  @@map("recursos_descarga")
-}
-
-model DescargasOffline {
-  descarga_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id    String    @db.Uuid
-  recurso_id    String    @db.Uuid
-  descargado_en DateTime  @default(now()) @db.Timestamptz
-
-  usuario       Usuarios  @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  recurso       RecursosDescarga @relation(fields: [recurso_id], references: [recurso_id])
-
-  @@index([usuario_id], map: "idx_doff_usuario")
-  @@map("descargas_offline")
-}
-
-model PlanAccion {
-  plan_item_id      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id        String            @db.Uuid
-  titulo            String            @db.VarChar(255)
-  prioridad         PrioridadPlanEnum
-  curso_vinculado_id String?          @db.Uuid
-  accion_label      String?           @db.VarChar(100)
-  completado        Boolean           @default(false)
-  orden             Int               @default(0) @db.SmallInt
-  creado_en         DateTime          @default(now()) @db.Timestamptz
-  actualizado_en    DateTime          @default(now()) @db.Timestamptz
-
-  usuario           Usuarios          @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  curso             Cursos?           @relation(fields: [curso_vinculado_id], references: [curso_id])
-
-  @@index([usuario_id], map: "idx_plan_usuario")
-  @@map("plan_accion")
-}
-
-model PerfilMovilidad {
-  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String?            @unique @db.Uuid
-  assinante_hash  String             @unique @db.VarChar(255)
-  home_cluster    String?            @db.VarChar(100)
-  home_municipio  String?            @db.VarChar(100)
-  income_cluster  IncomeClusterEnum?
-  age_group       String?            @db.VarChar(20)
-  mobility_pattern MobilityPatternEnum?
-  flag_flagship   Boolean?           @default(false)
-  creado_en       DateTime           @default(now()) @db.Timestamptz
-
-  usuario         Usuarios?          @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@index([assinante_hash], map: "idx_pmov_hash")
-  @@index([income_cluster], map: "idx_pmov_income")
-  @@index([usuario_id], map: "idx_pmov_usuario")
-  @@map("perfil_movilidad")
-}
-
-model CalidadRedZona {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ecgi                  String    @db.VarChar(50)
-  cluster               String    @db.VarChar(100)
-  municipio             String?   @db.VarChar(100)
-  day_date              DateTime  @db.Date
-  periodo               String?   @db.VarChar(20)
-  n_usuarios            Int?
-  n_sessoes             Int?
-  download_bytes        BigInt?
-  upload_bytes          BigInt?
-  dur_media_s           Decimal?  @db.Decimal(10, 2)
-  drop_pct_medio        Decimal?  @db.Decimal(5, 4)
-  congestionamento_medio Decimal? @db.Decimal(5, 4)
-  lat                   Decimal?  @db.Decimal(10, 7)
-  lon                   Decimal?  @db.Decimal(10, 7)
-  creado_en             DateTime  @default(now()) @db.Timestamptz
-
-  @@index([cluster], map: "idx_calred_cluster")
-  @@index([day_date], map: "idx_calred_fecha")
-  @@index([ecgi], map: "idx_calred_ecgi")
-  @@index([drop_pct_medio], map: "idx_calred_drop")
-  @@map("calidad_red_zona")
-}
-
-model AlertasOffline {
-  alerta_id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id         String    @db.Uuid
-  cluster_detectado  String?   @db.VarChar(100)
-  drop_pct_detectado Decimal?  @db.Decimal(5, 4)
-  congestionamiento  Decimal?  @db.Decimal(5, 4)
-  mensaje            String    @db.Text
-  curso_sugerido_id  String?   @db.Uuid
-  vista              Boolean   @default(false)
-  creado_en          DateTime  @default(now()) @db.Timestamptz
-
-  usuario            Usuarios  @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-  curso              Cursos?   @relation(fields: [curso_sugerido_id], references: [curso_id])
-
-  @@index([usuario_id], map: "idx_aloff_usuario")
-  @@index([vista], map: "idx_aloff_vista")
-  @@map("alertas_offline")
-}
-
-model NotificacionesRadar {
-  notificacion_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String    @db.Uuid
-  tipo            String    @db.VarChar(50)
-  titulo          String    @db.VarChar(255)
-  mensaje         String    @db.Text
-  datos           Json      @default("{}") @db.JsonB
-  leida           Boolean   @default(false)
-  creado_en       DateTime  @default(now()) @db.Timestamptz
-
-  usuario         Usuarios  @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@index([usuario_id], map: "idx_notif_usuario")
-  @@index([leida], map: "idx_notif_leida")
-  @@map("notificaciones_radar")
-}
-
-model Antenas {
-  ecgi      String   @id @db.VarChar(50)
-  lat       Decimal  @db.Decimal(10, 7)
-  lon       Decimal  @db.Decimal(10, 7)
-  cluster   String   @db.VarChar(100)
-  municipio String?  @db.VarChar(100)
-  creado_en DateTime @default(now()) @db.Timestamptz
-
-  @@index([cluster], map: "idx_antenas_cluster")
-  @@index([lat, lon], map: "idx_antenas_coords")
-  @@map("antenas")
-}
-
-model DistanciasCluster {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cluster_origem      String   @db.VarChar(100)
-  cluster_destino     String   @db.VarChar(100)
-  dist_media_km       Decimal  @db.Decimal(10, 4)
-  dist_p25_km         Decimal? @db.Decimal(10, 4)
-  dist_p75_km         Decimal? @db.Decimal(10, 4)
-  periodo_predominante String? @db.VarChar(20)
-  n_amostras          Int?
-  creado_en           DateTime @default(now()) @db.Timestamptz
-
-  @@unique([cluster_origem, cluster_destino])
-  @@index([cluster_origem], map: "idx_dist_cluster_origem")
-  @@index([cluster_destino], map: "idx_dist_cluster_destino")
-  @@map("distancias_cluster")
-}
-
-model OrigenDestino {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cluster_origem      String   @db.VarChar(100)
-  cluster_destino     String   @db.VarChar(100)
-  periodo_predominante String? @db.VarChar(20)
-  n_viagens_estimado  Int?
-  dist_media_km       Decimal? @db.Decimal(10, 4)
-  mesmo_cluster       Int?     @db.SmallInt
-
-  @@unique([cluster_origem, cluster_destino])
-  @@index([cluster_origem], map: "idx_od_origem")
-  @@index([cluster_destino], map: "idx_od_destino")
-  @@map("origen_destino")
+enum OnboardingStatusEnum {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
 }
