@@ -1,0 +1,225 @@
+import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/src/components/ui/dialog';
+import { StepIndicator } from '@/src/components/app/StepIndicator';
+import { AppButton } from '@/src/components/app/AppButton';
+import { AppInput } from '@/src/components/app/AppInput';
+import { CheckIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const moods = [
+  { id: 'agotado', label: 'Agotado', emoji: '😩' },
+  { id: 'triste', label: 'Triste', emoji: '😢' },
+  { id: 'neutral', label: 'Neutral', emoji: '😐' },
+  { id: 'bien', label: 'Bien', emoji: '🙂' },
+  { id: 'genial', label: 'Genial', emoji: '😄' },
+];
+
+const motivos = [
+  { id: 'sobrecarga', label: 'Sobrecarga de responsabilidades', emoji: '😰' },
+  { id: 'sin-tiempo', label: 'Falta de tiempo para todo', emoji: '⏰' },
+  { id: 'sin-avanzar', label: 'Siento que no avanzo', emoji: '😔' },
+];
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialMood?: string;
+  startAtStep?: 1 | 2 | 3;
+  onComplete?: (data: {
+    mood: string;
+    motivos: string[];
+    contexto: string;
+  }) => void;
+}
+
+export function CheckinModal({
+  open,
+  onOpenChange,
+  initialMood,
+  startAtStep,
+  onComplete,
+}: Props) {
+  const [step, setStep] = useState<1 | 2 | 3>(
+    startAtStep ?? (initialMood ? 2 : 1),
+  );
+  const [selectedMood, setSelectedMood] = useState<string>(
+    initialMood ?? '',
+  );
+  const [selectedMotivos, setSelectedMotivos] = useState<string[]>([]);
+  const [contexto, setContexto] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setStep(startAtStep ?? (initialMood ? 2 : 1));
+      setSelectedMood(initialMood ?? '');
+      setSelectedMotivos([]);
+      setContexto('');
+    }
+  }, [open, initialMood, startAtStep]);
+
+  function handleNext() {
+    if (step === 1 && selectedMood) setStep(2);
+    else if (step === 2) setStep(3);
+  }
+
+  function handleBack() {
+    if (step === 3) setStep(2);
+    else if (step === 2) setStep(1);
+  }
+
+  function toggleMotivo(id: string) {
+    setSelectedMotivos((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
+    );
+  }
+
+  function handleGuardar() {
+    onComplete?.({
+      mood: selectedMood,
+      motivos: selectedMotivos,
+      contexto,
+    });
+    resetState();
+    onOpenChange(false);
+  }
+
+  function resetState() {
+    setStep(startAtStep ?? (initialMood ? 2 : 1));
+    setSelectedMood('');
+    setSelectedMotivos([]);
+    setContexto('');
+  }
+
+  function handleClose(v: boolean) {
+    if (!v) resetState();
+    onOpenChange(v);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className='sm:max-w-md'>
+        <DialogHeader>
+          <DialogTitle>¿Cómo te sentís hoy?</DialogTitle>
+          <DialogDescription>
+            Tu honestidad nos ayuda a adaptar tu experiencia.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className='flex flex-col gap-6 py-4'>
+          <StepIndicator currentStep={step} totalSteps={3} />
+
+          {step === 1 && (
+            <div className='flex justify-between px-2'>
+              {moods.map((mood) => (
+                <button
+                  key={mood.id}
+                  type='button'
+                  onClick={() => setSelectedMood(mood.id)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200',
+                    selectedMood === mood.id
+                      ? 'bg-[var(--color-primary-pale)] scale-110'
+                      : 'hover:bg-[var(--color-body)]',
+                  )}
+                >
+                  <span className='text-2xl'>{mood.emoji}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] font-medium',
+                      selectedMood === mood.id
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-[var(--color-text-muted)]',
+                    )}
+                  >
+                    {mood.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className='space-y-3'>
+              {motivos.map((motivo) => (
+                <label
+                  key={motivo.id}
+                  onClick={() => toggleMotivo(motivo.id)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-[var(--radius-md)] border px-4 py-3 transition-colors cursor-pointer',
+                    selectedMotivos.includes(motivo.id)
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-pale)]'
+                      : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
+                      selectedMotivos.includes(motivo.id)
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]'
+                        : 'border-[var(--color-border)]',
+                    )}
+                  >
+                    {selectedMotivos.includes(motivo.id) && (
+                      <CheckIcon className='size-3 text-white' />
+                    )}
+                  </div>
+                  <span className='text-lg'>{motivo.emoji}</span>
+                  <span className='text-sm font-medium text-[var(--color-text)]'>
+                    {motivo.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-[var(--color-text)]'>
+                ¿Querés contarnos algo más? (opcional)
+              </label>
+              <AppInput
+                placeholder='Escribí lo que quieras, esto solo lo ve la IA para ayudarte mejor...'
+                value={contexto}
+                onChange={(e) => setContexto(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          {step > 1 && (
+            <AppButton variant='outline' onClick={handleBack}>
+              Atrás
+            </AppButton>
+          )}
+
+          {step < 3 ? (
+            <AppButton
+              variant='primary'
+              className='w-full'
+              disabled={step === 1 && !selectedMood}
+              onClick={handleNext}
+            >
+              Siguiente
+            </AppButton>
+          ) : (
+            <AppButton
+              variant='primary'
+              className='w-full'
+              onClick={handleGuardar}
+            >
+              Guardar y cerrar
+            </AppButton>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

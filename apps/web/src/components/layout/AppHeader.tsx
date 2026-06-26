@@ -5,10 +5,15 @@ import { AppBadge } from '@/src/components/app/AppBadge';
 
 interface Props {
   onMenuClick?: () => void;
+  onCheckinClick?: () => void;
   profilePercent?: number;
 }
 
-export function AppHeader({ onMenuClick, profilePercent = 80 }: Props) {
+export function AppHeader({
+  onMenuClick,
+  onCheckinClick,
+  profilePercent = 80,
+}: Props) {
   return (
     <header className='flex h-16 items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-card)] px-4 sm:px-6'>
       <div className='flex items-center gap-3'>
@@ -42,6 +47,7 @@ export function AppHeader({ onMenuClick, profilePercent = 80 }: Props) {
         <AppButton
           variant='primary'
           className='!hidden !px-4 !py-2 text-xs sm:!inline-flex'
+          onClick={onCheckinClick}
         >
           Check-in
         </AppButton>

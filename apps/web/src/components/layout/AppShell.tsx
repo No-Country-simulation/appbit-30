@@ -6,9 +6,10 @@ import { AppSidebar } from './AppSidebar';
 
 interface Props {
   children: React.ReactNode;
+  onCheckinClick?: () => void;
 }
 
-export function AppShell({ children }: Props) {
+export function AppShell({ children, onCheckinClick }: Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -34,7 +35,10 @@ export function AppShell({ children }: Props) {
         )}
 
         <div className='flex min-w-0 flex-1 flex-col'>
-          <AppHeader onMenuClick={() => setIsSidebarOpen(true)} />
+          <AppHeader
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onCheckinClick={onCheckinClick}
+          />
 
           <main className='flex-1 px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
         </div>

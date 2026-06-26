@@ -2,18 +2,19 @@ import { HistoryIcon } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 
 const emojis = [
-  { emoji: '😩', label: 'Agotado' },
-  { emoji: '😢', label: 'Triste' },
-  { emoji: '😐', label: 'Neutral' },
-  { emoji: '🙂', label: 'Bien' },
-  { emoji: '😄', label: 'Genial' },
+  { id: 'agotado', emoji: '😩', label: 'Agotado' },
+  { id: 'triste', emoji: '😢', label: 'Triste' },
+  { id: 'neutral', emoji: '😐', label: 'Neutral' },
+  { id: 'bien', emoji: '🙂', label: 'Bien' },
+  { id: 'genial', emoji: '😄', label: 'Genial' },
 ];
 
 interface Props {
   promedioSemanal?: number;
+  onEmojiClick?: (moodId: string) => void;
 }
 
-export function WellbeingCard({ promedioSemanal = 6.5 }: Props) {
+export function WellbeingCard({ promedioSemanal = 6.5, onEmojiClick }: Props) {
   return (
     <AppCard className='flex flex-col gap-4'>
       <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
@@ -23,8 +24,9 @@ export function WellbeingCard({ promedioSemanal = 6.5 }: Props) {
       <div className='flex justify-between'>
         {emojis.map((item) => (
           <button
-            key={item.label}
+            key={item.id}
             type='button'
+            onClick={() => onEmojiClick?.(item.id)}
             className='flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-2 py-2 transition-all duration-200 hover:bg-[var(--color-primary-pale)] hover:scale-110'
           >
             <span className='text-2xl'>{item.emoji}</span>
