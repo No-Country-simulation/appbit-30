@@ -18,13 +18,12 @@ export default async function HomePage() {
           {t('playground')}
         </Link>
 
-        {/* UNCOMMENT WHEN /auth IS READY */}
-        {/* <Link
+        <Link
           href='/auth'
           className='rounded-[var(--radius-md)] border border-[var(--color-border)] px-5 py-3 font-body font-semibold text-[var(--color-text)]'
         >
           {t('auth')}
-        </Link> */}
+        </Link>
       </div>
     </main>
   );

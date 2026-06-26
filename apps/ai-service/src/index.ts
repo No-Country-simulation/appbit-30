@@ -1,16 +1,19 @@
 /// <reference types="node" />
 import 'dotenv/config';
-import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { handle } from 'hono/vercel';
 import { cors } from 'hono/cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { wellbeingRequestSchema } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
 
 const app = new Hono();
+
 app.use('*', cors());
 
 app.get('/', (c) => c.text('AppBit AI Service - Operational'));
+
+app.get('/health', (c) => c.json({ status: 'up' }));
 
 app.post('/wellbeing/analyze', async (c) => {
   try {
@@ -109,12 +112,6 @@ app.post('/wellbeing/analyze', async (c) => {
   }
 });
 
-serve(
-  {
-    fetch: app.fetch,
-    port: 3001,
-  },
-  (info) => {
-    console.log(`AppBit AI Service corriendo en http://localhost:${info.port}`);
-  },
-);
+export const GET = handle(app);
+export const POST = handle(app);
+export const OPTIONS = handle(app);

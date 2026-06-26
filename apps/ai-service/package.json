@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev:vercel": "vercel dev",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +16,6 @@
     "@appbit/shared-schemas": "workspace:*",
     "@appbit/shared-types": "workspace:*",
     "@google/generative-ai": "^0.24.1",
-    "@hono/node-server": "^2.0.5",
     "dotenv": "^17.4.2",
     "hono": "^4.12.25",
     "zod": "^4.4.3"
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@types/node": "^20.19.43",
     "tsx": "^4.22.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vercel": "^54.15.1"
   }
 }

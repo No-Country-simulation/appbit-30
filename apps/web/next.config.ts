@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname, '../..'),
   },
+  serverExternalPackages: [
+    '@prisma/client',
+    '@prisma/client-runtime-utils',
+    '@prisma/adapter-pg',
+    'pg',
+  ],
 };
 
 export default withNextIntl(nextConfig);
