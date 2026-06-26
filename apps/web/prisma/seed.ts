@@ -19,16 +19,14 @@ import {
   PrioridadPlanEnum,
   IncomeClusterEnum,
   MobilityPatternEnum,
-} from '../src/server/generated/prisma';
-import { PrismaPg } from '@prisma/adapter-pg';
-import 'dotenv/config';
-
-import {
   GeneroEnum,
   NivelEducacionEnum,
   MomentoProfesionalEnum,
+  OnboardingStatusEnum,
   ObjetivoUsuarioEnum,
 } from '../src/server/generated/prisma';
+import { PrismaPg } from '@prisma/adapter-pg';
+import 'dotenv/config';
 
 // Tomamos la URL directa
 const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
@@ -50,16 +48,15 @@ async function main() {
   // ============================================
   console.log('📝 Creando usuarios...');
 
-  // Usuarios adicionales (sin upsert, solo create, pero con verificación para evitar duplicados)
-  const usuariosExistentes = await prisma.usuarios.findMany({
-    select: { email: true },
-  });
+  type UsuarioSeed = Omit<
+    Prisma.UsuariosUncheckedCreateInput,
+    'usuario_id' | 'creado_en' | 'actualizado_en'
+  > & {
+    nivelesEducacion: NivelEducacionEnum[];
+    momentosProfesionales: MomentoProfesionalEnum[];
+  };
 
-  const emailsExistentes = new Set(
-    usuariosExistentes.map((u: { email: string }) => u.email),
-  );
-
-  const usuariosData = [
+  const usuariosData: UsuarioSeed[] = [
     {
       email: 'maria.lopez@email.com',
       nombre_completo: 'María López',
@@ -69,13 +66,13 @@ async function main() {
       provincia_estado: 'Córdoba',
       ciudad: 'Córdoba',
       zona_residencia: 'Nueva Córdoba',
-      nivel_educacion: NivelEducacionEnum.Universitario_incompleto,
-      momento_profesional: MomentoProfesionalEnum.En_busqueda_activa,
+      nivelesEducacion: [NivelEducacionEnum.Universitario_incompleto],
+      momentosProfesionales: [MomentoProfesionalEnum.En_busqueda_activa],
       tipo_conexion: TipoConexionEnum.Datos_moviles,
       whatsapp_codigo: '+54',
       whatsapp_numero: '3511234567',
       idioma_app: IdiomaAppEnum.es,
-      perfil_completado: 70,
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
       lat: new Prisma.Decimal(-31.4201),
       lng: new Prisma.Decimal(-64.1888),
       confianza: new Prisma.Decimal(0.75),
@@ -90,13 +87,13 @@ async function main() {
       provincia_estado: 'Montevideo',
       ciudad: 'Montevideo',
       zona_residencia: 'Pocitos',
-      nivel_educacion: NivelEducacionEnum.Diplomatura,
-      momento_profesional: MomentoProfesionalEnum.Emprendedor_a,
+      nivelesEducacion: [NivelEducacionEnum.Diplomatura],
+      momentosProfesionales: [MomentoProfesionalEnum.Emprendedor_a],
       tipo_conexion: TipoConexionEnum.Banda_ancha_estable,
       whatsapp_codigo: '+598',
       whatsapp_numero: '91234567',
       idioma_app: IdiomaAppEnum.es,
-      perfil_completado: 80,
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
       lat: new Prisma.Decimal(-34.9011),
       lng: new Prisma.Decimal(-56.1645),
       confianza: new Prisma.Decimal(0.82),
@@ -111,13 +108,13 @@ async function main() {
       provincia_estado: 'San José',
       ciudad: 'San José',
       zona_residencia: 'Escazú',
-      nivel_educacion: NivelEducacionEnum.Universitario_completo,
-      momento_profesional: MomentoProfesionalEnum.Trabajando_cambiar,
+      nivelesEducacion: [NivelEducacionEnum.Universitario_completo],
+      momentosProfesionales: [MomentoProfesionalEnum.Trabajando_cambiar],
       tipo_conexion: TipoConexionEnum.Conexion_inestable,
       whatsapp_codigo: '+506',
       whatsapp_numero: '98765432',
       idioma_app: IdiomaAppEnum.es,
-      perfil_completado: 55,
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
       lat: new Prisma.Decimal(9.9281),
       lng: new Prisma.Decimal(-84.0907),
       confianza: new Prisma.Decimal(0.6),
@@ -132,13 +129,13 @@ async function main() {
       provincia_estado: 'Madrid',
       ciudad: 'Madrid',
       zona_residencia: 'Salamanca',
-      nivel_educacion: NivelEducacionEnum.Maestria,
-      momento_profesional: MomentoProfesionalEnum.Freelancer,
+      nivelesEducacion: [NivelEducacionEnum.Maestria],
+      momentosProfesionales: [MomentoProfesionalEnum.Freelancer],
       tipo_conexion: TipoConexionEnum.Banda_ancha_estable,
       whatsapp_codigo: '+34',
       whatsapp_numero: '612345678',
       idioma_app: IdiomaAppEnum.es,
-      perfil_completado: 90,
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
       lat: new Prisma.Decimal(40.4168),
       lng: new Prisma.Decimal(-3.7038),
       confianza: new Prisma.Decimal(0.88),
@@ -153,13 +150,13 @@ async function main() {
       provincia_estado: 'Panamá',
       ciudad: 'Panamá',
       zona_residencia: 'Punta Pacífica',
-      nivel_educacion: NivelEducacionEnum.Licenciatura,
-      momento_profesional: MomentoProfesionalEnum.En_busqueda_activa,
+      nivelesEducacion: [NivelEducacionEnum.Licenciatura],
+      momentosProfesionales: [MomentoProfesionalEnum.En_busqueda_activa],
       tipo_conexion: TipoConexionEnum.Datos_moviles,
       whatsapp_codigo: '+507',
       whatsapp_numero: '67891234',
       idioma_app: IdiomaAppEnum.es,
-      perfil_completado: 65,
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
       lat: new Prisma.Decimal(9.0335),
       lng: new Prisma.Decimal(-79.5016),
       confianza: new Prisma.Decimal(0.68),
@@ -168,8 +165,49 @@ async function main() {
   ];
 
   for (const data of usuariosData) {
-    if (!emailsExistentes.has(data.email)) {
-      await prisma.usuarios.create({ data });
+    const { nivelesEducacion, momentosProfesionales, ...usuarioData } = data;
+
+    const usuario = await prisma.usuarios.upsert({
+      where: {
+        email: usuarioData.email,
+      },
+      update: {
+        ...usuarioData,
+        actualizado_en: new Date(),
+      },
+      create: usuarioData,
+    });
+
+    for (const nivel of nivelesEducacion) {
+      await prisma.usuarioNivelEducacion.upsert({
+        where: {
+          usuario_id_nivel_educacion: {
+            usuario_id: usuario.usuario_id,
+            nivel_educacion: nivel,
+          },
+        },
+        update: {},
+        create: {
+          usuario_id: usuario.usuario_id,
+          nivel_educacion: nivel,
+        },
+      });
+    }
+
+    for (const momento of momentosProfesionales) {
+      await prisma.usuarioMomentoProfesional.upsert({
+        where: {
+          usuario_id_momento_profesional: {
+            usuario_id: usuario.usuario_id,
+            momento_profesional: momento,
+          },
+        },
+        update: {},
+        create: {
+          usuario_id: usuario.usuario_id,
+          momento_profesional: momento,
+        },
+      });
     }
   }
 
@@ -360,54 +398,54 @@ async function main() {
     {
       email: 'carlos.mendoza@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B2_Avanzado },
       ],
     },
     {
       email: 'laura.gomez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B1_Intermedio },
       ],
     },
     {
       email: 'pedro.ramirez@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'ana.martinez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Portugués', nivel: NivelIdiomaEnum.B2_Avanzado },
       ],
     },
     {
       email: 'juan.perez@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'maria.lopez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.A1_Basico },
       ],
     },
     {
       email: 'diego.fernandez@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
-        { idioma: 'Inglés', nivel: NivelIdiomaEnum.C1_C2_Bilingue },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
+        { idioma: 'Inglés', nivel: NivelIdiomaEnum.C1_Fluido },
       ],
     },
     {
       email: 'sofia.arias@email.com',
-      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.Nativo }],
+      idiomas: [{ idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido }],
     },
     {
       email: 'javier.torres@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B2_Avanzado },
         { idioma: 'Francés', nivel: NivelIdiomaEnum.A1_Basico },
       ],
@@ -415,7 +453,7 @@ async function main() {
     {
       email: 'lucia.rivera@email.com',
       idiomas: [
-        { idioma: 'Español', nivel: NivelIdiomaEnum.Nativo },
+        { idioma: 'Español', nivel: NivelIdiomaEnum.C1_Fluido },
         { idioma: 'Inglés', nivel: NivelIdiomaEnum.B1_Intermedio },
       ],
     },
