@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import 'dotenv/config';
 import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { cors } from 'hono/cors';

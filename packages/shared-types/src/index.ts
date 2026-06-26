@@ -5,6 +5,7 @@ import {
 
 export type WellbeingRequest = typeof wellbeingRequestSchema;
 export type WellbeingResponse = typeof wellbeingResponseSchema;
+export * from './wellbeing';
 
 export interface OrientationRequest {
   userId: string;
