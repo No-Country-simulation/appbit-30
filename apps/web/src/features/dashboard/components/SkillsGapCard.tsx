@@ -45,46 +45,28 @@ function CircularProgress({ value }: { value: number }) {
 
 export function SkillsGapCard({
   porcentaje = 40,
-  puesto = 'Data Analyst',
+  puesto = 'Data Analyst Jr.',
   onVerDetalles,
 }: Props) {
   return (
-    <AppCard className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between'>
-        <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
-          Tu Brecha de Skills
-        </h3>
-      </div>
+    <AppCard className='flex flex-col items-center gap-4 text-center'>
+      <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
+        Tu Brecha de Skills
+      </h3>
+
+      <CircularProgress value={porcentaje} />
 
       <p className='text-sm text-[var(--color-text-muted)]'>
-        Tenés el <strong>{porcentaje}%</strong> de las habilidades requeridas
-        para <strong>{puesto}</strong>. Con los cursos sugeridos podrías cerrar
-        la brecha en 3 meses.
+        Cumples con el <strong>{porcentaje}%</strong> de las habilidades
+        técnicas solicitadas por el mercado para{' '}
+        <strong>{puesto}</strong>.
       </p>
 
-      <div className='flex items-center gap-6'>
-        <CircularProgress value={porcentaje} />
-
-        <div className='space-y-1.5'>
-          {[
-            { label: 'Adquiridas', color: 'var(--color-success)' },
-            { label: 'En progreso', color: 'var(--color-secondary)' },
-            { label: 'Faltantes', color: 'var(--color-border)' },
-          ].map((item) => (
-            <div key={item.label} className='flex items-center gap-2 text-xs'>
-              <span
-                className='size-2.5 rounded-full'
-                style={{ backgroundColor: item.color }}
-              />
-              <span className='text-[var(--color-text-muted)]'>
-                {item.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <AppButton variant='primary' className='w-full' onClick={onVerDetalles}>
+      <AppButton
+        variant='outline'
+        className='w-full'
+        onClick={onVerDetalles}
+      >
         Ver Análisis Detallado
       </AppButton>
     </AppCard>

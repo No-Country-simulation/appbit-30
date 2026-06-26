@@ -28,22 +28,22 @@ export function AppHeader({
 
         <div className='hidden items-center gap-3 lg:flex'>
           <div className='flex items-center gap-2'>
+            <span className='whitespace-nowrap text-xs font-semibold text-[var(--color-success-text)]'>
+              Perfil al {profilePercent}%
+            </span>
             <div className='h-2 w-24 overflow-hidden rounded-full bg-[var(--color-border)]'>
               <div
                 className='h-full rounded-full bg-[var(--color-success)] transition-all duration-500'
                 style={{ width: `${profilePercent}%` }}
               />
             </div>
-            <span className='whitespace-nowrap text-xs font-semibold text-[var(--color-success-text)]'>
-              Perfil al {profilePercent}%
-            </span>
           </div>
-
-          <AppBadge variant='warning'>Offline sugerido</AppBadge>
         </div>
       </div>
 
       <div className='flex items-center gap-2'>
+        <AppBadge variant='warning'>Offline sugerido</AppBadge>
+
         <AppButton
           variant='primary'
           className='!hidden !px-4 !py-2 text-xs sm:!inline-flex'
