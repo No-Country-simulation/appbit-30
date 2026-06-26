@@ -4,6 +4,7 @@ import { AppCard } from '@/src/components/app/AppCard';
 interface Props {
   porcentaje?: number;
   puesto?: string;
+  onVerDetalles?: () => void;
 }
 
 function CircularProgress({ value }: { value: number }) {
@@ -45,6 +46,7 @@ function CircularProgress({ value }: { value: number }) {
 export function SkillsGapCard({
   porcentaje = 40,
   puesto = 'Data Analyst',
+  onVerDetalles,
 }: Props) {
   return (
     <AppCard className='flex flex-col gap-4'>
@@ -82,7 +84,7 @@ export function SkillsGapCard({
         </div>
       </div>
 
-      <AppButton variant='primary' className='w-full'>
+      <AppButton variant='primary' className='w-full' onClick={onVerDetalles}>
         Ver Análisis Detallado
       </AppButton>
     </AppCard>

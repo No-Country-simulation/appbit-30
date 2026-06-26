@@ -27,6 +27,7 @@ import {
   SkillsGapCard,
   ActionPlanCard,
   WellbeingCard,
+  SkillsGapModal,
 } from '@/src/features/dashboard/components';
 
 import { useState } from 'react';
@@ -37,6 +38,7 @@ export default function PlaygroundScreen() {
   const t = useTranslations('Playground');
   const [key, setKey] = useState(0);
   const [selectedChip, setSelectedChip] = useState('react');
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
 
   return (
     <AppShell>
@@ -306,9 +308,17 @@ export default function PlaygroundScreen() {
           <div className="space-y-4">
             <HeroBanner />
             <RadarBanner />
-            <SkillsGapCard />
             <ActionPlanCard />
             <WellbeingCard />
+
+            <SkillsGapCard onVerDetalles={() => setSkillsModalOpen(true)} />
+            <AppButton onClick={() => setSkillsModalOpen(true)}>
+              Abrir SkillsGapModal
+            </AppButton>
+            <SkillsGapModal
+              open={skillsModalOpen}
+              onOpenChange={setSkillsModalOpen}
+            />
           </div>
         </section>
 
