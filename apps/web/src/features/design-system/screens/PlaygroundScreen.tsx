@@ -21,6 +21,13 @@ import {
 } from "@/src/components";
 
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
+import {
+  HeroBanner,
+  RadarBanner,
+  SkillsGapCard,
+  ActionPlanCard,
+  WellbeingCard,
+} from '@/src/features/dashboard/components';
 
 import { useState } from 'react';
 
@@ -287,6 +294,22 @@ export default function PlaygroundScreen() {
           <OnboardingModal>
             <AppButton>Abrir Onboarding</AppButton>
           </OnboardingModal>
+        </section>
+
+        {/* ====================================================== */}
+        {/* DASHBOARD CARDS */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>Dashboard Cards</H2>
+
+          <div className="space-y-4">
+            <HeroBanner />
+            <RadarBanner />
+            <SkillsGapCard />
+            <ActionPlanCard />
+            <WellbeingCard />
+          </div>
         </section>
 
         {/* ====================================================== */}
