@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { AppButton } from '@/src/components/app/AppButton';
 import { AppCard } from '@/src/components/app/AppCard';
 
@@ -48,18 +51,21 @@ export function SkillsGapCard({
   puesto = 'Data Analyst Jr.',
   onVerDetalles,
 }: Props) {
+  const t = useTranslations('Dashboard');
+
   return (
     <AppCard className='flex flex-col items-center gap-4 text-center'>
       <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
-        Tu Brecha de Skills
+        {t('skillsGapTitle')}
       </h3>
 
       <CircularProgress value={porcentaje} />
 
       <p className='text-sm text-[var(--color-text-muted)]'>
-        Cumples con el <strong>{porcentaje}%</strong> de las habilidades
-        técnicas solicitadas por el mercado para{' '}
-        <strong>{puesto}</strong>.
+        {t.rich('skillsGapDesc', {
+          porcentaje: () => <strong>{porcentaje}%</strong>,
+          puesto: () => <strong>{puesto}</strong>,
+        })}
       </p>
 
       <AppButton
@@ -67,7 +73,7 @@ export function SkillsGapCard({
         className='w-full'
         onClick={onVerDetalles}
       >
-        Ver Análisis Detallado
+        {t('skillsGapButton')}
       </AppButton>
     </AppCard>
   );

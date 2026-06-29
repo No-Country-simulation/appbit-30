@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { AppCard } from '@/src/components/app/AppCard';
 
 const emojis = [
@@ -19,23 +22,32 @@ export function WellbeingCard({
   onEmojiClick,
   onHistorialClick,
 }: Props) {
+  const t = useTranslations('Dashboard');
+
+  const mensaje =
+    promedioSemanal >= 7
+      ? '¡Genial!'
+      : promedioSemanal >= 5
+        ? '¡Venís muy bien!'
+        : 'Seguí mejorando';
+
   return (
     <AppCard className='flex flex-col gap-4'>
       <div className='flex items-center justify-between'>
         <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
-          ¿Cómo te sentís hoy?
+          {t('wellbeingTitle')}
         </h3>
         <button
           type='button'
           onClick={onHistorialClick}
           className='text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
         >
-          Historial
+          {t('historial')}
         </button>
       </div>
 
       <p className='text-sm text-[var(--color-text-muted)]'>
-        Elegí tu estado actual para personalizar tus sugerencias diarias:
+        {t('wellbeingDesc')}
       </p>
 
       <div className='flex justify-between'>
@@ -56,12 +68,7 @@ export function WellbeingCard({
 
       <div className='mt-auto border-t border-[var(--color-border)] pt-3'>
         <p className='text-center text-sm text-[var(--color-text-muted)]'>
-          Promedio semanal: <strong className='text-[var(--color-text)]'>{promedioSemanal}</strong>.{' '}
-          {promedioSemanal >= 7
-            ? '¡Genial!'
-            : promedioSemanal >= 5
-              ? '¡Venís muy bien!'
-              : 'Seguí mejorando'}
+          {t('promedioSemanal', { promedio: promedioSemanal.toString(), mensaje })}
         </p>
       </div>
     </AppCard>

@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { CheckCircleIcon, PlayIcon, BookOpenIcon } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppButton } from '@/src/components/app/AppButton';
@@ -32,24 +35,23 @@ const defaultItems: ActionItem[] = [
   },
 ];
 
-const priorityStyles = {
-  alta: { color: 'text-[var(--color-danger)]', label: 'Alta prioridad' },
-  media: { color: 'text-[var(--color-warning)]', label: 'Media prioridad' },
-  completado: {
-    color: 'text-[var(--color-success)]',
-    label: 'Completado',
-  },
-};
-
 interface Props {
   items?: ActionItem[];
 }
 
 export function ActionPlanCard({ items = defaultItems }: Props) {
+  const t = useTranslations('Dashboard');
+
+  const priorityStyles = {
+    alta: { color: 'text-[var(--color-danger)]', label: t('altaPrioridad') },
+    media: { color: 'text-[var(--color-warning)]', label: t('mediaPrioridad') },
+    completado: { color: 'text-[var(--color-success)]', label: t('completado') },
+  };
+
   return (
     <AppCard className='flex flex-col'>
       <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
-        Plan de Acción Sugerido
+        {t('actionPlanTitle')}
       </h3>
 
       <ul className='mt-4 flex flex-col'>
@@ -81,12 +83,12 @@ export function ActionPlanCard({ items = defaultItems }: Props) {
               {!item.completed && (
                 <AppButton
                   variant={item.actionIcon === 'play' ? 'primary' : 'outline'}
-                  className='shrink-0 !px-3 !py-1.5 text-xs'
+                  className='shrink-0 !inline-flex !items-center !justify-center !gap-1.5 !min-w-[130px] !px-3 !py-1.5 text-xs'
                 >
                   {item.actionIcon === 'play' ? (
-                    <PlayIcon className='mr-1 size-3' />
+                    <PlayIcon className='shrink-0 size-3.5' />
                   ) : (
-                    <BookOpenIcon className='mr-1 size-3' />
+                    <BookOpenIcon className='shrink-0 size-3.5' />
                   )}
                   {item.actionLabel}
                 </AppButton>

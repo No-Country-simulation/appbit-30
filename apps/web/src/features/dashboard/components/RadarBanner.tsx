@@ -1,7 +1,12 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { AntennaIcon } from 'lucide-react';
 import { AppButton } from '@/src/components/app/AppButton';
 
 export function RadarBanner() {
+  const t = useTranslations('Dashboard');
+
   return (
     <section className='flex items-center justify-between gap-4 rounded-[var(--radius-md)] bg-[#f5c542] p-4 sm:px-6'>
       <div className='flex items-center gap-3'>
@@ -10,10 +15,12 @@ export function RadarBanner() {
         </div>
         <div>
           <p className='text-sm font-bold text-[#1a1a2e]'>
-            Radar CDRView
+            {t('radarTitle')}
           </p>
           <p className='text-xs text-[#1a1a2e]/70'>
-            Hay 5 vacantes híbridas a menos de 30 min de tu zona. ¡Aprovechá la cercanía!
+            {t.rich('radarDesc', {
+              cantidad: () => <strong>5</strong>,
+            })}
           </p>
         </div>
       </div>
@@ -21,7 +28,7 @@ export function RadarBanner() {
       <AppButton
         className='shrink-0 !bg-[#1a1a2e] !text-white hover:!bg-[#2a2a3e]'
       >
-        Ver vacantes recomendadas
+        {t('radarButton')}
       </AppButton>
     </section>
   );

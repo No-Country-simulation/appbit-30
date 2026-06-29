@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
   Briefcase,
@@ -23,6 +26,8 @@ const navGroups = [
 ];
 
 export function AppSidebar() {
+  const t = useTranslations('Dashboard');
+
   return (
     <aside className='flex w-[var(--sidebar-width)] min-h-screen flex-col border-r border-[var(--color-border)] bg-[var(--color-card)]'>
       <div className='flex items-center gap-2 border-b border-[var(--color-border)] px-6 py-5'>
@@ -34,31 +39,33 @@ export function AppSidebar() {
       <div className='px-4 py-3'>
         <div className='rounded-[var(--radius-md)] bg-[#f5c542] px-4 py-3 text-center'>
           <p className='text-xs font-bold uppercase tracking-wide text-[#1a1a2e]'>
-            Match de Perfil
+            {t('matchPerfil')}
           </p>
-          <p className='text-xs text-[#1a1a2e]/70'>Completado: 85%</p>
+          <p className='text-xs text-[#1a1a2e]/70'>
+            {t('perfilCompletado', { porcentaje: '85' })}
+          </p>
         </div>
       </div>
 
-      <nav className='flex-1 px-3 py-2'>
+      <nav className='flex-1 px-4 py-3'>
         {navGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             {groupIndex > 0 && (
-              <div className='my-2 border-t border-[var(--color-border)]' />
+              <div className='my-3 border-t border-[var(--color-border)]' />
             )}
-            <ul className='space-y-0.5'>
+            <ul className='space-y-1.5'>
               {group.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium transition-colors duration-200',
+                      'flex items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium transition-all duration-200',
                       item.href === '/dashboard'
                         ? 'bg-[var(--color-primary)] text-white'
-                        : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]',
+                        : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)] hover:pl-5',
                     )}
                   >
-                    <item.icon className='size-5' />
+                    <item.icon className='size-5 shrink-0' />
                     {item.label}
                   </a>
                 </li>
@@ -68,12 +75,12 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      <div className='border-t border-[var(--color-border)] px-3 py-2'>
+      <div className='border-t border-[var(--color-border)] px-4 py-3'>
         <a
           href='#'
-          className='flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-200 hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
+          className='flex items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-all duration-200 hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)] hover:pl-5'
         >
-          <User className='size-5' />
+          <User className='size-5 shrink-0' />
           Mi Perfil
         </a>
       </div>

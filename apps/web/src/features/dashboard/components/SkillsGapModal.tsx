@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -80,14 +83,15 @@ export function SkillsGapModal({
   porcentaje = 40,
   skills = defaultSkills,
 }: Props) {
+  const t = useTranslations('Dashboard');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Análisis de Brecha: {puesto}</DialogTitle>
+          <DialogTitle>{t('skillsModalTitle', { puesto })}</DialogTitle>
           <DialogDescription>
-            Comparativa de tus habilidades actuales vs. las requeridas para el
-            puesto.
+            {t('skillsModalDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,12 +105,12 @@ export function SkillsGapModal({
           </p>
         </div>
 
-        <div className='overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]'>
+        <div className='mb-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]'>
           <table className='w-full text-sm'>
             <thead>
               <tr className='bg-[var(--color-body)] text-left text-xs font-semibold text-[var(--color-text-muted)]'>
-                <th className='px-4 py-2.5'>Habilidad Requerida</th>
-                <th className='px-4 py-2.5'>Estado</th>
+                <th className='px-4 py-2.5'>{t('habilidadRequerida')}</th>
+                <th className='px-4 py-2.5'>{t('estado')}</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-[var(--color-border)]'>
@@ -128,7 +132,7 @@ export function SkillsGapModal({
 
         <DialogFooter>
           <AppButton variant='primary' className='w-full'>
-            Ir a Formación para mejorar
+            {t('skillsModalButton')}
           </AppButton>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { BellIcon } from 'lucide-react';
 import { AppIcon, AppLanguageSwitcher } from '@/src/components';
 import { AppButton } from '@/src/components/app/AppButton';
@@ -14,6 +17,8 @@ export function AppHeader({
   onCheckinClick,
   profilePercent = 80,
 }: Props) {
+  const t = useTranslations('Dashboard');
+
   return (
     <header className='flex h-16 items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-card)] px-4 sm:px-6'>
       <div className='flex items-center gap-3'>
@@ -29,7 +34,7 @@ export function AppHeader({
         <div className='hidden items-center gap-3 lg:flex'>
           <div className='flex items-center gap-2'>
             <span className='whitespace-nowrap text-xs font-semibold text-[var(--color-success-text)]'>
-              Perfil al {profilePercent}%
+              {t('perfilProgreso', { porcentaje: profilePercent.toString() })}
             </span>
             <div className='h-2 w-24 overflow-hidden rounded-full bg-[var(--color-border)]'>
               <div

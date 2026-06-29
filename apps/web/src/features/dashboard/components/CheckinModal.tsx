@@ -1,4 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +13,7 @@ import {
 import { StepIndicator } from '@/src/components/app/StepIndicator';
 import { AppButton } from '@/src/components/app/AppButton';
 import { AppInput } from '@/src/components/app/AppInput';
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const moods = [
@@ -21,11 +24,32 @@ const moods = [
   { id: 'genial', label: 'Genial', emoji: '😄' },
 ];
 
-const motivos = [
-  { id: 'sobrecarga', label: 'Sobrecarga de responsabilidades', emoji: '😰' },
-  { id: 'sin-tiempo', label: 'Falta de tiempo para todo', emoji: '⏰' },
-  { id: 'sin-avanzar', label: 'Siento que no avanzo', emoji: '😔' },
-];
+const motivosPorMood: Record<string, { id: string; label: string; emoji: string }[]> = {
+  agotado: [
+    { id: 'sobrecarga', label: 'Sobrecarga de responsabilidades', emoji: '😰' },
+    { id: 'sin-tiempo', label: 'Falta de tiempo para todo', emoji: '⏰' },
+    { id: 'sin-avanzar', label: 'Siento que no avanzo', emoji: '😔' },
+  ],
+  triste: [
+    { id: 'mal-entrevista', label: 'Me fue mal en una entrevista', emoji: '😞' },
+    { id: 'rechazo', label: 'Recibí un rechazo laboral', emoji: '💔' },
+    { id: 'sin-motivacion', label: 'Me siento desmotivado', emoji: '😢' },
+  ],
+  neutral: [
+    { id: 'dia-normal', label: 'Día normal, sin novedades', emoji: '😐' },
+    { id: 'pensando-futuro', label: 'Pensando en mi futuro laboral', emoji: '🤔' },
+  ],
+  bien: [
+    { id: 'buena-entrevista', label: 'Tuve una buena entrevista', emoji: '😊' },
+    { id: 'avance-curso', label: 'Avancé en mi curso', emoji: '📚' },
+    { id: 'logro-diario', label: 'Cumplí con mis objetivos del día', emoji: '✅' },
+  ],
+  genial: [
+    { id: 'nuevo-trabajo', label: 'Conseguí un nuevo trabajo', emoji: '🎉' },
+    { id: 'logro-importante', label: 'Logré algo importante', emoji: '🏆' },
+    { id: 'muy-motivado', label: 'Me siento muy motivado', emoji: '🔥' },
+  ],
+};
 
 interface Props {
   open: boolean;
@@ -46,6 +70,7 @@ export function CheckinModal({
   startAtStep,
   onComplete,
 }: Props) {
+  const t = useTranslations('Dashboard');
   const [step, setStep] = useState<1 | 2 | 3>(
     startAtStep ?? (initialMood ? 2 : 1),
   );
@@ -102,13 +127,15 @@ export function CheckinModal({
     onOpenChange(v);
   }
 
+  const currentMotivos = selectedMood ? motivosPorMood[selectedMood] ?? [] : [];
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>¿Cómo te sentís hoy?</DialogTitle>
+          <DialogTitle>{t('checkinTitle')}</DialogTitle>
           <DialogDescription>
-            Tu honestidad nos ayuda a adaptar tu experiencia.
+            {t('checkinDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +174,7 @@ export function CheckinModal({
 
           {step === 2 && (
             <div className='space-y-3'>
-              {motivos.map((motivo) => (
+              {currentMotivos.map((motivo) => (
                 <label
                   key={motivo.id}
                   onClick={() => toggleMotivo(motivo.id)}
@@ -180,12 +207,20 @@ export function CheckinModal({
           )}
 
           {step === 3 && (
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-[var(--color-text)]'>
-                ¿Querés contarnos algo más? (opcional)
-              </label>
+            <div className='space-y-6'>
+              <div className='flex items-center gap-2'>
+                <label className='text-sm font-medium text-[var(--color-text)]'>
+                  {t('contextoLabel')}
+                </label>
+                <div className='group relative'>
+                  <InfoIcon className='size-4 cursor-help text-[var(--color-text-muted)]' />
+                  <div className='absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded-[var(--radius-md)] bg-[var(--color-text)] px-3 py-2 text-xs text-[var(--color-card)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100'>
+                    {t('contextoTooltip')}
+                  </div>
+                </div>
+              </div>
               <AppInput
-                placeholder='Escribí lo que quieras, esto solo lo ve la IA para ayudarte mejor...'
+                placeholder={t('contextoPlaceholder')}
                 value={contexto}
                 onChange={(e) => setContexto(e.target.value)}
               />
@@ -196,7 +231,7 @@ export function CheckinModal({
         <DialogFooter>
           {step > 1 && (
             <AppButton variant='outline' onClick={handleBack}>
-              Atrás
+              {t('atras')}
             </AppButton>
           )}
 
@@ -207,7 +242,7 @@ export function CheckinModal({
               disabled={step === 1 && !selectedMood}
               onClick={handleNext}
             >
-              Siguiente
+              {t('siguiente')}
             </AppButton>
           ) : (
             <AppButton
@@ -215,7 +250,7 @@ export function CheckinModal({
               className='w-full'
               onClick={handleGuardar}
             >
-              Guardar y cerrar
+              {t('guardar')}
             </AppButton>
           )}
         </DialogFooter>
