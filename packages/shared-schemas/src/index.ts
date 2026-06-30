@@ -197,3 +197,40 @@ export const skillsResponseSchema = z.object({
 });
 
 export type SkillsResponse = z.infer<typeof skillsResponseSchema>;
+
+// --- SCHEMAS PARA ONBOARDING AI (FE-002 / FE-003) ---
+export const onboardingAIRequestSchema = z.object({
+  usuarioId: z.string(),
+  fechaNacimiento: z.string(),
+  genero: z.string(),
+  pais: z.string(),
+  provinciaEstado: z.string().optional(),
+  ciudad: z.string(),
+  zonaResidencia: z.string().optional(),
+  nivelEducacion: z.array(z.string()),
+  momentoProfesional: z.array(z.string()),
+  areasInteres: z.array(z.string()),
+  idiomas: z.array(
+    z.object({
+      idioma: z.string(),
+      nivel: z.string(),
+    }),
+  ),
+  disponibilidad: z.array(z.string()),
+  ubicacionTrabajo: z.string(),
+  objetivos: z.array(z.string()),
+  dispositivos: z.array(z.string()),
+  tipoConexion: z.string(),
+  locale: z.string().optional(),
+});
+
+export const onboardingAIResponseSchema = z.object({
+  success: z.boolean(),
+  usuarioId: z.string(),
+  orientacionId: z.string().optional(),
+  planAccionCount: z.number().optional(),
+  habilidadesCount: z.number().optional(),
+});
+
+export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
+export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
