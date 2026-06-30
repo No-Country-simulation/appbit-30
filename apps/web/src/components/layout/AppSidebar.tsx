@@ -25,7 +25,11 @@ const navGroups = [
   [{ label: 'Bienestar', icon: Heart, href: '#' }],
 ];
 
-export function AppSidebar() {
+interface Props {
+  matchPercent?: number;
+}
+
+export function AppSidebar({ matchPercent = 85 }: Props) {
   const t = useTranslations('Dashboard');
 
   return (
@@ -42,7 +46,7 @@ export function AppSidebar() {
             {t('matchPerfil')}
           </p>
           <p className='text-xs text-[#1a1a2e]/70'>
-            {t('perfilCompletado', { porcentaje: '85' })}
+            {t('perfilCompletado', { porcentaje: String(matchPercent) })}
           </p>
         </div>
       </div>

@@ -8,16 +8,17 @@ interface Props {
   children: React.ReactNode;
   onCheckinClick?: () => void;
   profilePercent?: number;
+  matchPercent?: number;
 }
 
-export function AppShell({ children, onCheckinClick, profilePercent }: Props) {
+export function AppShell({ children, onCheckinClick, profilePercent, matchPercent }: Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className='min-h-screen bg-[var(--color-body)]'>
       <div className='flex min-h-screen'>
         <div className='hidden lg:block'>
-          <AppSidebar />
+          <AppSidebar matchPercent={matchPercent} />
         </div>
 
         {isSidebarOpen && (
@@ -30,7 +31,7 @@ export function AppShell({ children, onCheckinClick, profilePercent }: Props) {
             />
 
             <div className='relative h-full w-[var(--sidebar-width)] max-w-[85vw]'>
-              <AppSidebar />
+              <AppSidebar matchPercent={matchPercent} />
             </div>
           </div>
         )}
