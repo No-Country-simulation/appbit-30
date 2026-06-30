@@ -34,6 +34,9 @@ const SELECT_TRIGGER_CLASSES =
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
 const NUMBERS_ONLY_REGEX = /^\d*$/;
 
+const SIN_CONOCIMIENTO = 'Desde_cero' as const;
+const CON_CONOCIMIENTOS = 'Con_conocimientos_previos' as const;
+
 interface FormData {
   fechaNacimiento: string;
   genero: string;
@@ -47,6 +50,9 @@ interface FormData {
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
   ubicacionTrabajo: string;
+  nivelExperienciaTecnologia: string;
+  habilidadesTecnicas: string[];
+  habilidadesBlandas: string[];
   objetivos: string[];
   dispositivos: string[];
   tipoConexion: string;
@@ -67,6 +73,9 @@ const INITIAL_FORM_DATA: FormData = {
   idiomas: [],
   disponibilidad: [],
   ubicacionTrabajo: '',
+  nivelExperienciaTecnologia: '',
+  habilidadesTecnicas: [],
+  habilidadesBlandas: [],
   objetivos: [],
   dispositivos: [],
   tipoConexion: '',
@@ -82,9 +91,9 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ['Personales', 'Educación', 'Objetivos'];
+const STEP_LABELS = ['Personales', 'Educación', 'Skills', 'Objetivos'];
 
 interface OnboardingModalProps {
   children?: React.ReactNode;
@@ -123,6 +132,8 @@ export function OnboardingModal({
       | 'momentoProfesional'
       | 'areasInteres'
       | 'disponibilidad'
+      | 'habilidadesTecnicas'
+      | 'habilidadesBlandas'
       | 'objetivos'
       | 'dispositivos'
     >,
@@ -134,6 +145,21 @@ export function OnboardingModal({
         ? prev[field].filter((v) => v !== value)
         : [...prev[field], value],
     }));
+    setShowErrors(false);
+  }
+
+  function handleNivelExperienciaTecnologiaChange(value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      nivelExperienciaTecnologia: value,
+      ...(value === SIN_CONOCIMIENTO
+        ? {
+            habilidadesTecnicas: [],
+            habilidadesBlandas: [],
+          }
+        : {}),
+    }));
+
     setShowErrors(false);
   }
 
@@ -166,9 +192,11 @@ export function OnboardingModal({
 
   function isStepValid(): boolean {
     const d = formData;
+
     if (step === 1) {
       return !!d.fechaNacimiento && !!d.genero && !!d.pais && !!d.ciudad;
     }
+
     if (step === 2) {
       return (
         d.nivelEducacion.length > 0 &&
@@ -179,6 +207,19 @@ export function OnboardingModal({
         !!d.ubicacionTrabajo
       );
     }
+
+    if (step === 3) {
+      if (!d.nivelExperienciaTecnologia) return false;
+
+      if (d.nivelExperienciaTecnologia === SIN_CONOCIMIENTO) {
+        return true;
+      }
+
+      return (
+        d.habilidadesTecnicas.length > 0 && d.habilidadesBlandas.length > 0
+      );
+    }
+
     return (
       d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
     );
@@ -190,7 +231,7 @@ export function OnboardingModal({
       return;
     }
     setShowErrors(false);
-    if (step < 3) {
+    if (step < 4) {
       setStep((step + 1) as Step);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -310,6 +351,39 @@ export function OnboardingModal({
     { value: 'Remoto', label: t('ubicacionTrabajoOption3') },
   ];
 
+  const nivelExperienciaTecnologiaOptions = [
+    {
+      value: SIN_CONOCIMIENTO,
+      label: t('nivelExperienciaTecnologiaOption1'),
+    },
+    {
+      value: CON_CONOCIMIENTOS,
+      label: t('nivelExperienciaTecnologiaOption2'),
+    },
+  ];
+
+  const habilidadesTecnicasOptions = [
+    { value: 'React_Frontend', label: t('habilidadesTecnicasOption1') },
+    { value: 'Python', label: t('habilidadesTecnicasOption2') },
+    { value: 'Java_CSharp', label: t('habilidadesTecnicasOption3') },
+    { value: 'SQL_Bases_Datos', label: t('habilidadesTecnicasOption4') },
+    { value: 'Node_Backend', label: t('habilidadesTecnicasOption5') },
+    { value: 'Excel_Avanzado', label: t('habilidadesTecnicasOption6') },
+    { value: 'PowerBI_Tableau', label: t('habilidadesTecnicasOption7') },
+    { value: 'AWS_Cloud', label: t('habilidadesTecnicasOption8') },
+    { value: 'Figma_Diseno_UX', label: t('habilidadesTecnicasOption9') },
+  ];
+
+  const habilidadesBlandasOptions = [
+    { value: 'Comunicacion_Asertiva', label: t('habilidadesBlandasOption1') },
+    { value: 'Trabajo_Equipo', label: t('habilidadesBlandasOption2') },
+    { value: 'Liderazgo', label: t('habilidadesBlandasOption3') },
+    { value: 'Gestion_Tiempo', label: t('habilidadesBlandasOption4') },
+    { value: 'Resolucion_Problemas', label: t('habilidadesBlandasOption5') },
+    { value: 'Pensamiento_Critico', label: t('habilidadesBlandasOption6') },
+    { value: 'Adaptabilidad', label: t('habilidadesBlandasOption7') },
+  ];
+
   const objetivosOptions = [
     { value: 'Primer_empleo_IT', label: t('objetivosOption1') },
     { value: 'Reconversion_laboral', label: t('objetivosOption2') },
@@ -339,13 +413,18 @@ export function OnboardingModal({
       ? t('step1Greeting')
       : step === 2
         ? t('step2Greeting')
-        : t('step3Greeting');
+        : step === 3
+          ? t('step3Greeting')
+          : t('step4Greeting');
+
   const currentSubtitle =
     step === 1
       ? t('step1Subtitle')
       : step === 2
         ? t('step2Subtitle')
-        : t('step3Subtitle');
+        : step === 3
+          ? t('step3Subtitle')
+          : t('step4Subtitle');
 
   return (
     <>
@@ -383,7 +462,7 @@ export function OnboardingModal({
           <div className='py-2'>
             <StepIndicator
               currentStep={step}
-              totalSteps={3}
+              totalSteps={4}
               labels={STEP_LABELS}
             />
           </div>
@@ -721,6 +800,98 @@ export function OnboardingModal({
             {step === 3 && (
               <div className='space-y-5'>
                 <div>
+                  <Body>{t('nivelExperienciaTecnologiaLabel')}</Body>
+                  <div className='mt-2 flex flex-wrap gap-2'>
+                    {nivelExperienciaTecnologiaOptions.map((opt) => (
+                      <ChoiceChip
+                        key={opt.value}
+                        label={opt.label}
+                        selected={
+                          formData.nivelExperienciaTecnologia === opt.value
+                        }
+                        onClick={() =>
+                          handleNivelExperienciaTecnologiaChange(opt.value)
+                        }
+                      />
+                    ))}
+                  </div>
+                  <FieldError
+                    show={showErrors && !formData.nivelExperienciaTecnologia}
+                  />
+                </div>
+
+                {formData.nivelExperienciaTecnologia === CON_CONOCIMIENTOS && (
+                  <>
+                    <div>
+                      <Body>
+                        {t('habilidadesTecnicasLabel')}{' '}
+                        <span className='text-[var(--color-text-muted)] text-xs'>
+                          {t('habilidadesTecnicasHint')}
+                        </span>
+                      </Body>
+                      <div className='mt-2 flex flex-wrap gap-2'>
+                        {habilidadesTecnicasOptions.map((opt) => (
+                          <ChoiceChip
+                            key={opt.value}
+                            label={opt.label}
+                            selected={formData.habilidadesTecnicas.includes(
+                              opt.value,
+                            )}
+                            onClick={() =>
+                              toggleArray('habilidadesTecnicas', opt.value)
+                            }
+                          />
+                        ))}
+                      </div>
+                      <FieldError
+                        show={
+                          showErrors &&
+                          formData.nivelExperienciaTecnologia ===
+                            CON_CONOCIMIENTOS &&
+                          formData.habilidadesTecnicas.length === 0
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Body>
+                        {t('habilidadesBlandasLabel')}{' '}
+                        <span className='text-[var(--color-text-muted)] text-xs'>
+                          {t('habilidadesBlandasHint')}
+                        </span>
+                      </Body>
+                      <div className='mt-2 flex flex-wrap gap-2'>
+                        {habilidadesBlandasOptions.map((opt) => (
+                          <ChoiceChip
+                            key={opt.value}
+                            label={opt.label}
+                            selected={formData.habilidadesBlandas.includes(
+                              opt.value,
+                            )}
+                            onClick={() =>
+                              toggleArray('habilidadesBlandas', opt.value)
+                            }
+                          />
+                        ))}
+                      </div>
+                      <FieldError
+                        show={
+                          showErrors &&
+                          formData.nivelExperienciaTecnologia ===
+                            CON_CONOCIMIENTOS &&
+                          formData.habilidadesBlandas.length === 0
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ===== STEP 4 ===== */}
+            {step === 4 && (
+              <div className='space-y-5'>
+                <div>
                   <Body>
                     {t('objetivosLabel')}{' '}
                     <span className='text-[var(--color-text-muted)] text-xs'>
@@ -840,7 +1011,7 @@ export function OnboardingModal({
                 {t('backButton')}
               </AppButton>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <AppButton onClick={handleNext}>{t('nextButton')} →</AppButton>
             ) : (
               <AppButton onClick={handleFinish} disabled={isLoading}>
