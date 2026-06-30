@@ -1,9 +1,9 @@
 export const EMOJI_VALUES = {
-  Agotado: 2.0,
+  Agotado: 2,
   Triste: 3.5,
   Neutral: 5.5,
   Bien: 7.5,
-  Genial: 9.0,
+  Genial: 9,
 } as const;
 
 export type WellbeingEmoji = keyof typeof EMOJI_VALUES;

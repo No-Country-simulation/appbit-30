@@ -1,13 +1,14 @@
 {
   "name": "ai-service",
   "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev:vercel": "vercel dev",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit",
-    "db:generate": "prisma generate"
+    "build": "pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build && tsc --noEmit"
   },
   
   "keywords": [],
