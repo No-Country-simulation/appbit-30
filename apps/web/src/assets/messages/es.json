@@ -210,6 +210,12 @@
     "perfilCompletado": "Completado: {porcentaje}%",
     "perfilProgreso": "Perfil al {porcentaje}%",
     "skillsModalBajo": "Todavía falta camino, pero con los cursos adecuados podés cerrar la brecha.",
-    "skillsModalAlto": "Vas bien encaminado, seguí así."
+    "skillsModalAlto": "Vas bien encaminado, seguí así.",
+    "perfilBreakdownTitle": "Completitud de tu perfil",
+    "perfilBreakdownOnboarding": "Onboarding completado",
+    "perfilBreakdownMovilidad": "Perfil de movilidad",
+    "perfilBreakdownAvatar": "Foto de perfil",
+    "perfilBreakdownUbicacion": "Ubicación configurada",
+    "perfilBreakdownWhatsapp": "WhatsApp vinculado"
   }
 }

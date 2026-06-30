@@ -8,9 +8,16 @@ interface Props {
   children: React.ReactNode;
   onCheckinClick?: () => void;
   profilePercent?: number;
+  perfilBreakdown?: {
+    onboarding: boolean;
+    movilidad: boolean;
+    avatar: boolean;
+    ubicacion: boolean;
+    whatsapp: boolean;
+  };
 }
 
-export function AppShell({ children, onCheckinClick, profilePercent }: Props) {
+export function AppShell({ children, onCheckinClick, profilePercent, perfilBreakdown }: Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -40,6 +47,7 @@ export function AppShell({ children, onCheckinClick, profilePercent }: Props) {
             onMenuClick={() => setIsSidebarOpen(true)}
             onCheckinClick={onCheckinClick}
             profilePercent={profilePercent}
+            perfilBreakdown={perfilBreakdown}
           />
 
           <main className='flex-1 px-4 py-6 sm:px-6 lg:px-8'>{children}</main>

@@ -85,6 +85,7 @@ export default function DashboardClient({
   }));
 
   const perfilCompletado = data?.perfil_completado ?? undefined;
+  const perfilBreakdown = data?.perfil_breakdown;
 
   return (
     <AppShell
@@ -94,6 +95,7 @@ export default function DashboardClient({
         setCheckinModalOpen(true);
       }}
       profilePercent={perfilCompletado}
+      perfilBreakdown={perfilBreakdown}
     >
       <div className='space-y-6'>
         <HeroBanner
