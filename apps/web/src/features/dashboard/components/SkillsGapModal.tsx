@@ -12,7 +12,7 @@ import {
 import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
 
-interface SkillRow {
+export interface SkillRow {
   habilidad: string;
   estado: 'Adquirida' | 'En progreso' | 'Faltante';
 }
