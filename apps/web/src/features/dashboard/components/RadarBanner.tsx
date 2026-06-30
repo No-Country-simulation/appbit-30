@@ -4,7 +4,11 @@ import { useTranslations } from 'next-intl';
 import { AntennaIcon } from 'lucide-react';
 import { AppButton } from '@/src/components/app/AppButton';
 
-export function RadarBanner() {
+interface Props {
+  vacantesCompatibles?: number;
+}
+
+export function RadarBanner({ vacantesCompatibles = 5 }: Props) {
   const t = useTranslations('Dashboard');
 
   return (
@@ -19,7 +23,7 @@ export function RadarBanner() {
           </p>
           <p className='text-xs text-[#1a1a2e]/70'>
             {t.rich('radarDesc', {
-              cantidad: () => <strong>5</strong>,
+              cantidad: () => <strong>{vacantesCompatibles}</strong>,
             })}
           </p>
         </div>

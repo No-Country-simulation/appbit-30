@@ -5,7 +5,7 @@ import { CheckCircleIcon, PlayIcon, BookOpenIcon } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppButton } from '@/src/components/app/AppButton';
 
-interface ActionItem {
+export interface ActionItem {
   title: string;
   priority: 'alta' | 'media' | 'completado';
   actionLabel: string;
