@@ -17,37 +17,37 @@ import { CheckIcon, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const moods = [
-  { id: 'agotado', label: 'Agotado', emoji: '😩' },
-  { id: 'triste', label: 'Triste', emoji: '😢' },
-  { id: 'neutral', label: 'Neutral', emoji: '😐' },
-  { id: 'bien', label: 'Bien', emoji: '🙂' },
-  { id: 'genial', label: 'Genial', emoji: '😄' },
+  { id: 'agotado', key: 'moodAgotado', emoji: '😩' },
+  { id: 'triste', key: 'moodTriste', emoji: '😢' },
+  { id: 'neutral', key: 'moodNeutral', emoji: '😐' },
+  { id: 'bien', key: 'moodBien', emoji: '🙂' },
+  { id: 'genial', key: 'moodGenial', emoji: '😄' },
 ];
 
-const motivosPorMood: Record<string, { id: string; label: string; emoji: string }[]> = {
+const motivosPorMood: Record<string, { id: string; key: string; emoji: string }[]> = {
   agotado: [
-    { id: 'sobrecarga', label: 'Sobrecarga de responsabilidades', emoji: '😰' },
-    { id: 'sin-tiempo', label: 'Falta de tiempo para todo', emoji: '⏰' },
-    { id: 'sin-avanzar', label: 'Siento que no avanzo', emoji: '😔' },
+    { id: 'sobrecarga', key: 'motivoAgotado1', emoji: '😰' },
+    { id: 'sin-tiempo', key: 'motivoAgotado2', emoji: '⏰' },
+    { id: 'sin-avanzar', key: 'motivoAgotado3', emoji: '😔' },
   ],
   triste: [
-    { id: 'mal-entrevista', label: 'Me fue mal en una entrevista', emoji: '😞' },
-    { id: 'rechazo', label: 'Recibí un rechazo laboral', emoji: '💔' },
-    { id: 'sin-motivacion', label: 'Me siento desmotivado', emoji: '😢' },
+    { id: 'mal-entrevista', key: 'motivoTriste1', emoji: '😞' },
+    { id: 'rechazo', key: 'motivoTriste2', emoji: '💔' },
+    { id: 'sin-motivacion', key: 'motivoTriste3', emoji: '😢' },
   ],
   neutral: [
-    { id: 'dia-normal', label: 'Día normal, sin novedades', emoji: '😐' },
-    { id: 'pensando-futuro', label: 'Pensando en mi futuro laboral', emoji: '🤔' },
+    { id: 'dia-normal', key: 'motivoNeutral1', emoji: '😐' },
+    { id: 'pensando-futuro', key: 'motivoNeutral2', emoji: '🤔' },
   ],
   bien: [
-    { id: 'buena-entrevista', label: 'Tuve una buena entrevista', emoji: '😊' },
-    { id: 'avance-curso', label: 'Avancé en mi curso', emoji: '📚' },
-    { id: 'logro-diario', label: 'Cumplí con mis objetivos del día', emoji: '✅' },
+    { id: 'buena-entrevista', key: 'motivoBien1', emoji: '😊' },
+    { id: 'avance-curso', key: 'motivoBien2', emoji: '📚' },
+    { id: 'logro-diario', key: 'motivoBien3', emoji: '✅' },
   ],
   genial: [
-    { id: 'nuevo-trabajo', label: 'Conseguí un nuevo trabajo', emoji: '🎉' },
-    { id: 'logro-importante', label: 'Logré algo importante', emoji: '🏆' },
-    { id: 'muy-motivado', label: 'Me siento muy motivado', emoji: '🔥' },
+    { id: 'nuevo-trabajo', key: 'motivoGenial1', emoji: '🎉' },
+    { id: 'logro-importante', key: 'motivoGenial2', emoji: '🏆' },
+    { id: 'muy-motivado', key: 'motivoGenial3', emoji: '🔥' },
   ],
 };
 
@@ -165,7 +165,7 @@ export function CheckinModal({
                         : 'text-[var(--color-text-muted)]',
                     )}
                   >
-                    {mood.label}
+                    {t(mood.key)}
                   </span>
                 </button>
               ))}
@@ -199,7 +199,7 @@ export function CheckinModal({
                   </div>
                   <span className='text-lg'>{motivo.emoji}</span>
                   <span className='text-sm font-medium text-[var(--color-text)]'>
-                    {motivo.label}
+                    {t(motivo.key)}
                   </span>
                 </label>
               ))}
