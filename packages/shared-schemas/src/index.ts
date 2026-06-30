@@ -161,3 +161,39 @@ export const dashboardResponseSchema = z.object({
 });
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+
+// --- SCHEMAS PARA SKILLS (FE-003) ---
+export const skillsResponseSchema = z.object({
+  habilidades: z.array(
+    z.object({
+      habilidad_id: z.string(),
+      nombre: z.string(),
+      categoria: z.string().nullable(),
+      area_principal: z.string().nullable(),
+      estado: z.string(),
+    }),
+  ),
+  gaps: z.array(z.any()),
+  mercadoHabilidades: z.array(
+    z.object({
+      habilidad_id: z.string(),
+      nombre: z.string(),
+      categoria: z.string().nullable(),
+      area_principal: z.string().nullable(),
+    }),
+  ),
+  resumen: z.object({
+    adquiridas: z.number(),
+    faltantes: z.number(),
+    enProgreso: z.number(),
+    totalMercado: z.number(),
+  }),
+  orientacion: z
+    .object({
+      gap_porcentual: z.number(),
+      trayectoria_sugerida: z.array(z.any()),
+    })
+    .nullable(),
+});
+
+export type SkillsResponse = z.infer<typeof skillsResponseSchema>;
