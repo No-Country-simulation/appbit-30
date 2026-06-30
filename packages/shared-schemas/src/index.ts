@@ -114,3 +114,50 @@ export const onboardingResponseSchema = z.object({
   message: z.string(),
   userId: z.string(),
 });
+
+// --- SCHEMAS PARA DASHBOARD (FE-003) ---
+export const dashboardResponseSchema = z.object({
+  usuario: z.object({
+    nombre_completo: z.string(),
+    avatar_url: z.string().nullable(),
+    confianza: z.number().nullable(),
+    home_cluster: z.string().nullable(),
+  }),
+  orientacion: z
+    .object({
+      gap_porcentual: z.number(),
+      vacantes_compatibles: z.array(z.any()),
+      gap_items: z.array(z.any()),
+      trayectoria_sugerida: z.array(z.any()),
+    })
+    .nullable(),
+  planAccion: z.array(
+    z.object({
+      plan_item_id: z.string(),
+      titulo: z.string(),
+      prioridad: z.string(),
+      completado: z.boolean(),
+      orden: z.number(),
+      accion_label: z.string().nullable(),
+      curso: z
+        .object({
+          titulo: z.string(),
+        })
+        .nullable(),
+    }),
+  ),
+  bienestar: z.object({
+    notaPromedio: z.number(),
+    totalCheckins: z.number(),
+  }),
+  notificacionesNoLeidas: z.number(),
+  perfilMovilidad: z
+    .object({
+      home_cluster: z.string().nullable(),
+      income_cluster: z.string().nullable(),
+      mobility_pattern: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;

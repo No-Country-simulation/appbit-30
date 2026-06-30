@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dbClient } from '../../../server/clients/db.client';
+import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
 export const dynamic = 'force-dynamic';
@@ -7,128 +7,123 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const authUser = await getCurrentAuthUser();
-    if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const email = authUser.email;
-    if (!email) {
-      return NextResponse.json({ error: 'Email not found' }, { status: 400 });
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 },
+      );
     }
 
     const usuario = await dbClient.usuarios.findUnique({
-      where: { email },
+      where: { auth_uid: authUser.id },
       select: {
         usuario_id: true,
         nombre_completo: true,
         avatar_url: true,
         confianza: true,
         home_cluster: true,
-        perfil_movilidad: {
+      },
+    });
+
+    if (!usuario) {
+      return NextResponse.json(
+        { error: 'User not found. Complete onboarding first.' },
+        { status: 404 },
+      );
+    }
+
+    const userId = usuario.usuario_id;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [orientacion, planAccion, bienestarAgg, notificacionesNoLeidas, perfilMovilidad] =
+      await Promise.all([
+        dbClient.orientaciones.findFirst({
+          where: { usuario_id: userId },
+          orderBy: { creado_en: 'desc' },
+          select: {
+            gap_porcentual: true,
+            vacantes_compatibles: true,
+            gap_items: true,
+            trayectoria_sugerida: true,
+          },
+        }),
+        dbClient.planAccion.findMany({
+          where: { usuario_id: userId },
+          orderBy: { orden: 'asc' },
+          select: {
+            plan_item_id: true,
+            titulo: true,
+            prioridad: true,
+            completado: true,
+            orden: true,
+            accion_label: true,
+            curso: { select: { titulo: true } },
+          },
+        }),
+        dbClient.checkIns.aggregate({
+          where: {
+            usuario_id: userId,
+            creado_en: { gte: sevenDaysAgo },
+          },
+          _avg: { nota_diaria: true },
+          _count: true,
+        }),
+        dbClient.notificacionesRadar.count({
+          where: { usuario_id: userId, leida: false },
+        }),
+        dbClient.perfilMovilidad.findUnique({
+          where: { usuario_id: userId },
           select: {
             home_cluster: true,
             income_cluster: true,
             mobility_pattern: true,
           },
-        },
-      },
-    });
+        }),
+      ]);
 
-    if (!usuario) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const orientacion = await dbClient.orientaciones.findFirst({
-      where: { usuario_id: usuario.usuario_id },
-      orderBy: { creado_en: 'desc' },
-      select: {
-        gap_porcentual: true,
-        gap_items: true,
-        vacantes_compatibles: true,
-        trayectoria_sugerida: true,
-      },
-    });
-
-    const planAccion = await dbClient.planAccion.findMany({
-      where: { usuario_id: usuario.usuario_id },
-      orderBy: [{ orden: 'asc' }, { prioridad: 'asc' }],
-      select: {
-        plan_item_id: true,
-        titulo: true,
-        prioridad: true,
-        accion_label: true,
-        completado: true,
-        orden: true,
-        curso: {
-          select: { titulo: true },
-        },
-      },
-    });
-
-    const sieteDiasAtras = new Date();
-    sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7);
-
-    const checkinsRecientes = await dbClient.checkIns.findMany({
-      where: {
-        usuario_id: usuario.usuario_id,
-        creado_en: { gte: sieteDiasAtras },
-      },
-      select: { nota_diaria: true },
-    });
-
-    let notaPromedio = null;
-    if (checkinsRecientes.length > 0) {
-      const suma = checkinsRecientes.reduce(
-        (acc, c) => acc + Number(c.nota_diaria),
-        0,
-      );
-      notaPromedio = Number((suma / checkinsRecientes.length).toFixed(2));
-    }
-
-    const notificacionesNoLeidas = await dbClient.notificacionesRadar.count({
-      where: {
-        usuario_id: usuario.usuario_id,
-        leida: false,
-      },
-    });
-
-    return NextResponse.json({
+    const response = {
       usuario: {
         nombre_completo: usuario.nombre_completo,
         avatar_url: usuario.avatar_url,
-        confianza: usuario.confianza ? Number(usuario.confianza) : null,
+        confianza: usuario.confianza != null ? Number(usuario.confianza) : null,
         home_cluster: usuario.home_cluster,
       },
-      perfilMovilidad: usuario.perfil_movilidad,
       orientacion: orientacion
         ? {
             gap_porcentual: Number(orientacion.gap_porcentual),
-            totalVacantes: Array.isArray(orientacion.vacantes_compatibles)
-              ? orientacion.vacantes_compatibles.length
-              : 0,
-            gap_items: orientacion.gap_items,
-            trayectoria_sugerida: orientacion.trayectoria_sugerida,
+            vacantes_compatibles: orientacion.vacantes_compatibles as unknown[],
+            gap_items: orientacion.gap_items as unknown[],
+            trayectoria_sugerida: orientacion.trayectoria_sugerida as unknown[],
           }
         : null,
       planAccion: planAccion.map((item) => ({
         plan_item_id: item.plan_item_id,
         titulo: item.titulo,
         prioridad: item.prioridad,
-        accion_label: item.accion_label,
         completado: item.completado,
         orden: item.orden,
+        accion_label: item.accion_label,
         curso: item.curso,
       })),
       bienestar: {
-        notaPromedio,
-        totalCheckins: checkinsRecientes.length,
+        notaPromedio:
+          bienestarAgg._avg.nota_diaria != null
+            ? Number(bienestarAgg._avg.nota_diaria)
+            : 0,
+        totalCheckins: bienestarAgg._count,
       },
       notificacionesNoLeidas,
-    });
+      perfilMovilidad,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('Error fetching dashboard data:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }
