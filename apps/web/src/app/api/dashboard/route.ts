@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const authUser = await getCurrentAuthUser();
 
-    let usuario: { usuario_id: string; nombre_completo: string; avatar_url: string | null; confianza: number | null; home_cluster: string | null } | null = null;
+    let usuario: { usuario_id: string; nombre_completo: string; avatar_url: string | null; confianza: number | null; home_cluster: string | null; whatsapp_codigo: string | null; whatsapp_numero: string | null } | null = null;
 
     if (authUser) {
       usuario = await dbClient.usuarios.findUnique({
@@ -21,6 +21,8 @@ export async function GET() {
           avatar_url: true,
           confianza: true,
           home_cluster: true,
+          whatsapp_codigo: true,
+          whatsapp_numero: true,
         },
       });
     }
@@ -35,6 +37,8 @@ export async function GET() {
           avatar_url: true,
           confianza: true,
           home_cluster: true,
+          whatsapp_codigo: true,
+          whatsapp_numero: true,
         },
       });
     }
@@ -101,8 +105,9 @@ export async function GET() {
     let perfilCompletado = 0;
     if (orientacion) perfilCompletado += 50;
     if (perfilMovilidad) perfilCompletado += 20;
-    if (usuario.avatar_url) perfilCompletado += 15;
-    if (usuario.home_cluster) perfilCompletado += 15;
+    if (usuario.avatar_url) perfilCompletado += 10;
+    if (usuario.home_cluster) perfilCompletado += 10;
+    if (usuario.whatsapp_codigo && usuario.whatsapp_numero) perfilCompletado += 10;
 
     // Cálculo de match_perfil (0-100)
     const matchPerfil = orientacion
@@ -112,6 +117,13 @@ export async function GET() {
     const response = {
       perfil_completado: perfilCompletado,
       match_perfil: matchPerfil,
+      perfil_breakdown: {
+        onboarding: !!orientacion,
+        movilidad: !!perfilMovilidad,
+        avatar: !!usuario.avatar_url,
+        ubicacion: !!usuario.home_cluster,
+        whatsapp: !!(usuario.whatsapp_codigo && usuario.whatsapp_numero),
+      },
       usuario: {
         nombre_completo: usuario.nombre_completo,
         avatar_url: usuario.avatar_url,

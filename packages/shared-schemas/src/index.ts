@@ -119,6 +119,13 @@ export const onboardingResponseSchema = z.object({
 export const dashboardResponseSchema = z.object({
   perfil_completado: z.number(),
   match_perfil: z.number(),
+  perfil_breakdown: z.object({
+    onboarding: z.boolean(),
+    movilidad: z.boolean(),
+    avatar: z.boolean(),
+    ubicacion: z.boolean(),
+    whatsapp: z.boolean(),
+  }),
   usuario: z.object({
     nombre_completo: z.string(),
     avatar_url: z.string().nullable(),
