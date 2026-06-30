@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev:web": "pnpm --filter web dev",
-    "dev:ai": "pnpm --filter ai-service dev",
+    "dev:ai": "pnpm --filter ai-service dev:vercel",
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:ai\""
   },
   "devDependencies": {
