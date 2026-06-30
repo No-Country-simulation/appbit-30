@@ -4,11 +4,11 @@ import { useTranslations } from 'next-intl';
 import { AppCard } from '@/src/components/app/AppCard';
 
 const emojis = [
-  { id: 'agotado', emoji: '😩', label: 'Agobio' },
-  { id: 'triste', emoji: '😢', label: 'Triste' },
-  { id: 'neutral', emoji: '😐', label: 'Neutral' },
-  { id: 'bien', emoji: '🙂', label: 'Bien' },
-  { id: 'genial', emoji: '😄', label: 'Genial' },
+  { id: 'agotado', emoji: '😩', key: 'moodAgotado' },
+  { id: 'triste', emoji: '😢', key: 'moodTriste' },
+  { id: 'neutral', emoji: '😐', key: 'moodNeutral' },
+  { id: 'bien', emoji: '🙂', key: 'moodBien' },
+  { id: 'genial', emoji: '😄', key: 'moodGenial' },
 ];
 
 interface Props {
@@ -24,12 +24,13 @@ export function WellbeingCard({
 }: Props) {
   const t = useTranslations('Dashboard');
 
-  const mensaje =
+  const mensajeKey =
     promedioSemanal >= 7
-      ? '¡Genial!'
+      ? 'mensajeGenial'
       : promedioSemanal >= 5
-        ? '¡Venís muy bien!'
-        : 'Seguí mejorando';
+        ? 'mensajeBien'
+        : 'mensajeRegular';
+  const mensaje = t(mensajeKey);
 
   return (
     <AppCard className='flex flex-col gap-4'>
@@ -58,10 +59,10 @@ export function WellbeingCard({
             onClick={() => onEmojiClick?.(item.id)}
             className='flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-2 py-2 transition-all duration-200 hover:bg-[var(--color-primary-pale)] hover:scale-110'
           >
-            <span className='text-2xl'>{item.emoji}</span>
-            <span className='text-[10px] font-medium text-[var(--color-text-muted)]'>
-              {item.label}
-            </span>
+              <span className='text-2xl'>{item.emoji}</span>
+              <span className='text-[10px] font-medium text-[var(--color-text-muted)]'>
+                {t(item.key)}
+              </span>
           </button>
         ))}
       </div>
