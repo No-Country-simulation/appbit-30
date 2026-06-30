@@ -10,8 +10,9 @@ import { ActionPlanCard } from '../components/ActionPlanCard';
 import { WellbeingCard } from '../components/WellbeingCard';
 import { SkillsGapModal } from '../components/SkillsGapModal';
 import { CheckinModal } from '../components/CheckinModal';
-import type { DashboardResponse } from '@appbit/shared-schemas';
+import type { DashboardResponse, SkillsResponse } from '@appbit/shared-schemas';
 import type { ActionItem } from '../components/ActionPlanCard';
+import type { SkillRow } from '../components/SkillsGapModal';
 
 interface Props {
   nombre: string;
@@ -23,6 +24,7 @@ export default function DashboardClient({
   shouldOpenOnboarding,
 }: Props) {
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
   const [checkinMood, setCheckinMood] = useState('');
@@ -30,12 +32,20 @@ export default function DashboardClient({
   const [onboardingOpen, setOnboardingOpen] = useState(shouldOpenOnboarding);
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((res) => {
+    Promise.all([
+      fetch('/api/dashboard').then((res) => {
         if (!res.ok) throw new Error('Error al cargar dashboard');
         return res.json() as Promise<DashboardResponse>;
+      }),
+      fetch('/api/skills').then((res) => {
+        if (!res.ok) throw new Error('Error al cargar skills');
+        return res.json() as Promise<SkillsResponse>;
+      }),
+    ])
+      .then(([dash, skills]) => {
+        setData(dash);
+        setSkillsData(skills);
       })
-      .then((json) => setData(json))
       .catch((err) => console.error('Dashboard fetch error:', err));
   }, []);
 
@@ -68,6 +78,11 @@ export default function DashboardClient({
   const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
     : undefined;
+
+  const skillsRows: SkillRow[] | undefined = skillsData?.habilidades?.map((h) => ({
+    habilidad: h.nombre,
+    estado: h.estado as SkillRow['estado'],
+  }));
 
   return (
     <AppShell
@@ -109,6 +124,9 @@ export default function DashboardClient({
       <SkillsGapModal
         open={skillsModalOpen}
         onOpenChange={setSkillsModalOpen}
+        puesto={skillsPuesto}
+        porcentaje={skillsGapPorcentaje}
+        skills={skillsRows}
       />
 
       <CheckinModal
