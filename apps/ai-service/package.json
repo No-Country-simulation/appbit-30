@@ -6,7 +6,8 @@
   "scripts": {
     "dev:vercel": "vercel dev",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "db:generate": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -16,12 +17,15 @@
     "@appbit/shared-schemas": "workspace:*",
     "@appbit/shared-types": "workspace:*",
     "@google/generative-ai": "^0.24.1",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
     "dotenv": "^17.4.2",
     "hono": "^4.12.25",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
+    "prisma": "^7.8.0",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "vercel": "^54.15.1"
