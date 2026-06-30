@@ -9,6 +9,7 @@
     "build": "tsc --noEmit",
     "db:generate": "prisma generate"
   },
+  
   "keywords": [],
   "author": "",
   "license": "ISC",
