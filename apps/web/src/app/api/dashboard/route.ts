@@ -2,29 +2,42 @@ import { NextResponse } from 'next/server';
 import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
+const DEV_USER_ID = '003f7b4f-364b-4fa0-b921-2452393769d6';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const authUser = await getCurrentAuthUser();
 
-    if (!authUser) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      );
+    let usuario: { usuario_id: string; nombre_completo: string; avatar_url: string | null; confianza: number | null; home_cluster: string | null } | null = null;
+
+    if (authUser) {
+      usuario = await dbClient.usuarios.findUnique({
+        where: { auth_uid: authUser.id },
+        select: {
+          usuario_id: true,
+          nombre_completo: true,
+          avatar_url: true,
+          confianza: true,
+          home_cluster: true,
+        },
+      });
     }
 
-    const usuario = await dbClient.usuarios.findUnique({
-      where: { auth_uid: authUser.id },
-      select: {
-        usuario_id: true,
-        nombre_completo: true,
-        avatar_url: true,
-        confianza: true,
-        home_cluster: true,
-      },
-    });
+    // Modo dev: usar usuario de prueba si no hay auth
+    if (!usuario) {
+      usuario = await dbClient.usuarios.findUnique({
+        where: { usuario_id: DEV_USER_ID },
+        select: {
+          usuario_id: true,
+          nombre_completo: true,
+          avatar_url: true,
+          confianza: true,
+          home_cluster: true,
+        },
+      });
+    }
 
     if (!usuario) {
       return NextResponse.json(

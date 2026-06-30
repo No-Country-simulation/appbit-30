@@ -22,9 +22,7 @@ export function RadarBanner({ vacantesCompatibles = 5 }: Props) {
             {t('radarTitle')}
           </p>
           <p className='text-xs text-[#1a1a2e]/70'>
-            {t.rich('radarDesc', {
-              cantidad: () => <strong>{vacantesCompatibles}</strong>,
-            })}
+            {t('radarDesc', { cantidad: vacantesCompatibles })}
           </p>
         </div>
       </div>

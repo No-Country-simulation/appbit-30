@@ -62,10 +62,7 @@ export function SkillsGapCard({
       <CircularProgress value={porcentaje} />
 
       <p className='text-sm text-[var(--color-text-muted)]'>
-        {t.rich('skillsGapDesc', {
-          porcentaje: () => <strong>{porcentaje}%</strong>,
-          puesto: () => <strong>{puesto}</strong>,
-        })}
+        {t('skillsGapDesc', { porcentaje, puesto })}
       </p>
 
       <AppButton

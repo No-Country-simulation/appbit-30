@@ -26,10 +26,7 @@ export function HeroBanner({
         </h1>
 
         <p className='mt-2 max-w-xl text-sm text-white/80'>
-          {t.rich('heroBannerDesc', {
-            cursos: () => <strong className='text-white'>{cursosPendientes} cursos</strong>,
-            vacantes: () => <strong className='text-white'>{vacantesDisponibles} vacantes</strong>,
-          })}
+          {t('heroBannerDesc', { cursos: cursosPendientes, vacantes: vacantesDisponibles })}
         </p>
 
         <div className='mt-5 flex flex-wrap gap-3'>

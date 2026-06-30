@@ -3,27 +3,34 @@ import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import { AreaInteresEnum } from '../../../../src/server/generated/prisma';
 
+const DEV_USER_ID = '003f7b4f-364b-4fa0-b921-2452393769d6';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
     const authUser = await getCurrentAuthUser();
 
-    if (!authUser) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      );
+    let usuario: { usuario_id: string } | null = null;
+
+    if (authUser) {
+      usuario = await dbClient.usuarios.findUnique({
+        where: { auth_uid: authUser.id },
+        select: { usuario_id: true },
+      });
     }
 
-    const usuario = await dbClient.usuarios.findUnique({
-      where: { auth_uid: authUser.id },
-      select: { usuario_id: true },
-    });
+    // Modo dev: usar usuario de prueba si no hay auth
+    if (!usuario) {
+      usuario = await dbClient.usuarios.findUnique({
+        where: { usuario_id: DEV_USER_ID },
+        select: { usuario_id: true },
+      });
+    }
 
     if (!usuario) {
       return NextResponse.json(
-        { error: 'User not found. Complete onboarding first.' },
+        { error: 'User not found.' },
         { status: 404 },
       );
     }
