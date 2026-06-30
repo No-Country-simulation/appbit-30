@@ -99,9 +99,7 @@ export function SkillsGapModal({
           <CircularProgress value={porcentaje} />
 
           <p className='text-center text-sm text-[var(--color-text-muted)]'>
-            {porcentaje < 50
-              ? 'Todavía falta camino, pero con los cursos adecuados podés cerrar la brecha.'
-              : 'Vas bien encaminado, seguí así.'}
+            {t(porcentaje < 50 ? 'skillsModalBajo' : 'skillsModalAlto')}
           </p>
         </div>
 
