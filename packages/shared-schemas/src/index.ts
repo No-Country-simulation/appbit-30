@@ -117,6 +117,8 @@ export const onboardingResponseSchema = z.object({
 
 // --- SCHEMAS PARA DASHBOARD (FE-003) ---
 export const dashboardResponseSchema = z.object({
+  perfil_completado: z.number(),
+  match_perfil: z.number(),
   usuario: z.object({
     nombre_completo: z.string(),
     avatar_url: z.string().nullable(),

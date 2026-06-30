@@ -97,7 +97,21 @@ export async function GET() {
         }),
       ]);
 
+    // Cálculo de perfil_completado (0-100)
+    let perfilCompletado = 0;
+    if (orientacion) perfilCompletado += 50;
+    if (perfilMovilidad) perfilCompletado += 20;
+    if (usuario.avatar_url) perfilCompletado += 15;
+    if (usuario.home_cluster) perfilCompletado += 15;
+
+    // Cálculo de match_perfil (0-100)
+    const matchPerfil = orientacion
+      ? 100 - Number(orientacion.gap_porcentual)
+      : Number(usuario.confianza ?? 0);
+
     const response = {
+      perfil_completado: perfilCompletado,
+      match_perfil: matchPerfil,
       usuario: {
         nombre_completo: usuario.nombre_completo,
         avatar_url: usuario.avatar_url,
