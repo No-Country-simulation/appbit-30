@@ -14,15 +14,15 @@ import { cn } from '@/lib/utils';
 
 const navGroups = [
   [
-    { label: 'Inicio', icon: LayoutDashboard, href: '/dashboard' },
-    { label: 'Empleos', icon: Briefcase, href: '#' },
-    { label: 'Formación', icon: GraduationCap, href: '#' },
+    { labelKey: 'navInicio', icon: LayoutDashboard, href: '/dashboard' },
+    { labelKey: 'navEmpleos', icon: Briefcase, href: '#' },
+    { labelKey: 'navFormacion', icon: GraduationCap, href: '#' },
   ],
   [
-    { label: 'Experiencias', icon: Star, href: '#' },
-    { label: 'Mentorías', icon: Users, href: '#' },
+    { labelKey: 'navExperiencias', icon: Star, href: '#' },
+    { labelKey: 'navMentorias', icon: Users, href: '#' },
   ],
-  [{ label: 'Bienestar', icon: Heart, href: '#' }],
+  [{ labelKey: 'navBienestar', icon: Heart, href: '#' }],
 ];
 
 export function AppSidebar() {
@@ -44,7 +44,7 @@ export function AppSidebar() {
             )}
             <ul className='space-y-1.5'>
               {group.map((item) => (
-                <li key={item.label}>
+                <li key={item.labelKey}>
                   <a
                     href={item.href}
                     className={cn(
@@ -55,7 +55,7 @@ export function AppSidebar() {
                     )}
                   >
                     <item.icon className='size-5 shrink-0' />
-                    {item.label}
+                    {t(item.labelKey)}
                   </a>
                 </li>
               ))}
@@ -70,7 +70,7 @@ export function AppSidebar() {
           className='flex items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-all duration-200 hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)] hover:pl-5'
         >
           <User className='size-5 shrink-0' />
-          Mi Perfil
+          {t('miPerfil')}
         </a>
       </div>
 
@@ -83,7 +83,7 @@ export function AppSidebar() {
             María Pérez
           </span>
           <span className='text-xs text-[var(--color-text-muted)]'>
-            Ver perfil
+            {t('verPerfil')}
           </span>
         </div>
       </div>
