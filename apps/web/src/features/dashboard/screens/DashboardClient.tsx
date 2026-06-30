@@ -84,6 +84,8 @@ export default function DashboardClient({
     estado: h.estado as SkillRow['estado'],
   }));
 
+  const perfilCompletado = data?.perfil_completado ?? undefined;
+
   return (
     <AppShell
       onCheckinClick={() => {
@@ -91,6 +93,7 @@ export default function DashboardClient({
         setCheckinStartStep(1);
         setCheckinModalOpen(true);
       }}
+      profilePercent={perfilCompletado}
     >
       <div className='space-y-6'>
         <HeroBanner

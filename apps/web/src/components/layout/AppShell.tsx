@@ -7,9 +7,10 @@ import { AppSidebar } from './AppSidebar';
 interface Props {
   children: React.ReactNode;
   onCheckinClick?: () => void;
+  profilePercent?: number;
 }
 
-export function AppShell({ children, onCheckinClick }: Props) {
+export function AppShell({ children, onCheckinClick, profilePercent }: Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -38,6 +39,7 @@ export function AppShell({ children, onCheckinClick }: Props) {
           <AppHeader
             onMenuClick={() => setIsSidebarOpen(true)}
             onCheckinClick={onCheckinClick}
+            profilePercent={profilePercent}
           />
 
           <main className='flex-1 px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
