@@ -208,6 +208,8 @@
     "estado": "Estado",
     "matchPerfil": "Match de Perfil",
     "perfilCompletado": "Completado: {porcentaje}%",
-    "perfilProgreso": "Perfil al {porcentaje}%"
+    "perfilProgreso": "Perfil al {porcentaje}%",
+    "skillsModalBajo": "Todavía falta camino, pero con los cursos adecuados podés cerrar la brecha.",
+    "skillsModalAlto": "Vas bien encaminado, seguí así."
   }
 }
