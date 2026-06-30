@@ -13,34 +13,36 @@ export interface ActionItem {
   completed?: boolean;
 }
 
-const defaultItems: ActionItem[] = [
-  {
-    title: 'SQL Avanzado',
-    priority: 'alta',
-    actionLabel: 'Iniciar Módulo',
-    actionIcon: 'play',
-  },
-  {
-    title: 'PowerBI / Dashboards',
-    priority: 'media',
-    actionLabel: 'Ver temario',
-    actionIcon: 'book',
-  },
-  {
-    title: 'Python Fundamentals',
-    priority: 'completado',
-    actionLabel: 'Iniciar Módulo',
-    actionIcon: 'play',
-    completed: true,
-  },
-];
-
 interface Props {
   items?: ActionItem[];
 }
 
-export function ActionPlanCard({ items = defaultItems }: Props) {
+export function ActionPlanCard({ items }: Props) {
   const t = useTranslations('Dashboard');
+
+  const defaultItems: ActionItem[] = [
+    {
+      title: 'SQL Avanzado',
+      priority: 'alta',
+      actionLabel: t('actionLabelIniciar'),
+      actionIcon: 'play',
+    },
+    {
+      title: 'PowerBI / Dashboards',
+      priority: 'media',
+      actionLabel: t('actionLabelVerTemario'),
+      actionIcon: 'book',
+    },
+    {
+      title: 'Python Fundamentals',
+      priority: 'completado',
+      actionLabel: t('actionLabelIniciar'),
+      actionIcon: 'play',
+      completed: true,
+    },
+  ];
+
+  const resolvedItems = items ?? defaultItems;
 
   const priorityStyles = {
     alta: { color: 'text-[var(--color-danger)]', label: t('altaPrioridad') },
@@ -55,13 +57,13 @@ export function ActionPlanCard({ items = defaultItems }: Props) {
       </h3>
 
       <ul className='mt-4 flex flex-col'>
-        {items.map((item, index) => {
+        {resolvedItems.map((item, index) => {
           const style = priorityStyles[item.priority];
           return (
             <li
               key={item.title}
               className={`flex items-center justify-between gap-4 py-4 ${
-                index < items.length - 1
+                index < resolvedItems.length - 1
                   ? 'border-b border-[var(--color-border)]'
                   : ''
               }`}

@@ -246,6 +246,8 @@
     "navMentorias": "Mentorías",
     "navBienestar": "Bienestar",
     "miPerfil": "Mi Perfil",
-    "verPerfil": "Ver perfil"
+    "verPerfil": "Ver perfil",
+    "actionLabelIniciar": "Iniciar Módulo",
+    "actionLabelVerTemario": "Ver temario"
   }
 }
