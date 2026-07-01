@@ -210,3 +210,132 @@ export const onboardingResponseSchema = z.object({
   message: z.string(),
   userId: z.string(),
 });
+
+// --- SCHEMAS PARA DASHBOARD (FE-003) ---
+export const dashboardResponseSchema = z.object({
+  perfil_completado: z.number(),
+  match_perfil: z.number(),
+  perfil_breakdown: z.object({
+    onboarding: z.boolean(),
+    movilidad: z.boolean(),
+    avatar: z.boolean(),
+    ubicacion: z.boolean(),
+    whatsapp: z.boolean(),
+  }),
+  usuario: z.object({
+    nombre_completo: z.string(),
+    avatar_url: z.string().nullable(),
+    confianza: z.number().nullable(),
+    home_cluster: z.string().nullable(),
+  }),
+  orientacion: z
+    .object({
+      gap_porcentual: z.number(),
+      vacantes_compatibles: z.array(z.any()),
+      gap_items: z.array(z.any()),
+      trayectoria_sugerida: z.array(z.any()),
+    })
+    .nullable(),
+  planAccion: z.array(
+    z.object({
+      plan_item_id: z.string(),
+      titulo: z.string(),
+      prioridad: z.string(),
+      completado: z.boolean(),
+      orden: z.number(),
+      accion_label: z.string().nullable(),
+      curso: z
+        .object({
+          titulo: z.string(),
+        })
+        .nullable(),
+    }),
+  ),
+  bienestar: z.object({
+    notaPromedio: z.number(),
+    totalCheckins: z.number(),
+  }),
+  notificacionesNoLeidas: z.number(),
+  perfilMovilidad: z
+    .object({
+      home_cluster: z.string().nullable(),
+      income_cluster: z.string().nullable(),
+      mobility_pattern: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+
+// --- SCHEMAS PARA SKILLS (FE-003) ---
+export const skillsResponseSchema = z.object({
+  habilidades: z.array(
+    z.object({
+      habilidad_id: z.string(),
+      nombre: z.string(),
+      categoria: z.string().nullable(),
+      area_principal: z.string().nullable(),
+      estado: z.string(),
+    }),
+  ),
+  gaps: z.array(z.any()),
+  mercadoHabilidades: z.array(
+    z.object({
+      habilidad_id: z.string(),
+      nombre: z.string(),
+      categoria: z.string().nullable(),
+      area_principal: z.string().nullable(),
+    }),
+  ),
+  resumen: z.object({
+    adquiridas: z.number(),
+    faltantes: z.number(),
+    enProgreso: z.number(),
+    totalMercado: z.number(),
+  }),
+  orientacion: z
+    .object({
+      gap_porcentual: z.number(),
+      trayectoria_sugerida: z.array(z.any()),
+    })
+    .nullable(),
+});
+
+export type SkillsResponse = z.infer<typeof skillsResponseSchema>;
+
+// --- SCHEMAS PARA ONBOARDING AI (FE-002 / FE-003) ---
+export const onboardingAIRequestSchema = z.object({
+  usuarioId: z.string(),
+  fechaNacimiento: z.string(),
+  genero: z.string(),
+  pais: z.string(),
+  provinciaEstado: z.string().optional(),
+  ciudad: z.string(),
+  zonaResidencia: z.string().optional(),
+  nivelEducacion: z.array(z.string()),
+  momentoProfesional: z.array(z.string()),
+  areasInteres: z.array(z.string()),
+  idiomas: z.array(
+    z.object({
+      idioma: z.string(),
+      nivel: z.string(),
+    }),
+  ),
+  disponibilidad: z.array(z.string()),
+  ubicacionTrabajo: z.string(),
+  objetivos: z.array(z.string()),
+  dispositivos: z.array(z.string()),
+  tipoConexion: z.string(),
+  locale: z.string().optional(),
+});
+
+export const onboardingAIResponseSchema = z.object({
+  success: z.boolean(),
+  usuarioId: z.string(),
+  orientacionId: z.string().optional(),
+  planAccionCount: z.number().optional(),
+  habilidadesCount: z.number().optional(),
+});
+
+export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
+export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
