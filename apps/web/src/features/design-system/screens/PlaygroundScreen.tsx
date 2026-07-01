@@ -21,6 +21,15 @@ import {
 } from "@/src/components";
 
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
+import {
+  HeroBanner,
+  RadarBanner,
+  SkillsGapCard,
+  ActionPlanCard,
+  WellbeingCard,
+  SkillsGapModal,
+  CheckinModal,
+} from '@/src/features/dashboard/components';
 
 import { useState } from 'react';
 
@@ -30,9 +39,19 @@ export default function PlaygroundScreen() {
   const t = useTranslations('Playground');
   const [key, setKey] = useState(0);
   const [selectedChip, setSelectedChip] = useState('react');
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
+  const [checkinMood, setCheckinMood] = useState<string>('');
+  const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
 
   return (
-    <AppShell>
+    <AppShell
+      onCheckinClick={() => {
+        setCheckinMood('');
+        setCheckinStartStep(1);
+        setCheckinModalOpen(true);
+      }}
+    >
       <div className='space-y-16'>
         <div className='space-y-4'>
           <H1>{t('title')}</H1>
@@ -287,6 +306,56 @@ export default function PlaygroundScreen() {
           <OnboardingModal>
             <AppButton>Abrir Onboarding</AppButton>
           </OnboardingModal>
+        </section>
+
+        {/* ====================================================== */}
+        {/* DASHBOARD CARDS */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>Dashboard Cards</H2>
+
+          <div className="space-y-4">
+            <HeroBanner />
+            <RadarBanner />
+            <ActionPlanCard />
+            <WellbeingCard
+              onEmojiClick={(moodId) => {
+                setCheckinMood(moodId);
+                setCheckinStartStep(2);
+                setCheckinModalOpen(true);
+              }}
+            />
+
+            <SkillsGapCard onVerDetalles={() => setSkillsModalOpen(true)} />
+            <AppButton onClick={() => setSkillsModalOpen(true)}>
+              Abrir SkillsGapModal
+            </AppButton>
+            <SkillsGapModal
+              open={skillsModalOpen}
+              onOpenChange={setSkillsModalOpen}
+            />
+
+            <AppButton onClick={() => {
+              setCheckinMood('');
+              setCheckinStartStep(1);
+              setCheckinModalOpen(true);
+            }}>
+              Abrir CheckinModal
+            </AppButton>
+            <CheckinModal
+              open={checkinModalOpen}
+              onOpenChange={(v) => {
+                setCheckinModalOpen(v);
+                if (!v) {
+                  setCheckinMood('');
+                  setCheckinStartStep(1);
+                }
+              }}
+              initialMood={checkinMood}
+              startAtStep={checkinStartStep}
+            />
+          </div>
         </section>
 
         {/* ====================================================== */}
