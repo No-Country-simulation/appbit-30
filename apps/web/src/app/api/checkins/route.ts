@@ -70,46 +70,52 @@ export async function POST(request: Request) {
             );
         }
 
+        const emojiEnum = emojiNormalized as EstadoCheckinEmojiEnum;
+
         const nota_diaria =
-            EMOJI_VALUES[emoji as keyof typeof EMOJI_VALUES];
+            EMOJI_VALUES[emojiEnum as keyof typeof EMOJI_VALUES];
 
         const result = await dbClient.$transaction(async (tx) => {
-                const usuario = await tx.usuarios.findUnique({
-                    where: { email: authUser.email },
+            const usuario = await tx.usuarios.findUnique({
+                where: { email: authUser.email },
+            });
+
+            if (!usuario) {
+                throw new Error('Usuario no encontrado');
+            }
+            console.log({
+                emoji,
+                emojiNormalized,
+                nota_diaria,
+            });
+            const checkin = await tx.checkIns.create({
+                data: {
+                    usuario_id: usuario.usuario_id,
+                    emoji: emojiEnum,
+                    nota_diaria,
+                },
+            });
+
+            if (motivos.length > 0) {
+                await tx.checkInMotivos.createMany({
+                    data: motivos.map((motivo: string) => ({
+                        checkin_id: checkin.checkin_id,
+                        motivo,
+                    })),
                 });
+            }
 
-                if (!usuario) {
-                    throw new Error('Usuario no encontrado');
-                }
-
-                const checkin = await tx.checkIns.create({
+            if (contexto) {
+                await tx.checkInContexto.create({
                     data: {
-                        usuario_id: usuario.usuario_id,
-                        emoji: emojiNormalized as EstadoCheckinEmojiEnum,
-                        nota_diaria,
+                        checkin_id: checkin.checkin_id,
+                        contexto,
                     },
                 });
+            }
 
-                if (motivos.length > 0) {
-                    await tx.checkInMotivos.createMany({
-                        data: motivos.map((motivo: string) => ({
-                            checkin_id: checkin.checkin_id,
-                            motivo,
-                        })),
-                    });
-                }
-
-                if (contexto) {
-                    await tx.checkInContexto.create({
-                        data: {
-                            checkin_id: checkin.checkin_id,
-                            contexto,
-                        },
-                    });
-                }
-
-                return checkin;
-            });
+            return checkin;
+        });
 
         return NextResponse.json({
             success: true,
