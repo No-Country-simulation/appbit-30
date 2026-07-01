@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
 import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
-import { IdiomaAppEnum } from '../../../server/generated/prisma';
+import {
+  IdiomaAppEnum,
+  EstadoHabilidadEnum,
+} from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
 const NIVEL_IDIOMA_MAP = {
@@ -12,6 +15,18 @@ const NIVEL_IDIOMA_MAP = {
   B2: 'B2_Avanzado' as NivelIdiomaEnum,
   C1: 'C1_Fluido' as NivelIdiomaEnum,
 } satisfies Record<string, NivelIdiomaEnum>;
+
+const HABILIDAD_TECNICA_TO_CATALOG_NAME: Record<string, string> = {
+  React_Frontend: 'React',
+  Python: 'Python',
+  Java_CSharp: 'Java',
+  SQL_Bases_Datos: 'SQL',
+  Node_Backend: 'Node.js',
+  Excel_Avanzado: 'Excel',
+  PowerBI_Tableau: 'PowerBI',
+  AWS_Cloud: 'AWS',
+  Figma_Diseno_UX: 'Figma',
+};
 
 function getAuthDisplayName(authUser: {
   email?: string | null;
@@ -226,6 +241,46 @@ export async function POST(request: Request) {
         },
       });
 
+      const habilidadesCatalogo = await tx.habilidadesMercado.findMany({
+        where: {
+          area_principal: {
+            in: data.areasInteres,
+          },
+        },
+        select: {
+          habilidad_id: true,
+          nombre: true,
+        },
+      });
+
+      await tx.usuarioHabilidades.deleteMany({
+        where: {
+          usuario_id: usuarioId,
+        },
+      });
+
+      if (habilidadesCatalogo.length > 0) {
+        const selectedSkillNames = new Set(
+          data.habilidadesTecnicas
+            .map((skill) => HABILIDAD_TECNICA_TO_CATALOG_NAME[skill])
+            .filter(Boolean),
+        );
+
+        await tx.usuarioHabilidades.createMany({
+          data: habilidadesCatalogo.map((habilidad) => ({
+            usuario_id: usuarioId,
+            habilidad_id: habilidad.habilidad_id,
+            estado:
+              data.nivelExperienciaTecnologia === 'Desde_cero'
+                ? EstadoHabilidadEnum.Faltante
+                : selectedSkillNames.has(habilidad.nombre)
+                  ? EstadoHabilidadEnum.Adquirida
+                  : EstadoHabilidadEnum.Faltante,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
       await tx.usuarioObjetivos.deleteMany({
         where: { usuario_id: usuarioId },
       });
@@ -279,6 +334,12 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             usuarioId: result.usuarioId,
             ...data,
+            nivel_inicial:
+              data.nivelExperienciaTecnologia === 'Desde_cero'
+                ? 'sin_conocimiento'
+                : 'con_conocimientos_previos',
+            gap_inicial:
+              data.nivelExperienciaTecnologia === 'Desde_cero' ? 100 : null,
           }),
           signal: AbortSignal.timeout(10000),
         });

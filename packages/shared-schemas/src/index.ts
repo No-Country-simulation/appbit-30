@@ -144,6 +144,45 @@ export const onboardingStep2Schema = z
 
 export const onboardingStep3Schema = z
   .object({
+    nivelExperienciaTecnologia: z.enum([
+      'Desde_cero',
+      'Con_conocimientos_previos',
+    ] as const),
+
+    habilidadesTecnicas: z
+      .array(
+        z.enum([
+          'React_Frontend',
+          'Python',
+          'Java_CSharp',
+          'SQL_Bases_Datos',
+          'Node_Backend',
+          'Excel_Avanzado',
+          'PowerBI_Tableau',
+          'AWS_Cloud',
+          'Figma_Diseno_UX',
+        ] as const),
+      )
+      .default([]),
+
+    habilidadesBlandas: z
+      .array(
+        z.enum([
+          'Comunicacion_Asertiva',
+          'Trabajo_Equipo',
+          'Liderazgo',
+          'Gestion_Tiempo',
+          'Resolucion_Problemas',
+          'Pensamiento_Critico',
+          'Adaptabilidad',
+        ] as const),
+      )
+      .default([]),
+  })
+  .strip();
+
+export const onboardingStep4Schema = z
+  .object({
     objetivos: z
       .array(
         z.enum([
@@ -183,18 +222,38 @@ export const onboardingSchema = z
     ...onboardingStep1Schema.shape,
     ...onboardingStep2Schema.shape,
     ...onboardingStep3Schema.shape,
+    ...onboardingStep4Schema.shape,
   })
-  .refine(
-    (data) => {
-      if (
-        (data.whatsappCodigo && !data.whatsappNumero) ||
-        (!data.whatsappCodigo && data.whatsappNumero)
-      )
-        return false;
-      return true;
-    },
-    { message: 'whatsappCodigo y whatsappNumero deben completarse juntos' },
-  );
+  .superRefine((data, ctx) => {
+    if (
+      (data.whatsappCodigo && !data.whatsappNumero) ||
+      (!data.whatsappCodigo && data.whatsappNumero)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['whatsappNumero'],
+        message: 'whatsappCodigo y whatsappNumero deben completarse juntos',
+      });
+    }
+
+    if (data.nivelExperienciaTecnologia === 'Con_conocimientos_previos') {
+      if (data.habilidadesTecnicas.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['habilidadesTecnicas'],
+          message: 'Seleccioná al menos una habilidad técnica',
+        });
+      }
+
+      if (data.habilidadesBlandas.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['habilidadesBlandas'],
+          message: 'Seleccioná al menos una habilidad blanda',
+        });
+      }
+    }
+  });
 
 export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 
