@@ -170,6 +170,8 @@
     "whatsappOptional": "(Opcional · Para notificações de entrevistas)",
     "whatsappPlaceholder": "11 9 1234 5678",
     "whatsappInfo": "Só escrevemos quando há novidades importantes das suas candidaturas.",
+    "whatsappPairError": "Se você adicionar WhatsApp, preencha o código de país e o número.",
+    "whatsappClearButton": "Limpar",
     "fieldRequired": "Este campo é obrigatório",
     "generoPlaceholderSelect": "Selecionar...",
     "paisPlaceholderSelect": "Selecionar..."

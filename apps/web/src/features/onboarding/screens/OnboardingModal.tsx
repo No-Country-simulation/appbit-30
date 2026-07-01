@@ -152,12 +152,6 @@ export function OnboardingModal({
     setFormData((prev) => ({
       ...prev,
       nivelExperienciaTecnologia: value,
-      ...(value === SIN_CONOCIMIENTO
-        ? {
-            habilidadesTecnicas: [],
-            habilidadesBlandas: [],
-          }
-        : {}),
     }));
 
     setShowErrors(false);
@@ -220,9 +214,33 @@ export function OnboardingModal({
       );
     }
 
+    const isWhatsappValid =
+      (!d.whatsappCodigo && !d.whatsappNumero) ||
+      (!!d.whatsappCodigo && !!d.whatsappNumero);
+
     return (
-      d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
+      d.objetivos.length > 0 &&
+      d.dispositivos.length > 0 &&
+      !!d.tipoConexion &&
+      isWhatsappValid
     );
+  }
+
+  function hasPartialWhatsapp() {
+    return (
+      (!!formData.whatsappCodigo && !formData.whatsappNumero) ||
+      (!formData.whatsappCodigo && !!formData.whatsappNumero)
+    );
+  }
+
+  function clearWhatsapp() {
+    setFormData((prev) => ({
+      ...prev,
+      whatsappCodigo: '',
+      whatsappNumero: '',
+    }));
+
+    setShowErrors(false);
   }
 
   function handleNext() {
@@ -260,6 +278,14 @@ export function OnboardingModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        habilidadesTecnicas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesTecnicas,
+        habilidadesBlandas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesBlandas,
         locale,
       }),
     })
@@ -964,6 +990,15 @@ export function OnboardingModal({
                       {t('whatsappOptional')}
                     </span>
                   </Body>
+                  {(formData.whatsappCodigo || formData.whatsappNumero) && (
+                    <button
+                      type='button'
+                      onClick={clearWhatsapp}
+                      className='font-body text-xs font-semibold text-[var(--color-primary)] hover:underline'
+                    >
+                      {t('whatsappClearButton')}
+                    </button>
+                  )}
                   <div className='mt-2 flex gap-2'>
                     <div className='w-1/3'>
                       <CountryCodeSelect
@@ -994,12 +1029,20 @@ export function OnboardingModal({
                       />
                     </div>
                   </div>
-                  <div className='mt-3 flex items-center gap-1.5 mb-6'>
+                  <div className='mt-3 flex items-center gap-1.5 mb-4'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>
                       {t('whatsappInfo')}
                     </Caption>
                   </div>
+                  {showErrors && hasPartialWhatsapp() && (
+                    <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
+                      <AlertCircleIcon className='size-4 shrink-0' />
+                      <Caption className='text-[var(--color-danger)]'>
+                        {t('whatsappPairError')}
+                      </Caption>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
