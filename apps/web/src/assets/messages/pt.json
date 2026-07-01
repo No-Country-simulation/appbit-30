@@ -173,5 +173,11 @@
     "checkEmailDescription": "Enviamos um link de acesso para {email}. Abra o link para continuar.",
     "useAnotherEmail": "Usar outro e-mail",
     "termsSentence": "Ao continuar, você aceita nossos Termos e Política de Privacidade."
+  },
+  "Error": {
+    "title": "Serviço temporariamente indisponível",
+    "description": "Não conseguimos verificar sua sessão neste momento. Pode ser um problema temporário de conexão ou do serviço.",
+    "retry": "Tentar novamente",
+    "goToLogin": "Ir para o login"
   }
 }
