@@ -37,7 +37,7 @@
     "hoverCard": "Card com hover",
     "playAnimation": "Reproduzir animação",
     "fadeInUp": "Fade In Up",
-    "onlyPhone": "Apenas celular",
+    "onlyPhone": "Celular",
     "pcOrLaptop": "PC / Laptop",
     "tablet": "Tablet"
   },
@@ -132,7 +132,7 @@
     "objetivosOption8": "Empreender",
     "dispositivosLabel": "Qual dispositivo você usa para estudar?",
     "dispositivosHint": "(Todos os que usa)",
-    "dispositivosOption1": "Apenas celular",
+    "dispositivosOption1": "Celular",
     "dispositivosOption2": "PC / Laptop",
     "dispositivosOption3": "Tablet",
     "tipoConexionLabel": "Tipo de conexão em casa",
