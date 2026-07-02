@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/src/i18n/navigation';
 import {
@@ -75,6 +75,36 @@ const INITIAL_FORM_DATA: FormData = {
   whatsappNumero: '',
 };
 
+const STORAGE_KEY = 'onboarding_form_data';
+const STORAGE_KEY_STEP = 'onboarding_step';
+
+const FORM_DATA_KEYS: (keyof FormData)[] = [
+  'fechaNacimiento', 'genero', 'pais', 'provinciaEstado', 'ciudad', 'zonaResidencia',
+  'nivelEducacion', 'momentoProfesional', 'areasInteres', 'idiomas',
+  'disponibilidad', 'ubicacionTrabajo', 'objetivos', 'dispositivos',
+  'tipoConexion', 'whatsappCodigo', 'whatsappNumero',
+];
+
+function getStoredFormData(): FormData {
+  if (typeof window === 'undefined') return INITIAL_FORM_DATA;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return INITIAL_FORM_DATA;
+    const parsed = JSON.parse(raw);
+    const valid = FORM_DATA_KEYS.every((key) => key in parsed);
+    if (!valid) return INITIAL_FORM_DATA;
+    return parsed as FormData;
+  } catch {
+    return INITIAL_FORM_DATA;
+  }
+}
+
+function clearStorage() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_STEP);
+}
+
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox='0 0 24 24' fill='currentColor'>
@@ -100,7 +130,16 @@ export function OnboardingModal({
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
   const [open, setOpen] = useState(defaultOpen);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window === 'undefined') return 1 as Step;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_STEP);
+      const n = Number(saved);
+      return (n >= 1 && n <= 3 ? n : 1) as Step;
+    } catch {
+      return 1 as Step;
+    }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectOpenRef = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -113,9 +152,17 @@ export function OnboardingModal({
     }
   }, []);
 
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>(getStoredFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_STEP, String(step));
+  }, [step]);
 
   function toggleArray(
     field: keyof Pick<
@@ -249,6 +296,7 @@ export function OnboardingModal({
   function resetForm() {
     setStep(1);
     setFormData(INITIAL_FORM_DATA);
+    clearStorage();
     setShowErrors(false);
     setIsLoading(false);
     setSubmitError(null);
