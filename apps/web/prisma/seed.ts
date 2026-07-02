@@ -54,6 +54,7 @@ async function main() {
   > & {
     nivelesEducacion: NivelEducacionEnum[];
     momentosProfesionales: MomentoProfesionalEnum[];
+    tipo_conexiones: TipoConexionEnum[];
   };
 
   const usuariosData: UsuarioSeed[] = [
@@ -68,7 +69,7 @@ async function main() {
       zona_residencia: 'Nueva Córdoba',
       nivelesEducacion: [NivelEducacionEnum.Universitario_incompleto],
       momentosProfesionales: [MomentoProfesionalEnum.En_busqueda_activa],
-      tipo_conexion: TipoConexionEnum.Datos_moviles,
+      tipo_conexiones: [TipoConexionEnum.Datos_moviles],
       whatsapp_codigo: '+54',
       whatsapp_numero: '3511234567',
       idioma_app: IdiomaAppEnum.es,
@@ -89,7 +90,7 @@ async function main() {
       zona_residencia: 'Pocitos',
       nivelesEducacion: [NivelEducacionEnum.Diplomatura],
       momentosProfesionales: [MomentoProfesionalEnum.Emprendedor_a],
-      tipo_conexion: TipoConexionEnum.Banda_ancha_estable,
+      tipo_conexiones: [TipoConexionEnum.Banda_ancha_estable],
       whatsapp_codigo: '+598',
       whatsapp_numero: '91234567',
       idioma_app: IdiomaAppEnum.es,
@@ -110,7 +111,7 @@ async function main() {
       zona_residencia: 'Escazú',
       nivelesEducacion: [NivelEducacionEnum.Universitario_completo],
       momentosProfesionales: [MomentoProfesionalEnum.Trabajando_cambiar],
-      tipo_conexion: TipoConexionEnum.Conexion_inestable,
+      tipo_conexiones: [TipoConexionEnum.Conexion_inestable],
       whatsapp_codigo: '+506',
       whatsapp_numero: '98765432',
       idioma_app: IdiomaAppEnum.es,
@@ -131,7 +132,7 @@ async function main() {
       zona_residencia: 'Salamanca',
       nivelesEducacion: [NivelEducacionEnum.Maestria],
       momentosProfesionales: [MomentoProfesionalEnum.Freelancer],
-      tipo_conexion: TipoConexionEnum.Banda_ancha_estable,
+      tipo_conexiones: [TipoConexionEnum.Banda_ancha_estable],
       whatsapp_codigo: '+34',
       whatsapp_numero: '612345678',
       idioma_app: IdiomaAppEnum.es,
@@ -152,7 +153,7 @@ async function main() {
       zona_residencia: 'Punta Pacífica',
       nivelesEducacion: [NivelEducacionEnum.Licenciatura],
       momentosProfesionales: [MomentoProfesionalEnum.En_busqueda_activa],
-      tipo_conexion: TipoConexionEnum.Datos_moviles,
+      tipo_conexiones: [TipoConexionEnum.Datos_moviles],
       whatsapp_codigo: '+507',
       whatsapp_numero: '67891234',
       idioma_app: IdiomaAppEnum.es,
@@ -165,7 +166,7 @@ async function main() {
   ];
 
   for (const data of usuariosData) {
-    const { nivelesEducacion, momentosProfesionales, ...usuarioData } = data;
+    const { nivelesEducacion, momentosProfesionales, tipo_conexiones, ...usuarioData } = data;
 
     const usuario = await prisma.usuarios.upsert({
       where: {
@@ -206,6 +207,22 @@ async function main() {
         create: {
           usuario_id: usuario.usuario_id,
           momento_profesional: momento,
+        },
+      });
+    }
+
+    for (const tipoConexion of tipo_conexiones) {
+      await prisma.usuarioTipoConexion.upsert({
+        where: {
+          usuario_id_tipo_conexion: {
+            usuario_id: usuario.usuario_id,
+            tipo_conexion: tipoConexion,
+          },
+        },
+        update: {},
+        create: {
+          usuario_id: usuario.usuario_id,
+          tipo_conexion: tipoConexion,
         },
       });
     }

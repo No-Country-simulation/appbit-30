@@ -116,7 +116,6 @@ export async function POST(request: Request) {
         provincia_estado: data.provinciaEstado ?? null,
         ciudad: data.ciudad,
         zona_residencia: data.zonaResidencia ?? null,
-        tipo_conexion: data.tipoConexion,
         whatsapp_codigo: data.whatsappCodigo ?? null,
         whatsapp_numero: data.whatsappNumero ?? null,
         idioma_app: idiomaApp,
@@ -250,6 +249,19 @@ export async function POST(request: Request) {
           data: data.dispositivos.map((dispositivo) => ({
             usuario_id: usuarioId,
             dispositivo,
+          })),
+        });
+      }
+
+      await tx.usuarioTipoConexion.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
+
+      if (data.tipoConexion.length > 0) {
+        await tx.usuarioTipoConexion.createMany({
+          data: data.tipoConexion.map((tipo) => ({
+            usuario_id: usuarioId,
+            tipo_conexion: tipo,
           })),
         });
       }

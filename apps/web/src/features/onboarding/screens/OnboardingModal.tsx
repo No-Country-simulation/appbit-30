@@ -49,7 +49,7 @@ interface FormData {
   ubicacionTrabajo: string[];
   objetivos: string[];
   dispositivos: string[];
-  tipoConexion: string;
+  tipoConexion: string[];
   whatsappCodigo: string;
   whatsappNumero: string;
 }
@@ -69,7 +69,7 @@ const INITIAL_FORM_DATA: FormData = {
   ubicacionTrabajo: [],
   objetivos: [],
   dispositivos: [],
-  tipoConexion: '',
+  tipoConexion: [],
   whatsappCodigo: '',
   whatsappNumero: '',
 };
@@ -126,6 +126,7 @@ export function OnboardingModal({
       | 'objetivos'
       | 'dispositivos'
       | 'ubicacionTrabajo'
+      | 'tipoConexion'
     >,
     value: string,
   ) {
@@ -181,7 +182,7 @@ export function OnboardingModal({
       );
     }
     return (
-      d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
+      d.objetivos.length > 0 && d.dispositivos.length > 0 && d.tipoConexion.length > 0
     );
   }
 
@@ -763,19 +764,15 @@ export function OnboardingModal({
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.tipoConexion === opt.value}
+                        selected={formData.tipoConexion.includes(opt.value)}
                         onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            tipoConexion:
-                              prev.tipoConexion === opt.value ? '' : opt.value,
-                          }));
+                          toggleArray('tipoConexion', opt.value);
                           setShowErrors(false);
                         }}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.tipoConexion} />
+                  <FieldError show={showErrors && formData.tipoConexion.length === 0} />
                 </div>
 
                 <div>

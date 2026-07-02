@@ -163,12 +163,14 @@ export const onboardingStep3Schema = z
     dispositivos: z
       .array(z.enum(['Solo_celular', 'PC_Laptop', 'Tablet'] as const))
       .min(1, { message: 'Seleccioná al menos un dispositivo' }),
-    tipoConexion: z.enum([
-      'Banda_ancha_estable',
-      'Datos_moviles',
-      'Conexion_inestable',
-      'Sin_conexion_casa',
-    ] as const),
+    tipoConexion: z
+      .array(z.enum([
+        'Banda_ancha_estable',
+        'Datos_moviles',
+        'Conexion_inestable',
+        'Sin_conexion_casa',
+      ] as const))
+      .min(1, { message: 'Seleccioná al menos un tipo de conexión' }),
     whatsappCodigo: z
       .string()
       .regex(/^\+\d{1,4}$/, 'Código de país inválido (ej: +54)')
