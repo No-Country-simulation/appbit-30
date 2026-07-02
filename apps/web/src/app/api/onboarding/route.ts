@@ -11,6 +11,8 @@ const NIVEL_IDIOMA_MAP = {
   B1: 'B1_Intermedio' as NivelIdiomaEnum,
   B2: 'B2_Avanzado' as NivelIdiomaEnum,
   C1: 'C1_Fluido' as NivelIdiomaEnum,
+  C2: 'C2_Profesional' as NivelIdiomaEnum,
+  Nativo: 'Nativo' as NivelIdiomaEnum,
 } satisfies Record<string, NivelIdiomaEnum>;
 
 function getAuthDisplayName(authUser: {
@@ -322,3 +324,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

@@ -129,7 +129,7 @@ export const onboardingStep2Schema = z
             'Portugues',
             'Frances',
           ] as const),
-          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
+          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Nativo'] as const),
         }),
       )
       .min(1, { message: 'Seleccioná al menos un idioma' }),
@@ -384,3 +384,4 @@ export const postulacionRequestSchema = z.object({
 });
 
 export type PostulacionRequest = z.infer<typeof postulacionRequestSchema>;
+

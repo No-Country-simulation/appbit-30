@@ -65,6 +65,8 @@ enum NivelIdiomaEnum {
   B1_Intermedio @map("B1 (Intermedio)")
   B2_Avanzado @map("B2 (Avanzado)")
   C1_Fluido @map("C1 (Fluido)")
+  C2_Profesional @map("C2 (Profesional)")
+  Nativo
 }
 
 enum DisponibilidadEnum {
@@ -838,3 +840,4 @@ model OrigenDestino {
   @@index([cluster_destino], map: "idx_od_destino")
   @@map("origen_destino")
 }
+
