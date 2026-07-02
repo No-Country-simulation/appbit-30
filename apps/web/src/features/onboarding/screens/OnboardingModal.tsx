@@ -46,7 +46,7 @@ interface FormData {
   areasInteres: string[];
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
-  ubicacionTrabajo: string;
+  ubicacionTrabajo: string[];
   objetivos: string[];
   dispositivos: string[];
   tipoConexion: string;
@@ -66,7 +66,7 @@ const INITIAL_FORM_DATA: FormData = {
   areasInteres: [],
   idiomas: [],
   disponibilidad: [],
-  ubicacionTrabajo: '',
+  ubicacionTrabajo: [],
   objetivos: [],
   dispositivos: [],
   tipoConexion: '',
@@ -125,6 +125,7 @@ export function OnboardingModal({
       | 'disponibilidad'
       | 'objetivos'
       | 'dispositivos'
+      | 'ubicacionTrabajo'
     >,
     value: string,
   ) {
@@ -176,7 +177,7 @@ export function OnboardingModal({
         d.areasInteres.length > 0 &&
         d.idiomas.some((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
-        !!d.ubicacionTrabajo
+        d.ubicacionTrabajo.length > 0
       );
     }
     return (
@@ -698,21 +699,12 @@ export function OnboardingModal({
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.ubicacionTrabajo === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            ubicacionTrabajo:
-                              prev.ubicacionTrabajo === opt.value
-                                ? ''
-                                : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.ubicacionTrabajo.includes(opt.value)}
+                        onClick={() => toggleArray('ubicacionTrabajo', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.ubicacionTrabajo} />
+                  <FieldError show={showErrors && formData.ubicacionTrabajo.length === 0} />
                 </div>
               </div>
             )}

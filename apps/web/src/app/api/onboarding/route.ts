@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
-import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
+import type { NivelIdiomaEnum, UbicacionTrabajoEnum } from '../../../server/generated/prisma';
 import { IdiomaAppEnum } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
@@ -219,12 +219,14 @@ export async function POST(request: Request) {
         where: { usuario_id: usuarioId },
       });
 
-      await tx.usuarioUbicacionTrabajo.create({
-        data: {
-          usuario_id: usuarioId,
-          ubicacion: data.ubicacionTrabajo,
-        },
-      });
+      if (data.ubicacionTrabajo.length > 0) {
+        await tx.usuarioUbicacionTrabajo.createMany({
+          data: data.ubicacionTrabajo.map((ubicacion) => ({
+            usuario_id: usuarioId,
+            ubicacion: ubicacion as UbicacionTrabajoEnum,
+          })),
+        });
+      }
 
       await tx.usuarioObjetivos.deleteMany({
         where: { usuario_id: usuarioId },

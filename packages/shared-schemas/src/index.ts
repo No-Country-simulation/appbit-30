@@ -138,7 +138,9 @@ export const onboardingStep2Schema = z
         z.enum(['Part_time', 'Full_time', 'Contractor', 'Freelance'] as const),
       )
       .min(1, { message: 'Seleccioná al menos una disponibilidad' }),
-    ubicacionTrabajo: z.enum(['Presencial', 'Hibrido', 'Remoto'] as const),
+    ubicacionTrabajo: z
+      .array(z.enum(['Presencial', 'Hibrido', 'Remoto'] as const))
+      .min(1, { message: 'Seleccioná al menos una modalidad' }),
   })
   .strip();
 
