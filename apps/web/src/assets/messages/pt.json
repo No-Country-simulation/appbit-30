@@ -145,6 +145,7 @@
     "whatsappOptional": "(Opcional · Para notificações de entrevistas)",
     "whatsappPlaceholder": "11 9 1234 5678",
     "whatsappInfo": "Só escrevemos quando há novidades importantes das suas candidaturas.",
+    "phoneFormatHint": "Formato esperado: {hint}",
     "fieldRequired": "Este campo é obrigatório",
     "generoPlaceholderSelect": "Selecionar...",
     "paisPlaceholderSelect": "Selecionar..."

@@ -182,23 +182,61 @@ export const onboardingStep3Schema = z
   })
   .strip();
 
+const PHONE_LENGTH_MAP: Record<string, number> = {
+  '+54': 10,
+  '+55': 11,
+  '+56': 9,
+  '+57': 10,
+  '+52': 10,
+  '+51': 9,
+  '+598': 8,
+  '+595': 9,
+  '+591': 8,
+  '+593': 9,
+  '+58': 10,
+  '+53': 8,
+  '+1': 10,
+  '+502': 8,
+  '+504': 8,
+  '+503': 8,
+  '+505': 8,
+  '+506': 8,
+  '+507': 8,
+  '+34': 9,
+  '+44': 10,
+  '+351': 9,
+};
+
 export const onboardingSchema = z
   .object({
     ...onboardingStep1Schema.shape,
     ...onboardingStep2Schema.shape,
     ...onboardingStep3Schema.shape,
   })
-  .refine(
-    (data) => {
-      if (
-        (data.whatsappCodigo && !data.whatsappNumero) ||
-        (!data.whatsappCodigo && data.whatsappNumero)
-      )
-        return false;
-      return true;
-    },
-    { message: 'whatsappCodigo y whatsappNumero deben completarse juntos' },
-  );
+  .superRefine((data, ctx) => {
+    const hasCode = !!data.whatsappCodigo;
+    const hasNum = !!data.whatsappNumero;
+
+    if (hasCode !== hasNum) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'whatsappCodigo y whatsappNumero deben completarse juntos',
+        path: ['whatsappNumero'],
+      });
+      return;
+    }
+
+    if (hasCode && data.whatsappCodigo && data.whatsappNumero) {
+      const expectedLen = PHONE_LENGTH_MAP[data.whatsappCodigo];
+      if (expectedLen && data.whatsappNumero.length !== expectedLen) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `El número debe tener ${expectedLen} dígitos para ${data.whatsappCodigo}`,
+          path: ['whatsappNumero'],
+        });
+      }
+    }
+  });
 
 export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 

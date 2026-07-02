@@ -145,6 +145,7 @@
     "whatsappOptional": "(Opcional · Para notificaciones de entrevistas)",
     "whatsappPlaceholder": "9 11 2345-6789",
     "whatsappInfo": "Solo te escribimos cuando hay novedades importantes de tus postulaciones.",
+    "phoneFormatHint": "Formato esperado: {hint}",
     "fieldRequired": "Este campo es obligatorio",
     "generoPlaceholderSelect": "Seleccionar...",
     "paisPlaceholderSelect": "Seleccionar..."

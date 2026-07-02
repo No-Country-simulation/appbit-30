@@ -23,6 +23,8 @@ import {
   AppInput,
   ChoiceChip,
   CountryCodeSelect,
+  formatPhoneNumber,
+  countries,
   StepIndicator,
 } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
@@ -32,7 +34,6 @@ import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
 const SELECT_TRIGGER_CLASSES =
   'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
-const NUMBERS_ONLY_REGEX = /^\d*$/;
 
 interface FormData {
   fechaNacimiento: string;
@@ -799,19 +800,43 @@ export function OnboardingModal({
                       />
                     </div>
                     <div className='w-2/3'>
-                      <AppInput
-                        value={formData.whatsappNumero}
-                        onChange={(e) => {
-                          if (NUMBERS_ONLY_REGEX.test(e.target.value))
-                            setFormData((prev) => ({
-                              ...prev,
-                              whatsappNumero: e.target.value,
-                            }));
-                        }}
-                        placeholder={t('whatsappPlaceholder')}
-                      />
+                      {(() => {
+                        const country = countries.find(
+                          (c) => c.code === formData.whatsappCodigo,
+                        );
+                        const maxLen = country?.phoneLength ?? 15;
+                        const blocks = country?.phoneBlocks ?? [3, 3, 4];
+                        const hint = country?.phoneHint ?? '';
+
+                        return (
+                          <AppInput
+                            value={formatPhoneNumber(
+                              formData.whatsappNumero,
+                              blocks,
+                            )}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              if (raw.length <= maxLen)
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  whatsappNumero: raw,
+                                }));
+                            }}
+                            placeholder={hint}
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
+                  {formData.whatsappCodigo && (
+                    <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
+                      {t('phoneFormatHint', {
+                        hint: countries.find(
+                          (c) => c.code === formData.whatsappCodigo,
+                        )?.phoneHint ?? '',
+                      })}
+                    </Caption>
+                  )}
                   <div className='mt-3 flex items-center gap-1.5 mb-6'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>
