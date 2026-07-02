@@ -374,3 +374,13 @@ export const onboardingAIResponseSchema = z.object({
 
 export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
 export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
+
+// --- SCHEMAS PARA POSTULACIONES (FE-004) ---
+export const postulacionRequestSchema = z.object({
+  vacante_id: z.string().uuid(),
+  mensaje_motivacion: z.string().max(2000).optional(),
+  usar_cv_guardado: z.boolean().default(true),
+  cv_url: z.string().url().optional(),
+});
+
+export type PostulacionRequest = z.infer<typeof postulacionRequestSchema>;
