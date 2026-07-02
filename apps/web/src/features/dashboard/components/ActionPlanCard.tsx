@@ -15,39 +15,19 @@ export interface ActionItem {
 
 interface Props {
   items?: ActionItem[];
+  isLoading?: boolean;
 }
 
-export function ActionPlanCard({ items }: Props) {
+export function ActionPlanCard({ items = [], isLoading = false }: Props) {
   const t = useTranslations('Dashboard');
-
-  const defaultItems: ActionItem[] = [
-    {
-      title: 'SQL Avanzado',
-      priority: 'alta',
-      actionLabel: t('actionLabelIniciar'),
-      actionIcon: 'play',
-    },
-    {
-      title: 'PowerBI / Dashboards',
-      priority: 'media',
-      actionLabel: t('actionLabelVerTemario'),
-      actionIcon: 'book',
-    },
-    {
-      title: 'Python Fundamentals',
-      priority: 'completado',
-      actionLabel: t('actionLabelIniciar'),
-      actionIcon: 'play',
-      completed: true,
-    },
-  ];
-
-  const resolvedItems = items ?? defaultItems;
 
   const priorityStyles = {
     alta: { color: 'text-[var(--color-danger)]', label: t('altaPrioridad') },
     media: { color: 'text-[var(--color-warning)]', label: t('mediaPrioridad') },
-    completado: { color: 'text-[var(--color-success)]', label: t('completado') },
+    completado: {
+      color: 'text-[var(--color-success)]',
+      label: t('completado'),
+    },
   };
 
   return (
@@ -56,49 +36,75 @@ export function ActionPlanCard({ items }: Props) {
         {t('actionPlanTitle')}
       </h3>
 
-      <ul className='mt-4 flex flex-col'>
-        {resolvedItems.map((item, index) => {
-          const style = priorityStyles[item.priority];
-          return (
-            <li
-              key={item.title}
-              className={`flex items-center justify-between gap-4 py-4 ${
-                index < resolvedItems.length - 1
-                  ? 'border-b border-[var(--color-border)]'
-                  : ''
-              }`}
+      {isLoading ? (
+        <div className='mt-4 flex flex-col gap-4'>
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className='flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-4 last:border-b-0'
             >
-              <div className='flex flex-col gap-1'>
-                <div className='flex items-center gap-2'>
-                  <p className='text-sm font-bold text-[var(--color-text)]'>
-                    {item.title}
-                  </p>
-                  {item.completed && (
-                    <CheckCircleIcon className='size-4 text-[var(--color-success)]' />
-                  )}
-                </div>
-                <span className={`text-xs font-medium ${style.color}`}>
-                  {style.label}
-                </span>
+              <div className='flex flex-1 flex-col gap-2'>
+                <div className='h-4 w-32 animate-pulse rounded bg-[var(--color-border)]' />
+                <div className='h-3 w-20 animate-pulse rounded bg-[var(--color-border)]' />
               </div>
 
-              {!item.completed && (
-                <AppButton
-                  variant={item.actionIcon === 'play' ? 'primary' : 'outline'}
-                  className='shrink-0 !inline-flex !items-center !justify-center !gap-1.5 !min-w-[130px] !px-3 !py-1.5 text-xs'
-                >
-                  {item.actionIcon === 'play' ? (
-                    <PlayIcon className='shrink-0 size-3.5' />
-                  ) : (
-                    <BookOpenIcon className='shrink-0 size-3.5' />
-                  )}
-                  {item.actionLabel}
-                </AppButton>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+              <div className='h-8 w-28 animate-pulse rounded-[var(--radius-md)] bg-[var(--color-border)]' />
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <p className='mt-4 font-body text-sm leading-6 text-[var(--color-text-muted)]'>
+          {t('actionPlanEmpty')}
+        </p>
+      ) : (
+        <ul className='mt-4 flex flex-col'>
+          {items.map((item, index) => {
+            const style = priorityStyles[item.priority];
+
+            return (
+              <li
+                key={`${item.title}-${index}`}
+                className={`flex items-center justify-between gap-4 py-4 ${
+                  index < items.length - 1
+                    ? 'border-b border-[var(--color-border)]'
+                    : ''
+                }`}
+              >
+                <div className='flex flex-col gap-1'>
+                  <div className='flex items-center gap-2'>
+                    <p className='text-sm font-bold text-[var(--color-text)]'>
+                      {item.title}
+                    </p>
+
+                    {item.completed && (
+                      <CheckCircleIcon className='size-4 text-[var(--color-success)]' />
+                    )}
+                  </div>
+
+                  <span className={`text-xs font-medium ${style.color}`}>
+                    {style.label}
+                  </span>
+                </div>
+
+                {!item.completed && (
+                  <AppButton
+                    variant={item.actionIcon === 'play' ? 'primary' : 'outline'}
+                    className='shrink-0 !inline-flex !min-w-[130px] !items-center !justify-center !gap-1.5 !px-3 !py-1.5 text-xs'
+                  >
+                    {item.actionIcon === 'play' ? (
+                      <PlayIcon className='size-3.5 shrink-0' />
+                    ) : (
+                      <BookOpenIcon className='size-3.5 shrink-0' />
+                    )}
+
+                    {item.actionLabel}
+                  </AppButton>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </AppCard>
   );
 }

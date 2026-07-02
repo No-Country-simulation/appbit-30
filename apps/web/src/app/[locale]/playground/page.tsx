@@ -3,6 +3,8 @@ import { getCurrentUserState } from '@/src/server/auth/get-current-user-state';
 import PlaygroundScreen from '@/src/features/design-system/screens/PlaygroundScreen';
 import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavailable';
 
+export const dynamic = 'force-dynamic';
+
 type Props = {
   params: Promise<{
     locale: string;

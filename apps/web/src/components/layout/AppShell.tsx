@@ -1,43 +1,56 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
+
+interface PerfilBreakdown {
+  onboarding: boolean;
+  movilidad: boolean;
+  avatar: boolean;
+  ubicacion: boolean;
+  whatsapp: boolean;
+}
 
 interface Props {
   children: React.ReactNode;
   onCheckinClick?: () => void;
+  userName?: string;
+  avatarUrl?: string | null;
   profilePercent?: number;
-  perfilBreakdown?: {
-    onboarding: boolean;
-    movilidad: boolean;
-    avatar: boolean;
-    ubicacion: boolean;
-    whatsapp: boolean;
-  };
+  perfilBreakdown?: PerfilBreakdown;
 }
 
-export function AppShell({ children, onCheckinClick, profilePercent, perfilBreakdown }: Props) {
+export function AppShell({
+  children,
+  onCheckinClick,
+  userName,
+  avatarUrl,
+  profilePercent,
+  perfilBreakdown,
+}: Props) {
+  const t = useTranslations('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className='min-h-screen bg-[var(--color-body)]'>
       <div className='flex min-h-screen'>
         <div className='hidden lg:block'>
-          <AppSidebar />
+          <AppSidebar userName={userName} avatarUrl={avatarUrl} />
         </div>
 
         {isSidebarOpen && (
           <div className='fixed inset-0 z-50 lg:hidden'>
             <button
               type='button'
-              aria-label='Cerrar menú'
+              aria-label={t('closeMenu')}
               className='absolute inset-0 bg-black/40'
               onClick={() => setIsSidebarOpen(false)}
             />
 
             <div className='relative h-full w-[var(--sidebar-width)] max-w-[85vw]'>
-              <AppSidebar />
+              <AppSidebar userName={userName} avatarUrl={avatarUrl} />
             </div>
           </div>
         )}

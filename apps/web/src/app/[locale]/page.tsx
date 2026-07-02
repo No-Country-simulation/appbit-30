@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getAuthRedirectPath } from '@/src/server/auth/get-auth-redirect-path';
 import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavailable';
 
+export const dynamic = 'force-dynamic';
+
 type Props = {
   params: Promise<{
     locale: string;

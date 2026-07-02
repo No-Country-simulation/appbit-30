@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -24,7 +24,10 @@ const moods = [
   { id: 'genial', key: 'moodGenial', emoji: '😄' },
 ];
 
-const motivosPorMood: Record<string, { id: string; key: string; emoji: string }[]> = {
+const motivosPorMood: Record<
+  string,
+  { id: string; key: string; emoji: string }[]
+> = {
   agotado: [
     { id: 'sobrecarga', key: 'motivoAgotado1', emoji: '😰' },
     { id: 'sin-tiempo', key: 'motivoAgotado2', emoji: '⏰' },
@@ -71,23 +74,17 @@ export function CheckinModal({
   onComplete,
 }: Props) {
   const t = useTranslations('Dashboard');
-  const [step, setStep] = useState<1 | 2 | 3>(
-    startAtStep ?? (initialMood ? 2 : 1),
-  );
-  const [selectedMood, setSelectedMood] = useState<string>(
-    initialMood ?? '',
-  );
+  const initialStep = startAtStep ?? (initialMood ? 2 : 1);
+  const [step, setStep] = useState<1 | 2 | 3>(initialStep);
+  const [selectedMood, setSelectedMood] = useState<string>(initialMood ?? '');
   const [selectedMotivos, setSelectedMotivos] = useState<string[]>([]);
-  const [contexto, setContexto] = useState('');
+  const [contexto, setContexto] = useState<string>('');
 
-  useEffect(() => {
-    if (open) {
-      setStep(startAtStep ?? (initialMood ? 2 : 1));
-      setSelectedMood(initialMood ?? '');
-      setSelectedMotivos([]);
-      setContexto('');
-    }
-  }, [open, initialMood, startAtStep]);
+  const stepLabels = [
+    t('checkinStepEstado'),
+    t('checkinStepMotivo'),
+    t('checkinStepContexto'),
+  ];
 
   function handleNext() {
     if (step === 1 && selectedMood) setStep(2);
@@ -127,20 +124,24 @@ export function CheckinModal({
     onOpenChange(v);
   }
 
-  const currentMotivos = selectedMood ? motivosPorMood[selectedMood] ?? [] : [];
+  const currentMotivos = selectedMood
+    ? (motivosPorMood[selectedMood] ?? [])
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <DialogTitle>{t('checkinTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('checkinDesc')}
-          </DialogDescription>
+          <DialogDescription>{t('checkinDesc')}</DialogDescription>
         </DialogHeader>
 
         <div className='flex flex-col gap-6 py-4'>
-          <StepIndicator currentStep={step} totalSteps={3} />
+          <StepIndicator
+            currentStep={step}
+            totalSteps={3}
+            labels={stepLabels}
+          />
 
           {step === 1 && (
             <div className='flex justify-between px-2'>

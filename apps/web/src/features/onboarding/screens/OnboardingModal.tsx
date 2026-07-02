@@ -93,7 +93,12 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ['Personales', 'Educación', 'Skills', 'Objetivos'];
+const STEP_LABEL_KEYS = [
+  'stepLabelPersonales',
+  'stepLabelEducacion',
+  'stepLabelSkills',
+  'stepLabelObjetivos',
+] as const;
 
 interface OnboardingModalProps {
   children?: React.ReactNode;
@@ -107,6 +112,7 @@ export function OnboardingModal({
   locked = false,
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
+  const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
   const [step, setStep] = useState<Step>(1);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -290,10 +296,8 @@ export function OnboardingModal({
       }),
     })
       .then(async (res) => {
-        const json = await res.json();
-
         if (!res.ok) {
-          throw new Error(json.message || 'Error al completar onboarding');
+          throw new Error(t('submitError'));
         }
 
         setOpen(false);
@@ -489,7 +493,7 @@ export function OnboardingModal({
             <StepIndicator
               currentStep={step}
               totalSteps={4}
-              labels={STEP_LABELS}
+              labels={stepLabels}
             />
           </div>
 
@@ -1035,7 +1039,7 @@ export function OnboardingModal({
                       {t('whatsappInfo')}
                     </Caption>
                   </div>
-                  {showErrors && hasPartialWhatsapp() && (
+                  {hasPartialWhatsapp() && (
                     <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
                       <AlertCircleIcon className='size-4 shrink-0' />
                       <Caption className='text-[var(--color-danger)]'>
@@ -1062,9 +1066,11 @@ export function OnboardingModal({
               </AppButton>
             )}
             {submitError && (
-              <div className='flex items-center gap-1.5 mt-2 text-[var(--color-error)]'>
+              <div className='mt-2 flex items-center gap-1.5 text-[var(--color-danger)]'>
                 <AlertCircleIcon className='size-4 shrink-0' />
-                <Caption>{submitError}</Caption>
+                <Caption className='text-[var(--color-danger)]'>
+                  {submitError}
+                </Caption>
               </div>
             )}
           </DialogFooter>
