@@ -14,6 +14,8 @@ const NIVEL_IDIOMA_MAP = {
   B1: 'B1_Intermedio' as NivelIdiomaEnum,
   B2: 'B2_Avanzado' as NivelIdiomaEnum,
   C1: 'C1_Fluido' as NivelIdiomaEnum,
+  C2: 'C2_Profesional' as NivelIdiomaEnum,
+  Nativo: 'Nativo' as NivelIdiomaEnum,
 } satisfies Record<string, NivelIdiomaEnum>;
 
 const HABILIDAD_TECNICA_TO_CATALOG_NAME: Record<string, string> = {
@@ -131,7 +133,6 @@ export async function POST(request: Request) {
         provincia_estado: data.provinciaEstado ?? null,
         ciudad: data.ciudad,
         zona_residencia: data.zonaResidencia ?? null,
-        tipo_conexion: data.tipoConexion,
         whatsapp_codigo: data.whatsappCodigo ?? null,
         whatsapp_numero: data.whatsappNumero ?? null,
         idioma_app: idiomaApp,
@@ -234,12 +235,14 @@ export async function POST(request: Request) {
         where: { usuario_id: usuarioId },
       });
 
-      await tx.usuarioUbicacionTrabajo.create({
-        data: {
-          usuario_id: usuarioId,
-          ubicacion: data.ubicacionTrabajo,
-        },
-      });
+      if (data.ubicacionTrabajo.length > 0) {
+        await tx.usuarioUbicacionTrabajo.createMany({
+          data: data.ubicacionTrabajo.map((ubicacion) => ({
+            usuario_id: usuarioId,
+            ubicacion,
+          })),
+        });
+      }
 
       const habilidadesCatalogo = await tx.habilidadesMercado.findMany({
         where: {
@@ -303,6 +306,19 @@ export async function POST(request: Request) {
           data: data.dispositivos.map((dispositivo) => ({
             usuario_id: usuarioId,
             dispositivo,
+          })),
+        });
+      }
+
+      await tx.usuarioTipoConexion.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
+
+      if (data.tipoConexion.length > 0) {
+        await tx.usuarioTipoConexion.createMany({
+          data: data.tipoConexion.map((tipo) => ({
+            usuario_id: usuarioId,
+            tipo_conexion: tipo,
           })),
         });
       }
