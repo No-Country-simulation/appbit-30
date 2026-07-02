@@ -375,10 +375,20 @@ export const onboardingAIRequestSchema = z.object({
   ),
   disponibilidad: z.array(z.string()),
   ubicacionTrabajo: z.string(),
+  nivelExperienciaTecnologia: z.enum([
+    'Desde_cero',
+    'Con_conocimientos_previos',
+  ] as const),
+  habilidadesTecnicas: z.array(z.string()).default([]),
+  habilidadesBlandas: z.array(z.string()).default([]),
   objetivos: z.array(z.string()),
   dispositivos: z.array(z.string()),
   tipoConexion: z.string(),
   locale: z.string().optional(),
+  nivel_inicial: z
+    .enum(['sin_conocimiento', 'con_conocimientos_previos'] as const)
+    .optional(),
+  gap_inicial: z.number().nullable().optional(),
 });
 
 export const onboardingAIResponseSchema = z.object({
