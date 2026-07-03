@@ -14,10 +14,6 @@ import {
   PrioridadPlanEnum,
   IdiomaAppEnum,
 } from '../../web/src/server/generated/prisma/index.js';
-import type {
-  HabilidadesMercado,
-  Cursos,
-} from '../../web/src/server/generated/prisma/index.js';
 
 const app = new Hono();
 
@@ -51,7 +47,10 @@ app.post('/wellbeing/analyze', async (c) => {
       idioma,
     } = validation.data;
 
-    const nota_actual = nota_diaria ?? EMOJI_VALUES[emoji];
+    type EmojiKey = keyof typeof EMOJI_VALUES;
+
+    const emojiKey = emoji as EmojiKey;
+    const nota_actual = nota_diaria ?? EMOJI_VALUES[emojiKey];
 
     const totalNotas = [...historial_semanal, nota_actual];
     const nota_semanal = Number(
@@ -61,7 +60,7 @@ app.post('/wellbeing/analyze', async (c) => {
     const tendencia_baja =
       historial_semanal.length > 1 &&
       historial_semanal.every(
-        (val, i) => i === 0 || val <= historial_semanal[i - 1]!,
+        (val: number, i: number) => i === 0 || val <= historial_semanal[i - 1]!,
       );
 
     let derivar_cvv =
@@ -187,7 +186,7 @@ PERFIL DEL USUARIO:
 - Ubicación trabajo preferida: ${data.ubicacionTrabajo}
 - Objetivos: ${data.objetivos.join(', ')}
 - Dispositivos disponibles: ${data.dispositivos.join(', ')}
-- Tipo de conexión: ${data.tipoConexion}
+- Tipos de conexión: ${data.tipoConexion.join(', ')}
 - Ciudad: ${data.ciudad}, ${data.pais}
 - Idioma de respuesta: ${idiomaRespuesta}
 
@@ -233,7 +232,11 @@ Respuesta JSON estricta (sin markdown, sin acentos en las claves):
     interface GeminiResponse {
       habilidades: { nombre: string; estado: string }[];
       gap_porcentual: number;
-      gap_items: { habilidad: string; nivel_requerido: string; nivel_actual: string }[];
+      gap_items: {
+        habilidad: string;
+        nivel_requerido: string;
+        nivel_actual: string;
+      }[];
       trayectoria_sugerida: string[];
       plan_accion: {
         titulo: string;
