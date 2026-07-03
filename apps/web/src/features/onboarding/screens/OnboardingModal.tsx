@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/src/i18n/navigation';
 import {
@@ -23,6 +23,8 @@ import {
   AppInput,
   ChoiceChip,
   CountryCodeSelect,
+  formatPhoneNumber,
+  countries,
   StepIndicator,
 } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
@@ -32,7 +34,9 @@ import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
 const SELECT_TRIGGER_CLASSES =
   'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
-const NUMBERS_ONLY_REGEX = /^\d*$/;
+
+const SIN_CONOCIMIENTO = 'Desde_cero' as const;
+const CON_CONOCIMIENTOS = 'Con_conocimientos_previos' as const;
 
 interface FormData {
   fechaNacimiento: string;
@@ -46,10 +50,13 @@ interface FormData {
   areasInteres: string[];
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
-  ubicacionTrabajo: string;
+  ubicacionTrabajo: string[];
+  nivelExperienciaTecnologia: string;
+  habilidadesTecnicas: string[];
+  habilidadesBlandas: string[];
   objetivos: string[];
   dispositivos: string[];
-  tipoConexion: string;
+  tipoConexion: string[];
   whatsappCodigo: string;
   whatsappNumero: string;
 }
@@ -66,13 +73,62 @@ const INITIAL_FORM_DATA: FormData = {
   areasInteres: [],
   idiomas: [],
   disponibilidad: [],
-  ubicacionTrabajo: '',
+  ubicacionTrabajo: [],
+  nivelExperienciaTecnologia: '',
+  habilidadesTecnicas: [],
+  habilidadesBlandas: [],
   objetivos: [],
   dispositivos: [],
-  tipoConexion: '',
+  tipoConexion: [],
   whatsappCodigo: '',
   whatsappNumero: '',
 };
+
+const STORAGE_KEY = 'onboarding_form_data';
+const STORAGE_KEY_STEP = 'onboarding_step';
+
+const FORM_DATA_KEYS: (keyof FormData)[] = [
+  'fechaNacimiento',
+  'genero',
+  'pais',
+  'provinciaEstado',
+  'ciudad',
+  'zonaResidencia',
+  'nivelEducacion',
+  'momentoProfesional',
+  'areasInteres',
+  'idiomas',
+  'disponibilidad',
+  'ubicacionTrabajo',
+  'nivelExperienciaTecnologia',
+  'habilidadesTecnicas',
+  'habilidadesBlandas',
+  'objetivos',
+  'dispositivos',
+  'tipoConexion',
+  'whatsappCodigo',
+  'whatsappNumero',
+];
+
+function getStoredFormData(): FormData {
+  if (typeof window === 'undefined') return INITIAL_FORM_DATA;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return INITIAL_FORM_DATA;
+    const parsed = JSON.parse(raw);
+    const valid = FORM_DATA_KEYS.every((key) => key in parsed);
+    if (!valid) return INITIAL_FORM_DATA;
+    return parsed as FormData;
+  } catch {
+    return INITIAL_FORM_DATA;
+  }
+}
+
+function clearStorage() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_STEP);
+}
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -82,24 +138,41 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ['Personales', 'Educación', 'Objetivos'];
+const STEP_LABEL_KEYS = [
+  'stepLabelPersonales',
+  'stepLabelEducacion',
+  'stepLabelSkills',
+  'stepLabelObjetivos',
+] as const;
 
 interface OnboardingModalProps {
   children?: React.ReactNode;
   defaultOpen?: boolean;
   locked?: boolean;
+  onCompleted?: () => void | Promise<void>;
 }
 
 export function OnboardingModal({
   children,
   defaultOpen = false,
   locked = false,
+  onCompleted,
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
+  const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window === 'undefined') return 1 as Step;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_STEP);
+      const n = Number(saved);
+      return (n >= 1 && n <= 4 ? n : 1) as Step;
+    } catch {
+      return 1 as Step;
+    }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectOpenRef = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -112,9 +185,17 @@ export function OnboardingModal({
     }
   }, []);
 
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>(getStoredFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_STEP, String(step));
+  }, [step]);
 
   function toggleArray(
     field: keyof Pick<
@@ -123,8 +204,12 @@ export function OnboardingModal({
       | 'momentoProfesional'
       | 'areasInteres'
       | 'disponibilidad'
+      | 'ubicacionTrabajo'
+      | 'habilidadesTecnicas'
+      | 'habilidadesBlandas'
       | 'objetivos'
       | 'dispositivos'
+      | 'tipoConexion'
     >,
     value: string,
   ) {
@@ -134,6 +219,15 @@ export function OnboardingModal({
         ? prev[field].filter((v) => v !== value)
         : [...prev[field], value],
     }));
+    setShowErrors(false);
+  }
+
+  function handleNivelExperienciaTecnologiaChange(value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      nivelExperienciaTecnologia: value,
+    }));
+
     setShowErrors(false);
   }
 
@@ -166,9 +260,11 @@ export function OnboardingModal({
 
   function isStepValid(): boolean {
     const d = formData;
+
     if (step === 1) {
       return !!d.fechaNacimiento && !!d.genero && !!d.pais && !!d.ciudad;
     }
+
     if (step === 2) {
       return (
         d.nivelEducacion.length > 0 &&
@@ -176,12 +272,49 @@ export function OnboardingModal({
         d.areasInteres.length > 0 &&
         d.idiomas.some((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
-        !!d.ubicacionTrabajo
+        d.ubicacionTrabajo.length > 0
       );
     }
+
+    if (step === 3) {
+      if (!d.nivelExperienciaTecnologia) return false;
+
+      if (d.nivelExperienciaTecnologia === SIN_CONOCIMIENTO) {
+        return true;
+      }
+
+      return (
+        d.habilidadesTecnicas.length > 0 && d.habilidadesBlandas.length > 0
+      );
+    }
+
+    const isWhatsappValid =
+      (!d.whatsappCodigo && !d.whatsappNumero) ||
+      (!!d.whatsappCodigo && !!d.whatsappNumero);
+
     return (
-      d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
+      d.objetivos.length > 0 &&
+      d.dispositivos.length > 0 &&
+      d.tipoConexion.length > 0 &&
+      isWhatsappValid
     );
+  }
+
+  function hasPartialWhatsapp() {
+    return (
+      (!!formData.whatsappCodigo && !formData.whatsappNumero) ||
+      (!formData.whatsappCodigo && !!formData.whatsappNumero)
+    );
+  }
+
+  function clearWhatsapp() {
+    setFormData((prev) => ({
+      ...prev,
+      whatsappCodigo: '',
+      whatsappNumero: '',
+    }));
+
+    setShowErrors(false);
   }
 
   function handleNext() {
@@ -190,7 +323,7 @@ export function OnboardingModal({
       return;
     }
     setShowErrors(false);
-    if (step < 3) {
+    if (step < 4) {
       setStep((step + 1) as Step);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -219,18 +352,28 @@ export function OnboardingModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        habilidadesTecnicas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesTecnicas,
+        habilidadesBlandas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesBlandas,
         locale,
       }),
     })
       .then(async (res) => {
-        const json = await res.json();
-
         if (!res.ok) {
-          throw new Error(json.message || 'Error al completar onboarding');
+          throw new Error(t('submitError'));
         }
 
-        setOpen(false);
-        resetForm();
+        if (onCompleted) {
+          setOpen(false);
+          resetForm();
+          await onCompleted();
+          return;
+        }
 
         router.replace('/dashboard', { locale });
         router.refresh();
@@ -246,6 +389,7 @@ export function OnboardingModal({
   function resetForm() {
     setStep(1);
     setFormData(INITIAL_FORM_DATA);
+    clearStorage();
     setShowErrors(false);
     setIsLoading(false);
     setSubmitError(null);
@@ -295,6 +439,8 @@ export function OnboardingModal({
     { value: 'B1', label: t('nivelOption3') },
     { value: 'B2', label: t('nivelOption4') },
     { value: 'C1', label: t('nivelOption5') },
+    { value: 'C2', label: t('nivelOption6') },
+    { value: 'Nativo', label: t('nivelOption7') },
   ];
 
   const disponibilidadOptions = [
@@ -308,6 +454,39 @@ export function OnboardingModal({
     { value: 'Presencial', label: t('ubicacionTrabajoOption1') },
     { value: 'Hibrido', label: t('ubicacionTrabajoOption2') },
     { value: 'Remoto', label: t('ubicacionTrabajoOption3') },
+  ];
+
+  const nivelExperienciaTecnologiaOptions = [
+    {
+      value: SIN_CONOCIMIENTO,
+      label: t('nivelExperienciaTecnologiaOption1'),
+    },
+    {
+      value: CON_CONOCIMIENTOS,
+      label: t('nivelExperienciaTecnologiaOption2'),
+    },
+  ];
+
+  const habilidadesTecnicasOptions = [
+    { value: 'React_Frontend', label: t('habilidadesTecnicasOption1') },
+    { value: 'Python', label: t('habilidadesTecnicasOption2') },
+    { value: 'Java_CSharp', label: t('habilidadesTecnicasOption3') },
+    { value: 'SQL_Bases_Datos', label: t('habilidadesTecnicasOption4') },
+    { value: 'Node_Backend', label: t('habilidadesTecnicasOption5') },
+    { value: 'Excel_Avanzado', label: t('habilidadesTecnicasOption6') },
+    { value: 'PowerBI_Tableau', label: t('habilidadesTecnicasOption7') },
+    { value: 'AWS_Cloud', label: t('habilidadesTecnicasOption8') },
+    { value: 'Figma_Diseno_UX', label: t('habilidadesTecnicasOption9') },
+  ];
+
+  const habilidadesBlandasOptions = [
+    { value: 'Comunicacion_Asertiva', label: t('habilidadesBlandasOption1') },
+    { value: 'Trabajo_Equipo', label: t('habilidadesBlandasOption2') },
+    { value: 'Liderazgo', label: t('habilidadesBlandasOption3') },
+    { value: 'Gestion_Tiempo', label: t('habilidadesBlandasOption4') },
+    { value: 'Resolucion_Problemas', label: t('habilidadesBlandasOption5') },
+    { value: 'Pensamiento_Critico', label: t('habilidadesBlandasOption6') },
+    { value: 'Adaptabilidad', label: t('habilidadesBlandasOption7') },
   ];
 
   const objetivosOptions = [
@@ -339,13 +518,18 @@ export function OnboardingModal({
       ? t('step1Greeting')
       : step === 2
         ? t('step2Greeting')
-        : t('step3Greeting');
+        : step === 3
+          ? t('step3Greeting')
+          : t('step4Greeting');
+
   const currentSubtitle =
     step === 1
       ? t('step1Subtitle')
       : step === 2
         ? t('step2Subtitle')
-        : t('step3Subtitle');
+        : step === 3
+          ? t('step3Subtitle')
+          : t('step4Subtitle');
 
   return (
     <>
@@ -383,8 +567,8 @@ export function OnboardingModal({
           <div className='py-2'>
             <StepIndicator
               currentStep={step}
-              totalSteps={3}
-              labels={STEP_LABELS}
+              totalSteps={4}
+              labels={stepLabels}
             />
           </div>
 
@@ -693,32 +877,119 @@ export function OnboardingModal({
 
                 <div>
                   <Body>{t('ubicacionTrabajoLabel')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2 mb-6'>
+                  <div className='mt-2 flex flex-wrap gap-2'>
                     {ubicacionTrabajoOptions.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.ubicacionTrabajo === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            ubicacionTrabajo:
-                              prev.ubicacionTrabajo === opt.value
-                                ? ''
-                                : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.ubicacionTrabajo.includes(opt.value)}
+                        onClick={() =>
+                          toggleArray('ubicacionTrabajo', opt.value)
+                        }
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.ubicacionTrabajo} />
+                  <FieldError
+                    show={showErrors && formData.ubicacionTrabajo.length === 0}
+                  />
                 </div>
               </div>
             )}
 
             {/* ===== STEP 3 ===== */}
             {step === 3 && (
+              <div className='space-y-5'>
+                <div>
+                  <Body>{t('nivelExperienciaTecnologiaLabel')}</Body>
+                  <div className='mt-2 flex flex-wrap gap-2'>
+                    {nivelExperienciaTecnologiaOptions.map((opt) => (
+                      <ChoiceChip
+                        key={opt.value}
+                        label={opt.label}
+                        selected={
+                          formData.nivelExperienciaTecnologia === opt.value
+                        }
+                        onClick={() =>
+                          handleNivelExperienciaTecnologiaChange(opt.value)
+                        }
+                      />
+                    ))}
+                  </div>
+                  <FieldError
+                    show={showErrors && !formData.nivelExperienciaTecnologia}
+                  />
+                </div>
+
+                {formData.nivelExperienciaTecnologia === CON_CONOCIMIENTOS && (
+                  <>
+                    <div>
+                      <Body>
+                        {t('habilidadesTecnicasLabel')}{' '}
+                        <span className='text-[var(--color-text-muted)] text-xs'>
+                          {t('habilidadesTecnicasHint')}
+                        </span>
+                      </Body>
+                      <div className='mt-2 flex flex-wrap gap-2'>
+                        {habilidadesTecnicasOptions.map((opt) => (
+                          <ChoiceChip
+                            key={opt.value}
+                            label={opt.label}
+                            selected={formData.habilidadesTecnicas.includes(
+                              opt.value,
+                            )}
+                            onClick={() =>
+                              toggleArray('habilidadesTecnicas', opt.value)
+                            }
+                          />
+                        ))}
+                      </div>
+                      <FieldError
+                        show={
+                          showErrors &&
+                          formData.nivelExperienciaTecnologia ===
+                            CON_CONOCIMIENTOS &&
+                          formData.habilidadesTecnicas.length === 0
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Body>
+                        {t('habilidadesBlandasLabel')}{' '}
+                        <span className='text-[var(--color-text-muted)] text-xs'>
+                          {t('habilidadesBlandasHint')}
+                        </span>
+                      </Body>
+                      <div className='mt-2 flex flex-wrap gap-2'>
+                        {habilidadesBlandasOptions.map((opt) => (
+                          <ChoiceChip
+                            key={opt.value}
+                            label={opt.label}
+                            selected={formData.habilidadesBlandas.includes(
+                              opt.value,
+                            )}
+                            onClick={() =>
+                              toggleArray('habilidadesBlandas', opt.value)
+                            }
+                          />
+                        ))}
+                      </div>
+                      <FieldError
+                        show={
+                          showErrors &&
+                          formData.nivelExperienciaTecnologia ===
+                            CON_CONOCIMIENTOS &&
+                          formData.habilidadesBlandas.length === 0
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ===== STEP 4 ===== */}
+            {step === 4 && (
               <div className='space-y-5'>
                 <div>
                   <Body>
@@ -771,19 +1042,14 @@ export function OnboardingModal({
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.tipoConexion === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            tipoConexion:
-                              prev.tipoConexion === opt.value ? '' : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.tipoConexion.includes(opt.value)}
+                        onClick={() => toggleArray('tipoConexion', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.tipoConexion} />
+                  <FieldError
+                    show={showErrors && formData.tipoConexion.length === 0}
+                  />
                 </div>
 
                 <div>
@@ -793,6 +1059,15 @@ export function OnboardingModal({
                       {t('whatsappOptional')}
                     </span>
                   </Body>
+                  {(formData.whatsappCodigo || formData.whatsappNumero) && (
+                    <button
+                      type='button'
+                      onClick={clearWhatsapp}
+                      className='font-body text-xs font-semibold text-[var(--color-primary)] hover:underline'
+                    >
+                      {t('whatsappClearButton')}
+                    </button>
+                  )}
                   <div className='mt-2 flex gap-2'>
                     <div className='w-1/3'>
                       <CountryCodeSelect
@@ -810,25 +1085,57 @@ export function OnboardingModal({
                       />
                     </div>
                     <div className='w-2/3'>
-                      <AppInput
-                        value={formData.whatsappNumero}
-                        onChange={(e) => {
-                          if (NUMBERS_ONLY_REGEX.test(e.target.value))
-                            setFormData((prev) => ({
-                              ...prev,
-                              whatsappNumero: e.target.value,
-                            }));
-                        }}
-                        placeholder={t('whatsappPlaceholder')}
-                      />
+                      {(() => {
+                        const country = countries.find(
+                          (c) => c.code === formData.whatsappCodigo,
+                        );
+                        const maxLen = country?.phoneLength ?? 15;
+                        const blocks = country?.phoneBlocks ?? [3, 3, 4];
+
+                        return (
+                          <AppInput
+                            value={formatPhoneNumber(
+                              formData.whatsappNumero,
+                              blocks,
+                            )}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              if (raw.length <= maxLen)
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  whatsappNumero: raw,
+                                }));
+                            }}
+                            placeholder={country?.phoneHint ?? ''}
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
-                  <div className='mt-3 flex items-center gap-1.5 mb-6'>
+                  {formData.whatsappCodigo && (
+                    <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
+                      {t('phoneFormatHint', {
+                        hint:
+                          countries.find(
+                            (c) => c.code === formData.whatsappCodigo,
+                          )?.phoneHint ?? '',
+                      })}
+                    </Caption>
+                  )}
+                  <div className='mt-3 flex items-center gap-1.5 mb-4'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>
                       {t('whatsappInfo')}
                     </Caption>
                   </div>
+                  {hasPartialWhatsapp() && (
+                    <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
+                      <AlertCircleIcon className='size-4 shrink-0' />
+                      <Caption className='text-[var(--color-danger)]'>
+                        {t('whatsappPairError')}
+                      </Caption>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -840,7 +1147,7 @@ export function OnboardingModal({
                 {t('backButton')}
               </AppButton>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <AppButton onClick={handleNext}>{t('nextButton')} →</AppButton>
             ) : (
               <AppButton onClick={handleFinish} disabled={isLoading}>
@@ -848,9 +1155,11 @@ export function OnboardingModal({
               </AppButton>
             )}
             {submitError && (
-              <div className='flex items-center gap-1.5 mt-2 text-[var(--color-error)]'>
+              <div className='mt-2 flex items-center gap-1.5 text-[var(--color-danger)]'>
                 <AlertCircleIcon className='size-4 shrink-0' />
-                <Caption>{submitError}</Caption>
+                <Caption className='text-[var(--color-danger)]'>
+                  {submitError}
+                </Caption>
               </div>
             )}
           </DialogFooter>
