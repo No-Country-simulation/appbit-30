@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AntennaIcon } from 'lucide-react';
 import { AppButton } from '@/src/components/app/AppButton';
@@ -11,7 +10,6 @@ interface Props {
 
 export function RadarBanner({ vacantesCompatibles = 5 }: Props) {
   const t = useTranslations('Dashboard');
-  const router = useRouter();
 
   return (
     <section className='flex items-center justify-between gap-4 rounded-[var(--radius-md)] bg-[#f5c542] p-4 sm:px-6'>
@@ -31,7 +29,6 @@ export function RadarBanner({ vacantesCompatibles = 5 }: Props) {
 
       <AppButton
         className='shrink-0 !bg-[#1a1a2e] !text-white hover:!bg-[#2a2a3e]'
-        onClick={() => router.push('/empleabilidad')}
       >
         {t('radarButton')}
       </AppButton>

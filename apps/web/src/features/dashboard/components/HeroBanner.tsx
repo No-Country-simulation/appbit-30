@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AppButton } from '@/src/components/app/AppButton';
 
@@ -11,12 +10,11 @@ interface Props {
 }
 
 export function HeroBanner({
-  nombre = 'María',
+  nombre = 'MarÃ­a',
   cursosPendientes = 2,
   vacantesDisponibles = 12,
 }: Props) {
   const t = useTranslations('Dashboard');
-  const router = useRouter();
 
   return (
     <section className='relative overflow-hidden rounded-[var(--radius-lg)] bg-[#1a1a2e] p-6 text-white sm:p-8'>
@@ -38,7 +36,6 @@ export function HeroBanner({
           <AppButton
             variant='outline'
             className='!border-white/30 !text-white hover:!border-white hover:!bg-white/10'
-            onClick={() => router.push('/empleabilidad')}
           >
             {t('verVacantes')}
           </AppButton>

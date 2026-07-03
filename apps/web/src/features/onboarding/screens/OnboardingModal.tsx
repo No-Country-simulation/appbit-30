@@ -346,8 +346,6 @@ export function OnboardingModal({
     { value: 'B1', label: t('nivelOption3') },
     { value: 'B2', label: t('nivelOption4') },
     { value: 'C1', label: t('nivelOption5') },
-    { value: 'C2', label: t('nivelOption6') },
-    { value: 'Nativo', label: t('nivelOption7') },
   ];
 
   const disponibilidadOptions = [
@@ -923,4 +921,3 @@ export function OnboardingModal({
     </>
   );
 }
-

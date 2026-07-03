@@ -129,7 +129,7 @@ export const onboardingStep2Schema = z
             'Portugues',
             'Frances',
           ] as const),
-          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Nativo'] as const),
+          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
         }),
       )
       .min(1, { message: 'Seleccioná al menos un idioma' }),
@@ -374,14 +374,3 @@ export const onboardingAIResponseSchema = z.object({
 
 export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
 export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
-
-// --- SCHEMAS PARA POSTULACIONES (FE-004) ---
-export const postulacionRequestSchema = z.object({
-  vacante_id: z.string().uuid(),
-  mensaje_motivacion: z.string().max(2000).optional(),
-  usar_cv_guardado: z.boolean().default(true),
-  cv_url: z.string().url().optional(),
-});
-
-export type PostulacionRequest = z.infer<typeof postulacionRequestSchema>;
-
