@@ -9,7 +9,7 @@ import {
   onboardingAIRequestSchema,
 } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
-import { dbClient } from './db.client';
+import { dbClient } from './db.client.js';
 import {
   EstadoHabilidadEnum,
   PrioridadPlanEnum,
