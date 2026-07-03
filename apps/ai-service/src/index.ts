@@ -485,14 +485,6 @@ Respuesta JSON estricta, sin markdown:
       };
     });
 
-    console.log('AI onboarding parsed:', {
-      usuarioId: userId,
-      gapPorcentual: safeGapPorcentual,
-      planItems: planRows.length,
-      skillsExistentes: existingUserSkills.length,
-      cursosDisponibles: cursosDisponibles.length,
-    });
-
     const orientacion = await dbClient.$transaction(
       async (tx) => {
         await tx.planAccion.deleteMany({
