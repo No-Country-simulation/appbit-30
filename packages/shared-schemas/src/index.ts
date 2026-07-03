@@ -35,25 +35,32 @@ const emojiKeys = Object.keys(EMOJI_VALUES) as [
 export const wellbeingEmojiSchema = z.enum(emojiKeys);
 
 // --- SCHEMAS PARA BIENESTAR (HU 9.3) ---
-export const wellbeingRequestSchema = z.object({
-  userId: z.string(),
-  emoji: wellbeingEmojiSchema,
-  nota_diaria: z.number().min(0).max(10).optional(), // Si no viene, se infiere del emoji
-  motivo: validText('motivo'),
-  contexto: validText('contexto'),
-  historial_semanal: z.array(z.number().min(0).max(10)).optional(),
-  idioma: z.string().default('Español'),
+
+export const EMOJIS_CHECKIN = [
+  'agotado',
+  'triste',
+  'neutral',
+  'bien',
+  'genial',
+] as const;
+
+export const checkinRequestSchema = z.object({
+  emoji: z.enum(EMOJIS_CHECKIN, {
+    error: 'El estado emocional seleccionado no es válido.',
+  }),
+
+  motivos: z
+    .array(z.string().trim().min(1, 'El motivo no puede estar vacío'))
+    .max(10, 'Se permiten como máximo 10 motivos.'),
+
+  contexto: z
+    .string()
+    .trim()
+    .max(500, 'El contexto no puede superar los 500 caracteres.')
+    .optional(),
 });
 
-export const wellbeingResponseSchema = z.object({
-  nota_actual: z.number(),
-  nota_semanal: z.number(),
-  mensaje: z.string(),
-  accion_sugerida: z.string(),
-  derivar_cvv: z.boolean(),
-  alerta: z.boolean(),
-});
-
+export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
 // --- SCHEMAS PARA ONBOARDING (FE-002) ---
 export const onboardingStep1Schema = z
   .object({
