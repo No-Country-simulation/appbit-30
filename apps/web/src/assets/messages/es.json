@@ -249,5 +249,11 @@
     "verPerfil": "Ver perfil",
     "actionLabelIniciar": "Iniciar Módulo",
     "actionLabelVerTemario": "Ver temario"
+  },
+  "Error": {
+    "title": "Servicio temporalmente no disponible",
+    "description": "No pudimos verificar tu sesión en este momento. Puede ser un problema temporal de conexión o del servicio.",
+    "retry": "Intentar de nuevo",
+    "goToLogin": "Ir a iniciar sesión"
   }
 }
