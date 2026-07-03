@@ -18,18 +18,11 @@ import {
   AppChoiceChips,
   ChoiceChip,
   StepIndicator,
-} from '@/src/components';
+} from "@/src/components";
 
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
-import {
-  HeroBanner,
-  RadarBanner,
-  SkillsGapCard,
-  ActionPlanCard,
-  WellbeingCard,
-  SkillsGapModal,
-  CheckinModal,
-} from '@/src/features/dashboard/components';
+
+import { TabBar } from '@/src/components/app/TabBar';
 
 import { useState } from 'react';
 
@@ -39,19 +32,10 @@ export default function PlaygroundScreen() {
   const t = useTranslations('Playground');
   const [key, setKey] = useState(0);
   const [selectedChip, setSelectedChip] = useState('react');
-  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
-  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
-  const [checkinMood, setCheckinMood] = useState<string>('');
-  const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
+  const [tabBarTab, setTabBarTab] = useState('recomendados');
 
   return (
-    <AppShell
-      onCheckinClick={() => {
-        setCheckinMood('');
-        setCheckinStartStep(1);
-        setCheckinModalOpen(true);
-      }}
-    >
+    <AppShell>
       <div className='space-y-16'>
         <div className='space-y-4'>
           <H1>{t('title')}</H1>
@@ -90,41 +74,41 @@ export default function PlaygroundScreen() {
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
             <ColorBox name='Primary' color='var(--color-primary)' />
 
-            <ColorBox name='Primary Light' color='var(--color-primary-light)' />
+            <ColorBox name="Primary Light" color="var(--color-primary-light)" />
 
-            <ColorBox name='Primary Dark' color='var(--color-primary-dark)' />
+            <ColorBox name="Primary Dark" color="var(--color-primary-dark)" />
 
-            <ColorBox name='Primary Pale' color='var(--color-primary-pale)' />
+            <ColorBox name="Primary Pale" color="var(--color-primary-pale)" />
 
-            <ColorBox name='Secondary' color='var(--color-secondary)' />
+            <ColorBox name="Secondary" color="var(--color-secondary)" />
 
             <ColorBox
-              name='Secondary Dark'
-              color='var(--color-secondary-dark)'
+              name="Secondary Dark"
+              color="var(--color-secondary-dark)"
             />
 
             <ColorBox
-              name='Secondary Pale'
-              color='var(--color-secondary-pale)'
+              name="Secondary Pale"
+              color="var(--color-secondary-pale)"
             />
 
-            <ColorBox name='Success' color='var(--color-success)' />
+            <ColorBox name="Success" color="var(--color-success)" />
 
-            <ColorBox name='Danger' color='var(--color-danger)' />
+            <ColorBox name="Danger" color="var(--color-danger)" />
 
-            <ColorBox name='Warning' color='var(--color-warning)' />
+            <ColorBox name="Warning" color="var(--color-warning)" />
 
-            <ColorBox name='Body' color='var(--color-body)' />
+            <ColorBox name="Body" color="var(--color-body)" />
 
-            <ColorBox name='Card' color='var(--color-card)' />
+            <ColorBox name="Card" color="var(--color-card)" />
 
-            <ColorBox name='Dark Surface' color='var(--color-dark-surface)' />
+            <ColorBox name="Dark Surface" color="var(--color-dark-surface)" />
 
-            <ColorBox name='Text' color='var(--color-text)' />
+            <ColorBox name="Text" color="var(--color-text)" />
 
-            <ColorBox name='Text Muted' color='var(--color-text-muted)' />
+            <ColorBox name="Text Muted" color="var(--color-text-muted)" />
 
-            <ColorBox name='Border' color='var(--color-border)' />
+            <ColorBox name="Border" color="var(--color-border)" />
           </div>
         </section>
 
@@ -138,11 +122,11 @@ export default function PlaygroundScreen() {
           <div className='flex flex-wrap items-end gap-4 lg:gap-8'>
             <RadiusBox label='sm' radius='var(--radius-sm)' />
 
-            <RadiusBox label='md' radius='var(--radius-md)' />
+            <RadiusBox label="md" radius="var(--radius-md)" />
 
-            <RadiusBox label='lg' radius='var(--radius-lg)' />
+            <RadiusBox label="lg" radius="var(--radius-lg)" />
 
-            <RadiusBox label='pill' radius='var(--radius-pill)' />
+            <RadiusBox label="pill" radius="var(--radius-pill)" />
           </div>
         </section>
 
@@ -156,9 +140,9 @@ export default function PlaygroundScreen() {
           <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
             <ShadowBox label='shadow-sm' shadow='var(--shadow-sm)' />
 
-            <ShadowBox label='shadow-md' shadow='var(--shadow-md)' />
+            <ShadowBox label="shadow-md" shadow="var(--shadow-md)" />
 
-            <ShadowBox label='shadow-lg' shadow='var(--shadow-lg)' />
+            <ShadowBox label="shadow-lg" shadow="var(--shadow-lg)" />
           </div>
         </section>
 
@@ -199,10 +183,10 @@ export default function PlaygroundScreen() {
         {/* CHOICE CHIP (simple) */}
         {/* ====================================================== */}
 
-        <section className='space-y-4'>
+        <section className="space-y-4">
           <H2>ChoiceChip (simple)</H2>
 
-          <div className='flex flex-wrap gap-3'>
+          <div className="flex flex-wrap gap-3">
             {['React', 'Vue', 'Angular', 'Svelte'].map((chip) => (
               <ChoiceChip
                 key={chip}
@@ -237,14 +221,14 @@ export default function PlaygroundScreen() {
         <section className='space-y-4'>
           <H2>{t('badges')}</H2>
 
-          <div className='flex gap-4 flex-wrap'>
+          <div className="flex gap-4 flex-wrap">
             <AppBadge>Primary</AppBadge>
 
-            <AppBadge variant='success'>Success</AppBadge>
+            <AppBadge variant="success">Success</AppBadge>
 
-            <AppBadge variant='danger'>Danger</AppBadge>
+            <AppBadge variant="danger">Danger</AppBadge>
 
-            <AppBadge variant='warning'>Warning</AppBadge>
+            <AppBadge variant="warning">Warning</AppBadge>
           </div>
         </section>
 
@@ -290,89 +274,43 @@ export default function PlaygroundScreen() {
         {/* StepIndicartor */}
         {/* ====================================================== */}
 
-        <section className='space-y-4'>
+        <section className="space-y-4">
           <H2>StepIndicator</H2>
-          <StepIndicator
-            currentStep={1}
-            totalSteps={4}
-            labels={['Personales', 'Educación', 'Skills', 'Objetivos']}
+          <StepIndicator currentStep={1} totalSteps={3} />
+          <StepIndicator currentStep={2} totalSteps={3} />
+          <StepIndicator currentStep={3} totalSteps={3} />
+        </section>
+
+        {/* ====================================================== */}
+        {/* TAB BAR */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>TabBar</H2>
+
+          <TabBar
+            tabs={[
+              { id: 'recomendados', label: 'Recomendados', count: 12 },
+              { id: 'aplicaciones', label: 'Mis Aplicaciones', count: 3 },
+            ]}
+            activeTab={tabBarTab}
+            onTabChange={setTabBarTab}
           />
-          <StepIndicator
-            currentStep={2}
-            totalSteps={4}
-            labels={['Personales', 'Educación', 'Skills', 'Objetivos']}
-          />
-          <StepIndicator
-            currentStep={3}
-            totalSteps={4}
-            labels={['Personales', 'Educación', 'Skills', 'Objetivos']}
-          />
-          <StepIndicator
-            currentStep={4}
-            totalSteps={4}
-            labels={['Personales', 'Educación', 'Skills', 'Objetivos']}
-          />{' '}
+
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Tab activo: {tabBarTab}
+          </p>
         </section>
 
         {/* ====================================================== */}
         {/* ONBOARDING MODAL */}
         {/* ====================================================== */}
 
-        <section className='space-y-4'>
+        <section className="space-y-4">
           <H2>OnboardingModal</H2>
           <OnboardingModal>
             <AppButton>Abrir Onboarding</AppButton>
           </OnboardingModal>
-        </section>
-
-        {/* ====================================================== */}
-        {/* DASHBOARD CARDS */}
-        {/* ====================================================== */}
-
-        <section className="space-y-4">
-          <H2>Dashboard Cards</H2>
-
-          <div className="space-y-4">
-            <HeroBanner />
-            <RadarBanner />
-            <ActionPlanCard />
-            <WellbeingCard
-              onEmojiClick={(moodId) => {
-                setCheckinMood(moodId);
-                setCheckinStartStep(2);
-                setCheckinModalOpen(true);
-              }}
-            />
-
-            <SkillsGapCard onVerDetalles={() => setSkillsModalOpen(true)} />
-            <AppButton onClick={() => setSkillsModalOpen(true)}>
-              Abrir SkillsGapModal
-            </AppButton>
-            <SkillsGapModal
-              open={skillsModalOpen}
-              onOpenChange={setSkillsModalOpen}
-            />
-
-            <AppButton onClick={() => {
-              setCheckinMood('');
-              setCheckinStartStep(1);
-              setCheckinModalOpen(true);
-            }}>
-              Abrir CheckinModal
-            </AppButton>
-            <CheckinModal
-              open={checkinModalOpen}
-              onOpenChange={(v) => {
-                setCheckinModalOpen(v);
-                if (!v) {
-                  setCheckinMood('');
-                  setCheckinStartStep(1);
-                }
-              }}
-              initialMood={checkinMood}
-              startAtStep={checkinStartStep}
-            />
-          </div>
         </section>
 
         {/* ====================================================== */}
@@ -461,9 +399,9 @@ export default function PlaygroundScreen() {
 function ColorBox({ name, color }: { name: string; color: string }) {
   return (
     <div>
-      <div className='h-20 rounded-xl border' style={{ background: color }} />
+      <div className="h-20 rounded-xl border" style={{ background: color }} />
 
-      <p className='mt-2 text-sm'>{name}</p>
+      <p className="mt-2 text-sm">{name}</p>
     </div>
   );
 }
@@ -472,11 +410,11 @@ function RadiusBox({ label, radius }: { label: string; radius: string }) {
   return (
     <div>
       <div
-        className='w-24 h-24 bg-[var(--color-primary)]'
+        className="w-24 h-24 bg-[var(--color-primary)]"
         style={{ borderRadius: radius }}
       />
 
-      <p className='mt-2'>{label}</p>
+      <p className="mt-2">{label}</p>
     </div>
   );
 }

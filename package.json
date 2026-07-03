@@ -7,11 +7,7 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:ai": "pnpm --filter ai-service dev:vercel",
-    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:ai\"",
-    "clean:packages": "rm -rf packages/shared-types/dist packages/shared-schemas/dist",
-    "build:packages": "pnpm run clean:packages && pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build",
-    "build:ai": "pnpm run build:packages && pnpm --filter ai-service build",
-    "build:web": "pnpm run build:packages && pnpm --filter web build"
+    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:ai\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

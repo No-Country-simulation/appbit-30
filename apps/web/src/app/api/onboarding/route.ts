@@ -1,36 +1,17 @@
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
-import {
-  IdiomaAppEnum,
-  EstadoHabilidadEnum,
-  NivelIdiomaEnum,
-} from '../../../server/generated/prisma';
+import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
+import { IdiomaAppEnum } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
-const NIVEL_IDIOMA_MAP: Partial<Record<string, NivelIdiomaEnum>> = {
-  A1: NivelIdiomaEnum.A1_Basico,
-  A2: NivelIdiomaEnum.A2_Elemental,
-  B1: NivelIdiomaEnum.B1_Intermedio,
-  B2: NivelIdiomaEnum.B2_Avanzado,
-  C1: NivelIdiomaEnum.C1_Fluido,
-};
-
-function normalizeNivelIdioma(nivel: string): NivelIdiomaEnum {
-  return NIVEL_IDIOMA_MAP[nivel] ?? NivelIdiomaEnum.C1_Fluido;
-}
-
-const HABILIDAD_TECNICA_TO_CATALOG_NAME: Record<string, string> = {
-  React_Frontend: 'React',
-  Python: 'Python',
-  Java_CSharp: 'Java',
-  SQL_Bases_Datos: 'SQL',
-  Node_Backend: 'Node.js',
-  Excel_Avanzado: 'Excel',
-  PowerBI_Tableau: 'PowerBI',
-  AWS_Cloud: 'AWS',
-  Figma_Diseno_UX: 'Figma',
-};
+const NIVEL_IDIOMA_MAP = {
+  A1: 'A1_Basico' as NivelIdiomaEnum,
+  A2: 'A2_Elemental' as NivelIdiomaEnum,
+  B1: 'B1_Intermedio' as NivelIdiomaEnum,
+  B2: 'B2_Avanzado' as NivelIdiomaEnum,
+  C1: 'C1_Fluido' as NivelIdiomaEnum,
+} satisfies Record<string, NivelIdiomaEnum>;
 
 function getAuthDisplayName(authUser: {
   email?: string | null;
@@ -135,6 +116,7 @@ export async function POST(request: Request) {
         provincia_estado: data.provinciaEstado ?? null,
         ciudad: data.ciudad,
         zona_residencia: data.zonaResidencia ?? null,
+        tipo_conexion: data.tipoConexion,
         whatsapp_codigo: data.whatsappCodigo ?? null,
         whatsapp_numero: data.whatsappNumero ?? null,
         idioma_app: idiomaApp,
@@ -215,7 +197,7 @@ export async function POST(request: Request) {
           data: data.idiomas.map(({ idioma, nivel }) => ({
             usuario_id: usuarioId,
             idioma,
-            nivel: normalizeNivelIdioma(nivel),
+            nivel: NIVEL_IDIOMA_MAP[nivel] ?? nivel,
           })),
         });
       }
@@ -237,54 +219,12 @@ export async function POST(request: Request) {
         where: { usuario_id: usuarioId },
       });
 
-      if (data.ubicacionTrabajo.length > 0) {
-        await tx.usuarioUbicacionTrabajo.createMany({
-          data: data.ubicacionTrabajo.map((ubicacion) => ({
-            usuario_id: usuarioId,
-            ubicacion,
-          })),
-        });
-      }
-
-      const habilidadesCatalogo = await tx.habilidadesMercado.findMany({
-        where: {
-          area_principal: {
-            in: data.areasInteres,
-          },
-        },
-        select: {
-          habilidad_id: true,
-          nombre: true,
-        },
-      });
-
-      await tx.usuarioHabilidades.deleteMany({
-        where: {
+      await tx.usuarioUbicacionTrabajo.create({
+        data: {
           usuario_id: usuarioId,
+          ubicacion: data.ubicacionTrabajo,
         },
       });
-
-      if (habilidadesCatalogo.length > 0) {
-        const selectedSkillNames = new Set(
-          data.habilidadesTecnicas
-            .map((skill) => HABILIDAD_TECNICA_TO_CATALOG_NAME[skill])
-            .filter(Boolean),
-        );
-
-        await tx.usuarioHabilidades.createMany({
-          data: habilidadesCatalogo.map((habilidad) => ({
-            usuario_id: usuarioId,
-            habilidad_id: habilidad.habilidad_id,
-            estado:
-              data.nivelExperienciaTecnologia === 'Desde_cero'
-                ? EstadoHabilidadEnum.Faltante
-                : selectedSkillNames.has(habilidad.nombre)
-                  ? EstadoHabilidadEnum.Adquirida
-                  : EstadoHabilidadEnum.Faltante,
-          })),
-          skipDuplicates: true,
-        });
-      }
 
       await tx.usuarioObjetivos.deleteMany({
         where: { usuario_id: usuarioId },
@@ -309,20 +249,6 @@ export async function POST(request: Request) {
             usuario_id: usuarioId,
             dispositivo,
           })),
-        });
-      }
-
-      await tx.usuarioTipoConexion.deleteMany({
-        where: { usuario_id: usuarioId },
-      });
-
-      if (data.tipoConexion.length > 0) {
-        await tx.usuarioTipoConexion.createMany({
-          data: data.tipoConexion.map((tipo) => ({
-            usuario_id: usuarioId,
-            tipo_conexion: tipo,
-          })),
-          skipDuplicates: true,
         });
       }
 
@@ -353,12 +279,6 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             usuarioId: result.usuarioId,
             ...data,
-            nivel_inicial:
-              data.nivelExperienciaTecnologia === 'Desde_cero'
-                ? 'sin_conocimiento'
-                : 'con_conocimientos_previos',
-            gap_inicial:
-              data.nivelExperienciaTecnologia === 'Desde_cero' ? 100 : null,
           }),
           signal: AbortSignal.timeout(10000),
         });

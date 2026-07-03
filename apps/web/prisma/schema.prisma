@@ -206,6 +206,7 @@ model Usuarios {
   ciudad              String                 @db.VarChar(150)
   zona_residencia     String?                @db.VarChar(255)
   onboarding_status   OnboardingStatusEnum   @default(PENDING)
+  tipo_conexion       TipoConexionEnum
   whatsapp_codigo     String?                @db.VarChar(10)
   whatsapp_numero     String?                @db.VarChar(20)
   idioma_app          IdiomaAppEnum          @default(es)
@@ -231,7 +232,6 @@ model Usuarios {
   usuario_nivel_educacion   UsuarioNivelEducacion[]
   usuario_momento_profesional UsuarioMomentoProfesional[]
   usuario_habilidades   UsuarioHabilidades[]
-  usuario_tipo_conexion UsuarioTipoConexion[]
   postulaciones         Postulaciones[]
   check_ins             CheckIns[]
   respuestas_salud      RespuestasSalud[]
@@ -329,19 +329,6 @@ model UsuarioUbicacionTrabajo {
   @@unique([usuario_id, ubicacion])
   @@index([usuario_id], map: "idx_uubic_usuario")
   @@map("usuario_ubicacion_trabajo")
-}
-
-model UsuarioTipoConexion {
-  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id    String             @db.Uuid
-  tipo_conexion TipoConexionEnum
-  creado_en     DateTime           @default(now()) @db.Timestamptz
-
-  usuario       Usuarios           @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
-
-  @@unique([usuario_id, tipo_conexion])
-  @@index([usuario_id])
-  @@map("usuario_tipo_conexion")
 }
 
 model UsuarioNivelEducacion {
