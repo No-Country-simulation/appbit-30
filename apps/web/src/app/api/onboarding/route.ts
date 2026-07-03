@@ -1,22 +1,24 @@
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
-import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
 import {
   IdiomaAppEnum,
   EstadoHabilidadEnum,
+  NivelIdiomaEnum,
 } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
-const NIVEL_IDIOMA_MAP = {
-  A1: 'A1_Basico' as NivelIdiomaEnum,
-  A2: 'A2_Elemental' as NivelIdiomaEnum,
-  B1: 'B1_Intermedio' as NivelIdiomaEnum,
-  B2: 'B2_Avanzado' as NivelIdiomaEnum,
-  C1: 'C1_Fluido' as NivelIdiomaEnum,
-  C2: 'C2_Profesional' as NivelIdiomaEnum,
-  Nativo: 'Nativo' as NivelIdiomaEnum,
-} satisfies Record<string, NivelIdiomaEnum>;
+const NIVEL_IDIOMA_MAP: Partial<Record<string, NivelIdiomaEnum>> = {
+  A1: NivelIdiomaEnum.A1_Basico,
+  A2: NivelIdiomaEnum.A2_Elemental,
+  B1: NivelIdiomaEnum.B1_Intermedio,
+  B2: NivelIdiomaEnum.B2_Avanzado,
+  C1: NivelIdiomaEnum.C1_Fluido,
+};
+
+function normalizeNivelIdioma(nivel: string): NivelIdiomaEnum {
+  return NIVEL_IDIOMA_MAP[nivel] ?? NivelIdiomaEnum.C1_Fluido;
+}
 
 const HABILIDAD_TECNICA_TO_CATALOG_NAME: Record<string, string> = {
   React_Frontend: 'React',
@@ -213,7 +215,7 @@ export async function POST(request: Request) {
           data: data.idiomas.map(({ idioma, nivel }) => ({
             usuario_id: usuarioId,
             idioma,
-            nivel: NIVEL_IDIOMA_MAP[nivel] ?? nivel,
+            nivel: normalizeNivelIdioma(nivel),
           })),
         });
       }
@@ -320,6 +322,7 @@ export async function POST(request: Request) {
             usuario_id: usuarioId,
             tipo_conexion: tipo,
           })),
+          skipDuplicates: true,
         });
       }
 

@@ -278,7 +278,10 @@
     "miPerfil": "Mi Perfil",
     "verPerfil": "Ver perfil",
     "actionLabelIniciar": "Iniciar Módulo",
-    "actionLabelVerTemario": "Ver temario"
+    "actionLabelVerTemario": "Ver temario",
+    "checkinStepEstado": "Estado",
+    "checkinStepMotivo": "Motivo",
+    "checkinStepContexto": "Contexto"
   },
   "Error": {
     "title": "Servicio temporalmente no disponible",

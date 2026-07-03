@@ -36,6 +36,27 @@ export const wellbeingEmojiSchema = z.enum(emojiKeys);
 
 // --- SCHEMAS PARA BIENESTAR (HU 9.3) ---
 
+export const wellbeingRequestSchema = z.object({
+  userId: z.string(),
+  emoji: wellbeingEmojiSchema,
+  nota_diaria: z.number().min(0).max(10).optional(), // Si no viene, se infiere del emoji
+  motivo: validText('motivo'),
+  contexto: validText('contexto'),
+  historial_semanal: z.array(z.number().min(0).max(10)).optional(),
+  idioma: z.string().default('Español'),
+});
+
+export const wellbeingResponseSchema = z.object({
+  nota_actual: z.number(),
+  nota_semanal: z.number(),
+  mensaje: z.string(),
+  accion_sugerida: z.string(),
+  derivar_cvv: z.boolean(),
+  alerta: z.boolean(),
+});
+
+export type WellbeingRequest = z.infer<typeof wellbeingRequestSchema>;
+
 export const EMOJIS_CHECKIN = [
   'agotado',
   'triste',
@@ -136,7 +157,15 @@ export const onboardingStep2Schema = z
             'Portugues',
             'Frances',
           ] as const),
-          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Nativo'] as const),
+          nivel: z.enum([
+            'A1',
+            'A2',
+            'B1',
+            'B2',
+            'C1',
+            'C2',
+            'Nativo',
+          ] as const),
         }),
       )
       .min(1, { message: 'Seleccioná al menos un idioma' }),
@@ -210,12 +239,14 @@ export const onboardingStep4Schema = z
       .array(z.enum(['Solo_celular', 'PC_Laptop', 'Tablet'] as const))
       .min(1, { message: 'Seleccioná al menos un dispositivo' }),
     tipoConexion: z
-      .array(z.enum([
-        'Banda_ancha_estable',
-        'Datos_moviles',
-        'Conexion_inestable',
-        'Sin_conexion_casa',
-      ] as const))
+      .array(
+        z.enum([
+          'Banda_ancha_estable',
+          'Datos_moviles',
+          'Conexion_inestable',
+          'Sin_conexion_casa',
+        ] as const),
+      )
       .min(1, { message: 'Seleccioná al menos un tipo de conexión' }),
     whatsappCodigo: z
       .string()
@@ -424,7 +455,16 @@ export const onboardingAIRequestSchema = z.object({
   ubicacionTrabajo: z.array(z.string()),
   objetivos: z.array(z.string()),
   dispositivos: z.array(z.string()),
-  tipoConexion: z.array(z.string()),
+  tipoConexion: z
+    .array(
+      z.enum([
+        'Banda_ancha_estable',
+        'Datos_moviles',
+        'Conexion_inestable',
+        'Sin_conexion_casa',
+      ] as const),
+    )
+    .min(1),
   locale: z.string().optional(),
 });
 
