@@ -59,6 +59,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   initialMood?: string;
   startAtStep?: 1 | 2 | 3;
+  onSaved?: () => void | Promise<void>;
   onComplete?: (data: {
     mood: string;
     motivos: string[];
@@ -71,14 +72,19 @@ export function CheckinModal({
   onOpenChange,
   initialMood,
   startAtStep,
+  onSaved,
   onComplete,
 }: Props) {
   const t = useTranslations('Dashboard');
+
   const initialStep = startAtStep ?? (initialMood ? 2 : 1);
+
   const [step, setStep] = useState<1 | 2 | 3>(initialStep);
   const [selectedMood, setSelectedMood] = useState<string>(initialMood ?? '');
   const [selectedMotivos, setSelectedMotivos] = useState<string[]>([]);
   const [contexto, setContexto] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const stepLabels = [
     t('checkinStepEstado'),
@@ -86,47 +92,114 @@ export function CheckinModal({
     t('checkinStepContexto'),
   ];
 
+  const currentMotivos = selectedMood
+    ? (motivosPorMood[selectedMood] ?? [])
+    : [];
+
+  function resetState() {
+    setStep(startAtStep ?? (initialMood ? 2 : 1));
+    setSelectedMood(initialMood ?? '');
+    setSelectedMotivos([]);
+    setContexto('');
+    setSubmitError(null);
+    setIsSubmitting(false);
+  }
+
+  function handleClose(nextOpen: boolean) {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!nextOpen) {
+      resetState();
+    }
+
+    onOpenChange(nextOpen);
+  }
+
+  function handleMoodSelect(moodId: string) {
+    setSelectedMood(moodId);
+    setSelectedMotivos([]);
+    setSubmitError(null);
+  }
+
   function handleNext() {
-    if (step === 1 && selectedMood) setStep(2);
-    else if (step === 2) setStep(3);
+    if (step === 1 && selectedMood) {
+      setStep(2);
+      return;
+    }
+
+    if (step === 2) {
+      setStep(3);
+    }
   }
 
   function handleBack() {
-    if (step === 3) setStep(2);
-    else if (step === 2) setStep(1);
+    if (step === 3) {
+      setStep(2);
+      return;
+    }
+
+    if (step === 2) {
+      setStep(1);
+    }
   }
 
   function toggleMotivo(id: string) {
+    setSubmitError(null);
+
     setSelectedMotivos((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
     );
   }
 
-  function handleGuardar() {
-    onComplete?.({
-      mood: selectedMood,
-      motivos: selectedMotivos,
-      contexto,
-    });
-    resetState();
-    onOpenChange(false);
-  }
+  async function handleGuardar() {
+    if (!selectedMood || isSubmitting) {
+      return;
+    }
 
-  function resetState() {
-    setStep(startAtStep ?? (initialMood ? 2 : 1));
-    setSelectedMood('');
-    setSelectedMotivos([]);
-    setContexto('');
-  }
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-  function handleClose(v: boolean) {
-    if (!v) resetState();
-    onOpenChange(v);
-  }
+    try {
+      const response = await fetch('/api/checkins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emoji: selectedMood,
+          motivos: selectedMotivos,
+          contexto: contexto.trim() || undefined,
+        }),
+      });
 
-  const currentMotivos = selectedMood
-    ? (motivosPorMood[selectedMood] ?? [])
-    : [];
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message ?? 'No pudimos guardar el check-in.');
+      }
+
+      onComplete?.({
+        mood: selectedMood,
+        motivos: selectedMotivos,
+        contexto,
+      });
+
+      await onSaved?.();
+
+      resetState();
+      onOpenChange(false);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'No pudimos guardar el check-in.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -143,17 +216,24 @@ export function CheckinModal({
             labels={stepLabels}
           />
 
+          {submitError && (
+            <div className='rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger-text)]'>
+              {submitError}
+            </div>
+          )}
+
           {step === 1 && (
             <div className='flex justify-between px-2'>
               {moods.map((mood) => (
                 <button
                   key={mood.id}
                   type='button'
-                  onClick={() => setSelectedMood(mood.id)}
+                  onClick={() => handleMoodSelect(mood.id)}
+                  disabled={isSubmitting}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200',
+                    'flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
                     selectedMood === mood.id
-                      ? 'bg-[var(--color-primary-pale)] scale-110'
+                      ? 'scale-110 bg-[var(--color-primary-pale)]'
                       : 'hover:bg-[var(--color-body)]',
                   )}
                 >
@@ -176,11 +256,13 @@ export function CheckinModal({
           {step === 2 && (
             <div className='space-y-3'>
               {currentMotivos.map((motivo) => (
-                <label
+                <button
                   key={motivo.id}
+                  type='button'
+                  disabled={isSubmitting}
                   onClick={() => toggleMotivo(motivo.id)}
                   className={cn(
-                    'flex items-center gap-3 rounded-[var(--radius-md)] border px-4 py-3 transition-colors cursor-pointer',
+                    'flex w-full cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
                     selectedMotivos.includes(motivo.id)
                       ? 'border-[var(--color-primary)] bg-[var(--color-primary-pale)]'
                       : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40',
@@ -202,7 +284,7 @@ export function CheckinModal({
                   <span className='text-sm font-medium text-[var(--color-text)]'>
                     {t(motivo.key)}
                   </span>
-                </label>
+                </button>
               ))}
             </div>
           )}
@@ -220,10 +302,15 @@ export function CheckinModal({
                   </div>
                 </div>
               </div>
+
               <AppInput
                 placeholder={t('contextoPlaceholder')}
                 value={contexto}
-                onChange={(e) => setContexto(e.target.value)}
+                disabled={isSubmitting}
+                onChange={(e) => {
+                  setSubmitError(null);
+                  setContexto(e.target.value);
+                }}
               />
             </div>
           )}
@@ -231,7 +318,11 @@ export function CheckinModal({
 
         <DialogFooter>
           {step > 1 && (
-            <AppButton variant='outline' onClick={handleBack}>
+            <AppButton
+              variant='outline'
+              onClick={handleBack}
+              disabled={isSubmitting}
+            >
               {t('atras')}
             </AppButton>
           )}
@@ -240,7 +331,7 @@ export function CheckinModal({
             <AppButton
               variant='primary'
               className='w-full'
-              disabled={step === 1 && !selectedMood}
+              disabled={isSubmitting || (step === 1 && !selectedMood)}
               onClick={handleNext}
             >
               {t('siguiente')}
@@ -249,9 +340,10 @@ export function CheckinModal({
             <AppButton
               variant='primary'
               className='w-full'
+              disabled={isSubmitting || !selectedMood}
               onClick={handleGuardar}
             >
-              {t('guardar')}
+              {isSubmitting ? 'Guardando...' : t('guardar')}
             </AppButton>
           )}
         </DialogFooter>

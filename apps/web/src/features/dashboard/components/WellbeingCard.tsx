@@ -80,7 +80,7 @@ export function WellbeingCard({
         ) : (
           <p className='text-center text-sm text-[var(--color-text-muted)]'>
             {t('promedioSemanal', {
-              promedio: promedio.toString(),
+              promedio: promedio.toString().slice(0, 4),
               mensaje,
             })}
           </p>

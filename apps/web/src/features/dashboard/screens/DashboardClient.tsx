@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
@@ -18,6 +18,16 @@ import type { SkillRow } from '../components/SkillsGapModal';
 interface Props {
   nombre: string;
   shouldOpenOnboarding: boolean;
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Error loading ${url}`);
+  }
+
+  return response.json() as Promise<T>;
 }
 
 export default function DashboardClient({
@@ -39,44 +49,46 @@ export default function DashboardClient({
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
   const [checkinModalKey, setCheckinModalKey] = useState(0);
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async () => {
     if (shouldOpenOnboarding) {
       return;
     }
 
+    try {
+      setDashboardError(false);
+
+      const [dash, skills] = await Promise.all([
+        fetchJson<DashboardResponse>('/api/dashboard'),
+        fetchJson<SkillsResponse>('/api/skills'),
+      ]);
+
+      setData(dash);
+      setSkillsData(skills);
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
+      setDashboardError(true);
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  }, [shouldOpenOnboarding]);
+
+  useEffect(() => {
     let isMounted = true;
 
-    Promise.all([
-      fetch('/api/dashboard').then((res) => {
-        if (!res.ok) throw new Error('Error loading dashboard');
-        return res.json() as Promise<DashboardResponse>;
-      }),
-      fetch('/api/skills').then((res) => {
-        if (!res.ok) throw new Error('Error loading skills');
-        return res.json() as Promise<SkillsResponse>;
-      }),
-    ])
-      .then(([dash, skills]) => {
-        if (!isMounted) return;
+    async function run() {
+      if (!isMounted) {
+        return;
+      }
 
-        setData(dash);
-        setSkillsData(skills);
-      })
-      .catch((err) => {
-        console.error('Dashboard fetch error:', err);
+      await loadDashboard();
+    }
 
-        if (!isMounted) return;
-        setDashboardError(true);
-      })
-      .finally(() => {
-        if (!isMounted) return;
-        setIsLoadingDashboard(false);
-      });
+    void run();
 
     return () => {
       isMounted = false;
     };
-  }, [shouldOpenOnboarding]);
+  }, [loadDashboard]);
 
   const nombre = data?.usuario?.nombre_completo ?? nombreProp;
   const avatarUrl = data?.usuario?.avatar_url ?? null;
@@ -113,11 +125,15 @@ export default function DashboardClient({
   const skillsGapFromUserSkills = (() => {
     const resumen = skillsData?.resumen;
 
-    if (!resumen) return undefined;
+    if (!resumen) {
+      return undefined;
+    }
 
     const total = resumen.adquiridas + resumen.faltantes + resumen.enProgreso;
 
-    if (total === 0) return undefined;
+    if (total === 0) {
+      return undefined;
+    }
 
     return Math.round((resumen.faltantes / total) * 100);
   })();
@@ -217,15 +233,17 @@ export default function DashboardClient({
       <CheckinModal
         key={checkinModalKey}
         open={checkinModalOpen}
-        onOpenChange={(v) => {
-          setCheckinModalOpen(v);
-          if (!v) {
+        onOpenChange={(nextOpen) => {
+          setCheckinModalOpen(nextOpen);
+
+          if (!nextOpen) {
             setCheckinMood('');
             setCheckinStartStep(1);
           }
         }}
         initialMood={checkinMood}
         startAtStep={checkinStartStep}
+        onSaved={loadDashboard}
       />
     </AppShell>
   );

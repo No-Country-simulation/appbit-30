@@ -6,53 +6,29 @@ import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
 export const dynamic = 'force-dynamic';
 
 function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)))}
-
-async function getDashboardUsuarioByAuthUid(authUid: string) {
-  return dbClient.usuarios.findUnique({
-    where: { auth_uid: authUid },
-    select: {
-      usuario_id: true,
-      nombre_completo: true,
-      avatar_url: true,
-      confianza: true,
-      home_cluster: true,
-      whatsapp_codigo: true,
-      whatsapp_numero: true,
-    },
-  });
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-async function getDashboardUsuarioById(usuarioId: string) {
-  return dbClient.usuarios.findUnique({
-    where: { usuario_id: usuarioId },
-    select: {
-      usuario_id: true,
-      nombre_completo: true,
-      avatar_url: true,
-      confianza: true,
-      home_cluster: true,
-      whatsapp_codigo: true,
-      whatsapp_numero: true,
-    },
-  });
-}
+const dashboardUsuarioSelect = {
+  usuario_id: true,
+  nombre_completo: true,
+  avatar_url: true,
+  confianza: true,
+  home_cluster: true,
+  whatsapp_codigo: true,
+  whatsapp_numero: true,
+  onboarding_status: true,
+} as const;
 
 export async function GET() {
   try {
     const authUser = await getCurrentAuthUser();
 
-    let usuario: Awaited<ReturnType<typeof getDashboardUsuarioByAuthUid>> =
-      null;
-
-    if (authUser) {
-      usuario = await getDashboardUsuarioByAuthUid(authUser.id);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Modo dev: usar usuario de prueba si no hay auth
-    if (!usuario) {
-      usuario = await getDashboardUsuarioById(DEV_USER_ID);
-    }
+    const usuario = await findLinkedUsuario(authUser, dashboardUsuarioSelect);
 
     if (!usuario) {
       return NextResponse.json(
@@ -95,28 +71,38 @@ export async function GET() {
           completado: true,
           orden: true,
           accion_label: true,
-          curso: { select: { titulo: true } },
+          curso: {
+            select: {
+              titulo: true,
+            },
+          },
         },
       }),
 
       dbClient.checkIns.aggregate({
         where: {
           usuario_id: userId,
-          creado_en: { gte: sevenDaysAgo },
+          creado_en: {
+            gte: sevenDaysAgo,
+          },
         },
-        _avg: { nota_diaria: true },
+        _avg: {
+          nota_diaria: true,
+        },
         _count: true,
       }),
 
       dbClient.notificacionesRadar.count({
-        where: { usuario_id: userId, leida: false },
+        where: {
+          usuario_id: userId,
+          leida: false,
+        },
       }),
 
-      dbClient.notificacionesRadar.count({
-        where: { usuario_id: userId, leida: false },
-      }),
       dbClient.perfilMovilidad.findUnique({
-        where: { usuario_id: userId },
+        where: {
+          usuario_id: userId,
+        },
         select: {
           home_cluster: true,
           income_cluster: true,
@@ -125,7 +111,9 @@ export async function GET() {
       }),
 
       dbClient.usuarioHabilidades.findMany({
-        where: { usuario_id: userId },
+        where: {
+          usuario_id: userId,
+        },
         include: {
           habilidad: {
             select: {
@@ -148,7 +136,6 @@ export async function GET() {
     const whatsappCompleted = Boolean(
       usuario.whatsapp_codigo && usuario.whatsapp_numero,
     );
-    ]);
 
     let perfilCompletado = 0;
 
@@ -188,7 +175,7 @@ export async function GET() {
         ? clampPercent(100 - gapPorcentual)
         : clampPercent(Number(usuario.confianza ?? 0));
 
-    const response = {
+    return NextResponse.json({
       perfil_completado: perfilCompletado,
       match_perfil: matchPerfil,
       perfil_breakdown: {
@@ -237,9 +224,7 @@ export async function GET() {
       },
       notificacionesNoLeidas,
       perfilMovilidad,
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
 
