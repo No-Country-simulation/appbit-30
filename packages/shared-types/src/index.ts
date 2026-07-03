@@ -26,5 +26,3 @@ export interface OrientationRequest {
   level: string;
   goal: string;
 }
-
-export * from './wellbeing';
