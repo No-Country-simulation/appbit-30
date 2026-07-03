@@ -279,5 +279,11 @@
     "verPerfil": "Ver perfil",
     "actionLabelIniciar": "Iniciar Módulo",
     "actionLabelVerTemario": "Ver ementa"
+  },
+  "Error": {
+    "title": "Serviço temporariamente indisponível",
+    "description": "Não conseguimos verificar sua sessão neste momento. Pode ser um problema temporário de conexão ou do serviço.",
+    "retry": "Tentar novamente",
+    "goToLogin": "Ir para o login"
   }
 }

@@ -1,30 +1,27 @@
-import { Link } from '@/src/i18n/navigation';
-import { getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
+import { getAuthRedirectPath } from '@/src/server/auth/get-auth-redirect-path';
+import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavailable';
 
-export default async function HomePage() {
-  const t = await getTranslations('Navigation');
+export const dynamic = 'force-dynamic';
 
-  return (
-    <main className='flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--color-body)] p-6'>
-      <h1 className='font-heading text-4xl font-black text-[var(--color-text)]'>
-        Bi.T
-      </h1>
+type Props = {
+  params: Promise<{
+    locale: string;
+  }>;
+};
 
-      <div className='flex gap-3'>
-        <Link
-          href='/playground'
-          className='rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 py-3 font-body font-semibold text-white'
-        >
-          {t('playground')}
-        </Link>
+export default async function HomePage({ params }: Props) {
+  const { locale } = await params;
 
-        <Link
-          href='/auth'
-          className='rounded-[var(--radius-md)] border border-[var(--color-border)] px-5 py-3 font-body font-semibold text-[var(--color-text)]'
-        >
-          {t('auth')}
-        </Link>
-      </div>
-    </main>
-  );
+  let redirectPath: Awaited<ReturnType<typeof getAuthRedirectPath>>;
+
+  try {
+    redirectPath = await getAuthRedirectPath(locale);
+  } catch (error) {
+    console.error('Error resolving home auth redirect path:', error);
+
+    return <AuthStateUnavailable locale={locale} retryPath='/' />;
+  }
+
+  redirect(redirectPath);
 }

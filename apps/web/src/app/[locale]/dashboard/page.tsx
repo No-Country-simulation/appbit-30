@@ -1,5 +1,7 @@
 import DashboardScreen from '@/src/features/dashboard/screens/DashboardScreen';
 
+export const dynamic = 'force-dynamic';
+
 type Props = {
   params: Promise<{
     locale: string;
