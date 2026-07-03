@@ -98,7 +98,10 @@ app.post('/wellbeing/analyze', async (c) => {
       idioma,
     } = validation.data;
 
-    const nota_actual = nota_diaria ?? EMOJI_VALUES[emoji];
+    type EmojiKey = keyof typeof EMOJI_VALUES;
+
+    const emojiKey = emoji as EmojiKey;
+    const nota_actual = nota_diaria ?? EMOJI_VALUES[emojiKey];
 
     const totalNotas = [...historial_semanal, nota_actual];
     const nota_semanal = Number(
@@ -108,7 +111,7 @@ app.post('/wellbeing/analyze', async (c) => {
     const tendencia_baja =
       historial_semanal.length > 1 &&
       historial_semanal.every(
-        (val, i) => i === 0 || val <= historial_semanal[i - 1]!,
+        (val: number, i: number) => i === 0 || val <= historial_semanal[i - 1]!,
       );
 
     let derivar_cvv =
@@ -295,7 +298,7 @@ PERFIL DEL USUARIO:
     }
 - Objetivos: ${data.objetivos.join(', ')}
 - Dispositivos disponibles: ${data.dispositivos.join(', ')}
-- Tipo de conexión: ${data.tipoConexion}
+- Tipos de conexión: ${data.tipoConexion.join(', ')}
 - Ciudad: ${data.ciudad}, ${data.pais}
 - Idioma de respuesta: ${idiomaRespuesta}
 

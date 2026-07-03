@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/src/i18n/navigation';
 import {
@@ -23,6 +23,8 @@ import {
   AppInput,
   ChoiceChip,
   CountryCodeSelect,
+  formatPhoneNumber,
+  countries,
   StepIndicator,
 } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
@@ -32,7 +34,6 @@ import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
 const SELECT_TRIGGER_CLASSES =
   'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
-const NUMBERS_ONLY_REGEX = /^\d*$/;
 
 const SIN_CONOCIMIENTO = 'Desde_cero' as const;
 const CON_CONOCIMIENTOS = 'Con_conocimientos_previos' as const;
@@ -49,13 +50,13 @@ interface FormData {
   areasInteres: string[];
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
-  ubicacionTrabajo: string;
+  ubicacionTrabajo: string[];
   nivelExperienciaTecnologia: string;
   habilidadesTecnicas: string[];
   habilidadesBlandas: string[];
   objetivos: string[];
   dispositivos: string[];
-  tipoConexion: string;
+  tipoConexion: string[];
   whatsappCodigo: string;
   whatsappNumero: string;
 }
@@ -72,16 +73,47 @@ const INITIAL_FORM_DATA: FormData = {
   areasInteres: [],
   idiomas: [],
   disponibilidad: [],
-  ubicacionTrabajo: '',
+  ubicacionTrabajo: [],
   nivelExperienciaTecnologia: '',
   habilidadesTecnicas: [],
   habilidadesBlandas: [],
   objetivos: [],
   dispositivos: [],
-  tipoConexion: '',
+  tipoConexion: [],
   whatsappCodigo: '',
   whatsappNumero: '',
 };
+
+const STORAGE_KEY = 'onboarding_form_data';
+const STORAGE_KEY_STEP = 'onboarding_step';
+
+const FORM_DATA_KEYS: (keyof FormData)[] = [
+  'fechaNacimiento', 'genero', 'pais', 'provinciaEstado', 'ciudad', 'zonaResidencia',
+  'nivelEducacion', 'momentoProfesional', 'areasInteres', 'idiomas',
+  'disponibilidad', 'ubicacionTrabajo', 'nivelExperienciaTecnologia',
+  'habilidadesTecnicas', 'habilidadesBlandas', 'objetivos', 'dispositivos',
+  'tipoConexion', 'whatsappCodigo', 'whatsappNumero',
+];
+
+function getStoredFormData(): FormData {
+  if (typeof window === 'undefined') return INITIAL_FORM_DATA;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return INITIAL_FORM_DATA;
+    const parsed = JSON.parse(raw);
+    const valid = FORM_DATA_KEYS.every((key) => key in parsed);
+    if (!valid) return INITIAL_FORM_DATA;
+    return parsed as FormData;
+  } catch {
+    return INITIAL_FORM_DATA;
+  }
+}
+
+function clearStorage() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_STEP);
+}
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -114,7 +146,16 @@ export function OnboardingModal({
   const t = useTranslations('Onboarding');
   const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window === 'undefined') return 1 as Step;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_STEP);
+      const n = Number(saved);
+      return (n >= 1 && n <= 4 ? n : 1) as Step;
+    } catch {
+      return 1 as Step;
+    }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectOpenRef = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -127,9 +168,17 @@ export function OnboardingModal({
     }
   }, []);
 
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>(getStoredFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_STEP, String(step));
+  }, [step]);
 
   function toggleArray(
     field: keyof Pick<
@@ -138,10 +187,12 @@ export function OnboardingModal({
       | 'momentoProfesional'
       | 'areasInteres'
       | 'disponibilidad'
+      | 'ubicacionTrabajo'
       | 'habilidadesTecnicas'
       | 'habilidadesBlandas'
       | 'objetivos'
       | 'dispositivos'
+      | 'tipoConexion'
     >,
     value: string,
   ) {
@@ -204,7 +255,7 @@ export function OnboardingModal({
         d.areasInteres.length > 0 &&
         d.idiomas.some((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
-        !!d.ubicacionTrabajo
+        d.ubicacionTrabajo.length > 0
       );
     }
 
@@ -227,7 +278,7 @@ export function OnboardingModal({
     return (
       d.objetivos.length > 0 &&
       d.dispositivos.length > 0 &&
-      !!d.tipoConexion &&
+      d.tipoConexion.length > 0 &&
       isWhatsappValid
     );
   }
@@ -317,6 +368,7 @@ export function OnboardingModal({
   function resetForm() {
     setStep(1);
     setFormData(INITIAL_FORM_DATA);
+    clearStorage();
     setShowErrors(false);
     setIsLoading(false);
     setSubmitError(null);
@@ -366,6 +418,8 @@ export function OnboardingModal({
     { value: 'B1', label: t('nivelOption3') },
     { value: 'B2', label: t('nivelOption4') },
     { value: 'C1', label: t('nivelOption5') },
+    { value: 'C2', label: t('nivelOption6') },
+    { value: 'Nativo', label: t('nivelOption7') },
   ];
 
   const disponibilidadOptions = [
@@ -802,26 +856,17 @@ export function OnboardingModal({
 
                 <div>
                   <Body>{t('ubicacionTrabajoLabel')}</Body>
-                  <div className='mt-2 flex flex-wrap gap-2 mb-6'>
+                  <div className='mt-2 flex flex-wrap gap-2'>
                     {ubicacionTrabajoOptions.map((opt) => (
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.ubicacionTrabajo === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            ubicacionTrabajo:
-                              prev.ubicacionTrabajo === opt.value
-                                ? ''
-                                : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.ubicacionTrabajo.includes(opt.value)}
+                        onClick={() => toggleArray('ubicacionTrabajo', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.ubicacionTrabajo} />
+                  <FieldError show={showErrors && formData.ubicacionTrabajo.length === 0} />
                 </div>
               </div>
             )}
@@ -972,19 +1017,12 @@ export function OnboardingModal({
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.tipoConexion === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            tipoConexion:
-                              prev.tipoConexion === opt.value ? '' : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.tipoConexion.includes(opt.value)}
+                        onClick={() => toggleArray('tipoConexion', opt.value)}
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.tipoConexion} />
+                  <FieldError show={showErrors && formData.tipoConexion.length === 0} />
                 </div>
 
                 <div>
@@ -1020,19 +1058,42 @@ export function OnboardingModal({
                       />
                     </div>
                     <div className='w-2/3'>
-                      <AppInput
-                        value={formData.whatsappNumero}
-                        onChange={(e) => {
-                          if (NUMBERS_ONLY_REGEX.test(e.target.value))
-                            setFormData((prev) => ({
-                              ...prev,
-                              whatsappNumero: e.target.value,
-                            }));
-                        }}
-                        placeholder={t('whatsappPlaceholder')}
-                      />
+                      {(() => {
+                        const country = countries.find(
+                          (c) => c.code === formData.whatsappCodigo,
+                        );
+                        const maxLen = country?.phoneLength ?? 15;
+                        const blocks = country?.phoneBlocks ?? [3, 3, 4];
+
+                        return (
+                          <AppInput
+                            value={formatPhoneNumber(
+                              formData.whatsappNumero,
+                              blocks,
+                            )}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              if (raw.length <= maxLen)
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  whatsappNumero: raw,
+                                }));
+                            }}
+                            placeholder={country?.phoneHint ?? ''}
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
+                  {formData.whatsappCodigo && (
+                    <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
+                      {t('phoneFormatHint', {
+                        hint: countries.find(
+                          (c) => c.code === formData.whatsappCodigo,
+                        )?.phoneHint ?? '',
+                      })}
+                    </Caption>
+                  )}
                   <div className='mt-3 flex items-center gap-1.5 mb-4'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>

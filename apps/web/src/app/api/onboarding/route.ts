@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
-import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
 import {
   IdiomaAppEnum,
   EstadoHabilidadEnum,
+  NivelIdiomaEnum,
 } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 
-const NIVEL_IDIOMA_MAP = {
-  A1: 'A1_Basico' as NivelIdiomaEnum,
-  A2: 'A2_Elemental' as NivelIdiomaEnum,
-  B1: 'B1_Intermedio' as NivelIdiomaEnum,
-  B2: 'B2_Avanzado' as NivelIdiomaEnum,
-  C1: 'C1_Fluido' as NivelIdiomaEnum,
-} satisfies Record<string, NivelIdiomaEnum>;
+const NIVEL_IDIOMA_MAP: Partial<Record<string, NivelIdiomaEnum>> = {
+  A1: NivelIdiomaEnum.A1_Basico,
+  A2: NivelIdiomaEnum.A2_Elemental,
+  B1: NivelIdiomaEnum.B1_Intermedio,
+  B2: NivelIdiomaEnum.B2_Avanzado,
+  C1: NivelIdiomaEnum.C1_Fluido,
+};
+
+function normalizeNivelIdioma(nivel: string): NivelIdiomaEnum {
+  return NIVEL_IDIOMA_MAP[nivel] ?? NivelIdiomaEnum.C1_Fluido;
+}
 
 const HABILIDAD_TECNICA_TO_CATALOG_NAME: Record<string, string> = {
   React_Frontend: 'React',
@@ -131,7 +135,6 @@ export async function POST(request: Request) {
         provincia_estado: data.provinciaEstado ?? null,
         ciudad: data.ciudad,
         zona_residencia: data.zonaResidencia ?? null,
-        tipo_conexion: data.tipoConexion,
         whatsapp_codigo: data.whatsappCodigo ?? null,
         whatsapp_numero: data.whatsappNumero ?? null,
         idioma_app: idiomaApp,
@@ -212,7 +215,7 @@ export async function POST(request: Request) {
           data: data.idiomas.map(({ idioma, nivel }) => ({
             usuario_id: usuarioId,
             idioma,
-            nivel: NIVEL_IDIOMA_MAP[nivel] ?? nivel,
+            nivel: normalizeNivelIdioma(nivel),
           })),
         });
       }
@@ -234,12 +237,14 @@ export async function POST(request: Request) {
         where: { usuario_id: usuarioId },
       });
 
-      await tx.usuarioUbicacionTrabajo.create({
-        data: {
-          usuario_id: usuarioId,
-          ubicacion: data.ubicacionTrabajo,
-        },
-      });
+      if (data.ubicacionTrabajo.length > 0) {
+        await tx.usuarioUbicacionTrabajo.createMany({
+          data: data.ubicacionTrabajo.map((ubicacion) => ({
+            usuario_id: usuarioId,
+            ubicacion,
+          })),
+        });
+      }
 
       const habilidadesCatalogo = await tx.habilidadesMercado.findMany({
         where: {
@@ -304,6 +309,20 @@ export async function POST(request: Request) {
             usuario_id: usuarioId,
             dispositivo,
           })),
+        });
+      }
+
+      await tx.usuarioTipoConexion.deleteMany({
+        where: { usuario_id: usuarioId },
+      });
+
+      if (data.tipoConexion.length > 0) {
+        await tx.usuarioTipoConexion.createMany({
+          data: data.tipoConexion.map((tipo) => ({
+            usuario_id: usuarioId,
+            tipo_conexion: tipo,
+          })),
+          skipDuplicates: true,
         });
       }
 

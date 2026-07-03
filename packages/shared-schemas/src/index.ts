@@ -35,6 +35,7 @@ const emojiKeys = Object.keys(EMOJI_VALUES) as [
 export const wellbeingEmojiSchema = z.enum(emojiKeys);
 
 // --- SCHEMAS PARA BIENESTAR (HU 9.3) ---
+
 export const wellbeingRequestSchema = z.object({
   userId: z.string(),
   emoji: wellbeingEmojiSchema,
@@ -54,6 +55,33 @@ export const wellbeingResponseSchema = z.object({
   alerta: z.boolean(),
 });
 
+export type WellbeingRequest = z.infer<typeof wellbeingRequestSchema>;
+
+export const EMOJIS_CHECKIN = [
+  'agotado',
+  'triste',
+  'neutral',
+  'bien',
+  'genial',
+] as const;
+
+export const checkinRequestSchema = z.object({
+  emoji: z.enum(EMOJIS_CHECKIN, {
+    error: 'El estado emocional seleccionado no es válido.',
+  }),
+
+  motivos: z
+    .array(z.string().trim().min(1, 'El motivo no puede estar vacío'))
+    .max(10, 'Se permiten como máximo 10 motivos.'),
+
+  contexto: z
+    .string()
+    .trim()
+    .max(500, 'El contexto no puede superar los 500 caracteres.')
+    .optional(),
+});
+
+export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
 // --- SCHEMAS PARA ONBOARDING (FE-002) ---
 export const onboardingStep1Schema = z
   .object({
@@ -129,7 +157,15 @@ export const onboardingStep2Schema = z
             'Portugues',
             'Frances',
           ] as const),
-          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
+          nivel: z.enum([
+            'A1',
+            'A2',
+            'B1',
+            'B2',
+            'C1',
+            'C2',
+            'Nativo',
+          ] as const),
         }),
       )
       .min(1, { message: 'Seleccioná al menos un idioma' }),
@@ -138,7 +174,9 @@ export const onboardingStep2Schema = z
         z.enum(['Part_time', 'Full_time', 'Contractor', 'Freelance'] as const),
       )
       .min(1, { message: 'Seleccioná al menos una disponibilidad' }),
-    ubicacionTrabajo: z.enum(['Presencial', 'Hibrido', 'Remoto'] as const),
+    ubicacionTrabajo: z
+      .array(z.enum(['Presencial', 'Hibrido', 'Remoto'] as const))
+      .min(1, { message: 'Seleccioná al menos una modalidad' }),
   })
   .strip();
 
@@ -200,12 +238,16 @@ export const onboardingStep4Schema = z
     dispositivos: z
       .array(z.enum(['Solo_celular', 'PC_Laptop', 'Tablet'] as const))
       .min(1, { message: 'Seleccioná al menos un dispositivo' }),
-    tipoConexion: z.enum([
-      'Banda_ancha_estable',
-      'Datos_moviles',
-      'Conexion_inestable',
-      'Sin_conexion_casa',
-    ] as const),
+    tipoConexion: z
+      .array(
+        z.enum([
+          'Banda_ancha_estable',
+          'Datos_moviles',
+          'Conexion_inestable',
+          'Sin_conexion_casa',
+        ] as const),
+      )
+      .min(1, { message: 'Seleccioná al menos un tipo de conexión' }),
     whatsappCodigo: z
       .string()
       .regex(/^\+\d{1,4}$/, 'Código de país inválido (ej: +54)')
@@ -216,6 +258,31 @@ export const onboardingStep4Schema = z
       .optional(),
   })
   .strip();
+
+const PHONE_LENGTH_MAP: Record<string, number> = {
+  '+54': 10,
+  '+55': 11,
+  '+56': 9,
+  '+57': 10,
+  '+52': 10,
+  '+51': 9,
+  '+598': 8,
+  '+595': 9,
+  '+591': 8,
+  '+593': 9,
+  '+58': 10,
+  '+53': 8,
+  '+1': 10,
+  '+502': 8,
+  '+504': 8,
+  '+503': 8,
+  '+505': 8,
+  '+506': 8,
+  '+507': 8,
+  '+34': 9,
+  '+44': 10,
+  '+351': 9,
+};
 
 export const onboardingSchema = z
   .object({
@@ -234,6 +301,17 @@ export const onboardingSchema = z
         path: ['whatsappNumero'],
         message: 'whatsappCodigo y whatsappNumero deben completarse juntos',
       });
+    }
+
+    if (data.whatsappCodigo && data.whatsappNumero) {
+      const expectedLen = PHONE_LENGTH_MAP[data.whatsappCodigo];
+      if (expectedLen && data.whatsappNumero.length !== expectedLen) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `El número debe tener ${expectedLen} dígitos para ${data.whatsappCodigo}`,
+          path: ['whatsappNumero'],
+        });
+      }
     }
 
     if (data.nivelExperienciaTecnologia === 'Con_conocimientos_previos') {
@@ -374,7 +452,7 @@ export const onboardingAIRequestSchema = z.object({
     }),
   ),
   disponibilidad: z.array(z.string()),
-  ubicacionTrabajo: z.string(),
+  ubicacionTrabajo: z.array(z.string()),
   nivelExperienciaTecnologia: z.enum([
     'Desde_cero',
     'Con_conocimientos_previos',
@@ -383,7 +461,16 @@ export const onboardingAIRequestSchema = z.object({
   habilidadesBlandas: z.array(z.string()).default([]),
   objetivos: z.array(z.string()),
   dispositivos: z.array(z.string()),
-  tipoConexion: z.string(),
+  tipoConexion: z
+    .array(
+      z.enum([
+        'Banda_ancha_estable',
+        'Datos_moviles',
+        'Conexion_inestable',
+        'Sin_conexion_casa',
+      ] as const),
+    )
+    .min(1),
   locale: z.string().optional(),
   nivel_inicial: z
     .enum(['sin_conocimiento', 'con_conocimientos_previos'] as const)

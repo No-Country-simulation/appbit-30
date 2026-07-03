@@ -6,18 +6,12 @@ import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
 export const dynamic = 'force-dynamic';
 
 function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
+  return Math.max(0, Math.min(100, Math.round(value)))}
 
-export async function GET() {
-  try {
-    const authUser = await getCurrentAuthUser();
-
-    if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const usuario = await findLinkedUsuario(authUser, {
+async function getDashboardUsuarioByAuthUid(authUid: string) {
+  return dbClient.usuarios.findUnique({
+    where: { auth_uid: authUid },
+    select: {
       usuario_id: true,
       nombre_completo: true,
       avatar_url: true,
@@ -25,8 +19,40 @@ export async function GET() {
       home_cluster: true,
       whatsapp_codigo: true,
       whatsapp_numero: true,
-      onboarding_status: true,
-    });
+    },
+  });
+}
+
+async function getDashboardUsuarioById(usuarioId: string) {
+  return dbClient.usuarios.findUnique({
+    where: { usuario_id: usuarioId },
+    select: {
+      usuario_id: true,
+      nombre_completo: true,
+      avatar_url: true,
+      confianza: true,
+      home_cluster: true,
+      whatsapp_codigo: true,
+      whatsapp_numero: true,
+    },
+  });
+}
+
+export async function GET() {
+  try {
+    const authUser = await getCurrentAuthUser();
+
+    let usuario: Awaited<ReturnType<typeof getDashboardUsuarioByAuthUid>> =
+      null;
+
+    if (authUser) {
+      usuario = await getDashboardUsuarioByAuthUid(authUser.id);
+    }
+
+    // Modo dev: usar usuario de prueba si no hay auth
+    if (!usuario) {
+      usuario = await getDashboardUsuarioById(DEV_USER_ID);
+    }
 
     if (!usuario) {
       return NextResponse.json(
@@ -86,6 +112,9 @@ export async function GET() {
         where: { usuario_id: userId, leida: false },
       }),
 
+      dbClient.notificacionesRadar.count({
+        where: { usuario_id: userId, leida: false },
+      }),
       dbClient.perfilMovilidad.findUnique({
         where: { usuario_id: userId },
         select: {
@@ -119,6 +148,7 @@ export async function GET() {
     const whatsappCompleted = Boolean(
       usuario.whatsapp_codigo && usuario.whatsapp_numero,
     );
+    ]);
 
     let perfilCompletado = 0;
 

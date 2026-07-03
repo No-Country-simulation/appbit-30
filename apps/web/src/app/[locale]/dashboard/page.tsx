@@ -5,6 +5,8 @@ import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavai
 
 export const dynamic = 'force-dynamic';
 
+export const dynamic = 'force-dynamic';
+
 type Props = {
   params: Promise<{
     locale: string;
