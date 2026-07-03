@@ -88,11 +88,26 @@ const STORAGE_KEY = 'onboarding_form_data';
 const STORAGE_KEY_STEP = 'onboarding_step';
 
 const FORM_DATA_KEYS: (keyof FormData)[] = [
-  'fechaNacimiento', 'genero', 'pais', 'provinciaEstado', 'ciudad', 'zonaResidencia',
-  'nivelEducacion', 'momentoProfesional', 'areasInteres', 'idiomas',
-  'disponibilidad', 'ubicacionTrabajo', 'nivelExperienciaTecnologia',
-  'habilidadesTecnicas', 'habilidadesBlandas', 'objetivos', 'dispositivos',
-  'tipoConexion', 'whatsappCodigo', 'whatsappNumero',
+  'fechaNacimiento',
+  'genero',
+  'pais',
+  'provinciaEstado',
+  'ciudad',
+  'zonaResidencia',
+  'nivelEducacion',
+  'momentoProfesional',
+  'areasInteres',
+  'idiomas',
+  'disponibilidad',
+  'ubicacionTrabajo',
+  'nivelExperienciaTecnologia',
+  'habilidadesTecnicas',
+  'habilidadesBlandas',
+  'objetivos',
+  'dispositivos',
+  'tipoConexion',
+  'whatsappCodigo',
+  'whatsappNumero',
 ];
 
 function getStoredFormData(): FormData {
@@ -136,12 +151,14 @@ interface OnboardingModalProps {
   children?: React.ReactNode;
   defaultOpen?: boolean;
   locked?: boolean;
+  onCompleted?: () => void | Promise<void>;
 }
 
 export function OnboardingModal({
   children,
   defaultOpen = false,
   locked = false,
+  onCompleted,
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
   const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
@@ -351,8 +368,12 @@ export function OnboardingModal({
           throw new Error(t('submitError'));
         }
 
-        setOpen(false);
-        resetForm();
+        if (onCompleted) {
+          setOpen(false);
+          resetForm();
+          await onCompleted();
+          return;
+        }
 
         router.replace('/dashboard', { locale });
         router.refresh();
@@ -862,11 +883,15 @@ export function OnboardingModal({
                         key={opt.value}
                         label={opt.label}
                         selected={formData.ubicacionTrabajo.includes(opt.value)}
-                        onClick={() => toggleArray('ubicacionTrabajo', opt.value)}
+                        onClick={() =>
+                          toggleArray('ubicacionTrabajo', opt.value)
+                        }
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.ubicacionTrabajo.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.ubicacionTrabajo.length === 0}
+                  />
                 </div>
               </div>
             )}
@@ -1022,7 +1047,9 @@ export function OnboardingModal({
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.tipoConexion.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.tipoConexion.length === 0}
+                  />
                 </div>
 
                 <div>
@@ -1088,9 +1115,10 @@ export function OnboardingModal({
                   {formData.whatsappCodigo && (
                     <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
                       {t('phoneFormatHint', {
-                        hint: countries.find(
-                          (c) => c.code === formData.whatsappCodigo,
-                        )?.phoneHint ?? '',
+                        hint:
+                          countries.find(
+                            (c) => c.code === formData.whatsappCodigo,
+                          )?.phoneHint ?? '',
                       })}
                     </Caption>
                   )}

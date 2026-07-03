@@ -21,13 +21,23 @@ interface Props {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    cache: 'no-store',
+  });
 
   if (!response.ok) {
     throw new Error(`Error loading ${url}`);
   }
 
   return response.json() as Promise<T>;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasGeneratedRecommendations(dashboard: DashboardResponse) {
+  return dashboard.planAccion.length > 0;
 }
 
 export default function DashboardClient({
@@ -38,9 +48,17 @@ export default function DashboardClient({
 
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
+
+  const [onboardingCompletedClient, setOnboardingCompletedClient] =
+    useState(false);
+
+  const shouldShowOnboarding =
+    shouldOpenOnboarding && !onboardingCompletedClient;
+
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(
-    () => !shouldOpenOnboarding,
+    () => !shouldShowOnboarding,
   );
+
   const [dashboardError, setDashboardError] = useState(false);
 
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
@@ -49,46 +67,82 @@ export default function DashboardClient({
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
   const [checkinModalKey, setCheckinModalKey] = useState(0);
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(
+    async (
+      options: {
+        waitForRecommendations?: boolean;
+        force?: boolean;
+      } = {},
+    ) => {
+      if (shouldShowOnboarding && !options.force) {
+        return;
+      }
+
+      const maxAttempts = options.waitForRecommendations ? 12 : 1;
+      const delayMs = 1500;
+
+      try {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const [dash, skills] = await Promise.all([
+            fetchJson<DashboardResponse>('/api/dashboard'),
+            fetchJson<SkillsResponse>('/api/skills'),
+          ]);
+
+          setData(dash);
+          setSkillsData(skills);
+          setDashboardError(false);
+
+          if (
+            !options.waitForRecommendations ||
+            hasGeneratedRecommendations(dash)
+          ) {
+            break;
+          }
+
+          if (attempt < maxAttempts) {
+            await sleep(delayMs);
+          }
+        }
+      } catch (error) {
+        console.error('Dashboard fetch error:', error);
+        setDashboardError(true);
+      } finally {
+        setIsLoadingDashboard(false);
+      }
+    },
+    [shouldShowOnboarding],
+  );
+
+  useEffect(() => {
     if (shouldOpenOnboarding) {
       return;
     }
 
-    try {
-      setDashboardError(false);
-
-      const [dash, skills] = await Promise.all([
-        fetchJson<DashboardResponse>('/api/dashboard'),
-        fetchJson<SkillsResponse>('/api/skills'),
-      ]);
-
-      setData(dash);
-      setSkillsData(skills);
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      setDashboardError(true);
-    } finally {
-      setIsLoadingDashboard(false);
-    }
-  }, [shouldOpenOnboarding]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function run() {
-      if (!isMounted) {
-        return;
-      }
-
-      await loadDashboard();
-    }
-
-    void run();
+    const timeoutId = window.setTimeout(() => {
+      void loadDashboard();
+    }, 0);
 
     return () => {
-      isMounted = false;
+      window.clearTimeout(timeoutId);
     };
-  }, [loadDashboard]);
+  }, [loadDashboard, shouldOpenOnboarding]);
+
+  async function handleOnboardingCompleted() {
+    setOnboardingCompletedClient(true);
+    setData(null);
+    setSkillsData(null);
+    setDashboardError(false);
+    setIsLoadingDashboard(true);
+
+    await loadDashboard({
+      force: true,
+      waitForRecommendations: true,
+    });
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }
 
   const nombre = data?.usuario?.nombre_completo ?? nombreProp;
   const avatarUrl = data?.usuario?.avatar_url ?? null;
@@ -219,7 +273,13 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {shouldOpenOnboarding && <OnboardingModal defaultOpen locked />}
+      {shouldShowOnboarding && (
+        <OnboardingModal
+          defaultOpen
+          locked
+          onCompleted={handleOnboardingCompleted}
+        />
+      )}
 
       <SkillsGapModal
         open={skillsModalOpen}
@@ -243,7 +303,11 @@ export default function DashboardClient({
         }}
         initialMood={checkinMood}
         startAtStep={checkinStartStep}
-        onSaved={loadDashboard}
+        onSaved={() =>
+          loadDashboard({
+            force: true,
+          })
+        }
       />
     </AppShell>
   );

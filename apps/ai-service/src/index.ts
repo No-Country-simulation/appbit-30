@@ -55,23 +55,84 @@ function fallbackPlanTitle(locale?: string) {
   return locale === 'pt' ? 'Plano de ação' : 'Plan de acción';
 }
 
-function normalizePlanItems(
-  items: {
-    titulo: string;
-    prioridad: string;
-    curso_sugerido: string | null;
-    accion_label: string;
-  }[],
-  locale?: string,
-) {
-  return items.slice(0, 5).map((item, index) => ({
+type SafePlanItem = {
+  titulo: string;
+  prioridad: string;
+  curso_sugerido: string | null;
+  accion_label: string | null;
+};
+
+function normalizePlanItems(items: unknown, locale?: string): SafePlanItem[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.slice(0, 5).map((item, index) => {
+    const rawItem =
+      item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+
+    return {
+      titulo:
+        truncateText(rawItem.titulo, 255) ??
+        `${fallbackPlanTitle(locale)} ${index + 1}`,
+      prioridad: truncateText(rawItem.prioridad, 50) ?? 'Media_prioridad',
+      curso_sugerido: truncateText(rawItem.curso_sugerido, 255),
+      accion_label: truncateText(rawItem.accion_label, 100),
+    };
+  });
+}
+
+function buildFallbackPlanItems(params: {
+  fallbackGapItems: { habilidad: string }[];
+  cursosDisponibles: { titulo: string }[];
+  locale?: string;
+}): SafePlanItem[] {
+  const { fallbackGapItems, cursosDisponibles, locale } = params;
+  const defaultCourse = cursosDisponibles[0]?.titulo ?? null;
+
+  const itemsFromGap = fallbackGapItems.slice(0, 3).map((item, index) => ({
     titulo:
-      truncateText(item.titulo, 255) ??
-      `${fallbackPlanTitle(locale)} ${index + 1}`,
-    prioridad: item.prioridad,
-    curso_sugerido: truncateText(item.curso_sugerido, 255),
-    accion_label: truncateText(item.accion_label, 100),
+      locale === 'pt'
+        ? `Reforçar fundamentos de ${item.habilidad}`
+        : `Reforzar fundamentos de ${item.habilidad}`,
+    prioridad: index === 0 ? 'Alta_prioridad' : 'Media_prioridad',
+    curso_sugerido: defaultCourse,
+    accion_label: locale === 'pt' ? 'Começar agora' : 'Empezar ahora',
   }));
+
+  if (itemsFromGap.length > 0) {
+    return itemsFromGap;
+  }
+
+  return [
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Completar o primeiro curso recomendado'
+          : 'Completar el primer curso recomendado',
+      prioridad: 'Alta_prioridad',
+      curso_sugerido: defaultCourse,
+      accion_label: locale === 'pt' ? 'Ver curso' : 'Ver curso',
+    },
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Construir um projeto simples para praticar'
+          : 'Construir un proyecto simple para practicar',
+      prioridad: 'Media_prioridad',
+      curso_sugerido: null,
+      accion_label: locale === 'pt' ? 'Planejar projeto' : 'Planear proyecto',
+    },
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Atualizar o perfil com novas habilidades'
+          : 'Actualizar el perfil con nuevas habilidades',
+      prioridad: 'Baja_prioridad',
+      curso_sugerido: null,
+      accion_label: locale === 'pt' ? 'Atualizar perfil' : 'Actualizar perfil',
+    },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -365,87 +426,116 @@ Respuesta JSON estricta, sin markdown:
 
     const aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
 
-    const safePlanAccion = normalizePlanItems(
-      Array.isArray(aiResponse.plan_accion) ? aiResponse.plan_accion : [],
+    const aiGapItems = Array.isArray(aiResponse.gap_items)
+      ? aiResponse.gap_items
+      : [];
+
+    const safeGapItems = aiGapItems.length > 0 ? aiGapItems : fallbackGapItems;
+
+    const safeTrayectoriaSugerida =
+      Array.isArray(aiResponse.trayectoria_sugerida) &&
+      aiResponse.trayectoria_sugerida.length > 0
+        ? aiResponse.trayectoria_sugerida.slice(0, 3)
+        : [
+            data.areasInteres[0]
+              ? `${data.areasInteres[0]} Jr`
+              : data.locale === 'pt'
+                ? 'Perfil tecnológico inicial'
+                : 'Perfil tecnológico inicial',
+          ];
+
+    const aiPlanAccion = normalizePlanItems(
+      aiResponse.plan_accion,
       data.locale,
     );
+
+    const fallbackPlanAccion = buildFallbackPlanItems({
+      fallbackGapItems,
+      cursosDisponibles,
+      locale: data.locale,
+    });
+
+    const safePlanAccion =
+      aiPlanAccion.length > 0 ? aiPlanAccion : fallbackPlanAccion;
 
     const safeGapPorcentual = clampPercent(
       data.gap_inicial ?? dbGapPorcentual ?? Number(aiResponse.gap_porcentual),
     );
 
-    const safeGapItems =
-      aiResponse.gap_items.length > 0 ? aiResponse.gap_items : fallbackGapItems;
+    const cursoIdByExactTitle = new Map(
+      cursosDisponibles.map((curso) => [
+        curso.titulo.trim().toLowerCase(),
+        curso.curso_id,
+      ]),
+    );
 
-    const orientacion = await dbClient.$transaction(async (tx) => {
-      await tx.orientaciones.deleteMany({ where: { usuario_id: userId } });
-      await tx.planAccion.deleteMany({ where: { usuario_id: userId } });
+    const planRows = safePlanAccion.map((item, index) => {
+      const cursoKey = item.curso_sugerido?.trim().toLowerCase();
+      const cursoId = cursoKey
+        ? (cursoIdByExactTitle.get(cursoKey) ?? null)
+        : null;
 
-      const orient = await tx.orientaciones.create({
-        data: {
-          usuario_id: userId,
-          gap_porcentual: safeGapPorcentual,
-          gap_items: safeGapItems as any,
-          trayectoria_sugerida: aiResponse.trayectoria_sugerida as any,
-          vacantes_compatibles: [],
-          confianza: 0.85,
-          idioma_respuesta:
-            data.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es,
-        },
-      });
+      return {
+        usuario_id: userId,
+        titulo: item.titulo,
+        prioridad: normalizePrioridad(item.prioridad),
+        orden: index + 1,
+        curso_vinculado_id: cursoId,
+        accion_label: item.accion_label,
+      };
+    });
 
-      let planCreados = 0;
+    console.log('AI onboarding parsed:', {
+      usuarioId: userId,
+      gapPorcentual: safeGapPorcentual,
+      planItems: planRows.length,
+      skillsExistentes: existingUserSkills.length,
+      cursosDisponibles: cursosDisponibles.length,
+    });
 
-      for (let i = 0; i < safePlanAccion.length; i++) {
-        const item = safePlanAccion[i]!;
-        let cursoId: string | null = null;
-
-        console.log('AI onboarding parsed:', {
-          usuarioId: userId,
-          gapPorcentual: aiResponse.gap_porcentual,
-          planItems: safePlanAccion.length,
-          skillsExistentes: existingUserSkills.length,
-        });
-
-        if (item.curso_sugerido) {
-          const curso = await tx.cursos.findFirst({
-            where: {
-              titulo: {
-                contains: item.curso_sugerido,
-                mode: 'insensitive',
-              },
-            },
-            select: { curso_id: true },
-          });
-
-          cursoId = curso?.curso_id ?? null;
-        }
-
-        console.log('Creating plan item:', {
-          index: i + 1,
-          tituloLength: item.titulo.length,
-          accionLabelLength: item.accion_label?.length ?? 0,
-        });
-
-        await tx.planAccion.create({
-          data: {
+    const orientacion = await dbClient.$transaction(
+      async (tx) => {
+        await tx.planAccion.deleteMany({
+          where: {
             usuario_id: userId,
-            titulo: item.titulo,
-            prioridad: normalizePrioridad(item.prioridad),
-            orden: i + 1,
-            curso_vinculado_id: cursoId,
-            accion_label: item.accion_label,
           },
         });
 
-        planCreados++;
-      }
+        await tx.orientaciones.deleteMany({
+          where: {
+            usuario_id: userId,
+          },
+        });
 
-      return {
-        orient,
-        planCreados,
-      };
-    });
+        const orient = await tx.orientaciones.create({
+          data: {
+            usuario_id: userId,
+            gap_porcentual: safeGapPorcentual,
+            gap_items: safeGapItems as any,
+            trayectoria_sugerida: safeTrayectoriaSugerida as any,
+            vacantes_compatibles: [],
+            confianza: 0.85,
+            idioma_respuesta:
+              data.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es,
+          },
+        });
+
+        if (planRows.length > 0) {
+          await tx.planAccion.createMany({
+            data: planRows,
+          });
+        }
+
+        return {
+          orient,
+          planCreados: planRows.length,
+        };
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
 
     return c.json({
       success: true,
@@ -472,13 +562,23 @@ Respuesta JSON estricta, sin markdown:
 // Helpers
 // ---------------------------------------------------------------------------
 function normalizePrioridad(prioridad: string): PrioridadPlanEnum {
-  const normalizado = prioridad.replace(' ', '_') as PrioridadPlanEnum;
+  const normalizada = prioridad.trim().toLowerCase().replace(/\s+/g, '_');
 
   if (
-    normalizado === PrioridadPlanEnum.Alta_prioridad ||
-    normalizado === PrioridadPlanEnum.Baja_prioridad
+    normalizada === 'alta_prioridad' ||
+    normalizada === 'alta' ||
+    normalizada === 'alta_priority'
   ) {
-    return normalizado;
+    return PrioridadPlanEnum.Alta_prioridad;
+  }
+
+  if (
+    normalizada === 'baja_prioridad' ||
+    normalizada === 'baja' ||
+    normalizada === 'baixa_prioridade' ||
+    normalizada === 'baixa'
+  ) {
+    return PrioridadPlanEnum.Baja_prioridad;
   }
 
   return PrioridadPlanEnum.Media_prioridad;
