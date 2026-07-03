@@ -88,11 +88,26 @@ const STORAGE_KEY = 'onboarding_form_data';
 const STORAGE_KEY_STEP = 'onboarding_step';
 
 const FORM_DATA_KEYS: (keyof FormData)[] = [
-  'fechaNacimiento', 'genero', 'pais', 'provinciaEstado', 'ciudad', 'zonaResidencia',
-  'nivelEducacion', 'momentoProfesional', 'areasInteres', 'idiomas',
-  'disponibilidad', 'ubicacionTrabajo', 'nivelExperienciaTecnologia',
-  'habilidadesTecnicas', 'habilidadesBlandas', 'objetivos', 'dispositivos',
-  'tipoConexion', 'whatsappCodigo', 'whatsappNumero',
+  'fechaNacimiento',
+  'genero',
+  'pais',
+  'provinciaEstado',
+  'ciudad',
+  'zonaResidencia',
+  'nivelEducacion',
+  'momentoProfesional',
+  'areasInteres',
+  'idiomas',
+  'disponibilidad',
+  'ubicacionTrabajo',
+  'nivelExperienciaTecnologia',
+  'habilidadesTecnicas',
+  'habilidadesBlandas',
+  'objetivos',
+  'dispositivos',
+  'tipoConexion',
+  'whatsappCodigo',
+  'whatsappNumero',
 ];
 
 function getStoredFormData(): FormData {
@@ -125,20 +140,28 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ['Personales', 'Educación', 'Skills', 'Objetivos'];
+const STEP_LABEL_KEYS = [
+  'stepLabelPersonales',
+  'stepLabelEducacion',
+  'stepLabelSkills',
+  'stepLabelObjetivos',
+] as const;
 
 interface OnboardingModalProps {
   children?: React.ReactNode;
   defaultOpen?: boolean;
   locked?: boolean;
+  onCompleted?: () => void | Promise<void>;
 }
 
 export function OnboardingModal({
   children,
   defaultOpen = false,
   locked = false,
+  onCompleted,
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
+  const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
   const [step, setStep] = useState<Step>(() => {
     if (typeof window === 'undefined') return 1 as Step;
@@ -341,14 +364,16 @@ export function OnboardingModal({
       }),
     })
       .then(async (res) => {
-        const json = await res.json();
-
         if (!res.ok) {
-          throw new Error(json.message || 'Error al completar onboarding');
+          throw new Error(t('submitError'));
         }
 
-        setOpen(false);
-        resetForm();
+        if (onCompleted) {
+          setOpen(false);
+          resetForm();
+          await onCompleted();
+          return;
+        }
 
         router.replace('/dashboard', { locale });
         router.refresh();
@@ -543,7 +568,7 @@ export function OnboardingModal({
             <StepIndicator
               currentStep={step}
               totalSteps={4}
-              labels={STEP_LABELS}
+              labels={stepLabels}
             />
           </div>
 
@@ -858,11 +883,15 @@ export function OnboardingModal({
                         key={opt.value}
                         label={opt.label}
                         selected={formData.ubicacionTrabajo.includes(opt.value)}
-                        onClick={() => toggleArray('ubicacionTrabajo', opt.value)}
+                        onClick={() =>
+                          toggleArray('ubicacionTrabajo', opt.value)
+                        }
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.ubicacionTrabajo.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.ubicacionTrabajo.length === 0}
+                  />
                 </div>
               </div>
             )}
@@ -1018,7 +1047,9 @@ export function OnboardingModal({
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && formData.tipoConexion.length === 0} />
+                  <FieldError
+                    show={showErrors && formData.tipoConexion.length === 0}
+                  />
                 </div>
 
                 <div>
@@ -1084,9 +1115,10 @@ export function OnboardingModal({
                   {formData.whatsappCodigo && (
                     <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
                       {t('phoneFormatHint', {
-                        hint: countries.find(
-                          (c) => c.code === formData.whatsappCodigo,
-                        )?.phoneHint ?? '',
+                        hint:
+                          countries.find(
+                            (c) => c.code === formData.whatsappCodigo,
+                          )?.phoneHint ?? '',
                       })}
                     </Caption>
                   )}
@@ -1096,7 +1128,7 @@ export function OnboardingModal({
                       {t('whatsappInfo')}
                     </Caption>
                   </div>
-                  {showErrors && hasPartialWhatsapp() && (
+                  {hasPartialWhatsapp() && (
                     <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
                       <AlertCircleIcon className='size-4 shrink-0' />
                       <Caption className='text-[var(--color-danger)]'>
@@ -1123,9 +1155,11 @@ export function OnboardingModal({
               </AppButton>
             )}
             {submitError && (
-              <div className='flex items-center gap-1.5 mt-2 text-[var(--color-error)]'>
+              <div className='mt-2 flex items-center gap-1.5 text-[var(--color-danger)]'>
                 <AlertCircleIcon className='size-4 shrink-0' />
-                <Caption>{submitError}</Caption>
+                <Caption className='text-[var(--color-danger)]'>
+                  {submitError}
+                </Caption>
               </div>
             )}
           </DialogFooter>

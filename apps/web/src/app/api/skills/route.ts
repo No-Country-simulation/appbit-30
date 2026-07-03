@@ -1,36 +1,30 @@
 import { NextResponse } from 'next/server';
 import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
-import { AreaInteresEnum } from '../../../../src/server/generated/prisma';
-
-const DEV_USER_ID = '003f7b4f-364b-4fa0-b921-2452393769d6';
+import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
+import { AreaInteresEnum } from '@/src/server/generated/prisma';
 
 export const dynamic = 'force-dynamic';
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
 
 export async function GET(request: Request) {
   try {
     const authUser = await getCurrentAuthUser();
 
-    let usuario: { usuario_id: string } | null = null;
-
-    if (authUser) {
-      usuario = await dbClient.usuarios.findUnique({
-        where: { auth_uid: authUser.id },
-        select: { usuario_id: true },
-      });
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Modo dev: usar usuario de prueba si no hay auth
-    if (!usuario) {
-      usuario = await dbClient.usuarios.findUnique({
-        where: { usuario_id: DEV_USER_ID },
-        select: { usuario_id: true },
-      });
-    }
+    const usuario = await findLinkedUsuario(authUser, {
+      usuario_id: true,
+    });
 
     if (!usuario) {
       return NextResponse.json(
-        { error: 'User not found.' },
+        { error: 'User not found. Complete onboarding first.' },
         { status: 404 },
       );
     }
@@ -53,7 +47,13 @@ export async function GET(request: Request) {
             },
           },
         },
+        orderBy: {
+          habilidad: {
+            nombre: 'asc',
+          },
+        },
       }),
+
       dbClient.orientaciones.findFirst({
         where: { usuario_id: userId },
         orderBy: { creado_en: 'desc' },
@@ -63,6 +63,7 @@ export async function GET(request: Request) {
           trayectoria_sugerida: true,
         },
       }),
+
       dbClient.habilidadesMercado.findMany({
         where: areaFilter ? { area_principal: areaFilter } : undefined,
         orderBy: { nombre: 'asc' },
@@ -75,35 +76,68 @@ export async function GET(request: Request) {
       }),
     ]);
 
+    const adquiridas = userSkills.filter(
+      (skill) => skill.estado === 'Adquirida',
+    ).length;
+
+    const faltantes = userSkills.filter(
+      (skill) => skill.estado === 'Faltante',
+    ).length;
+
+    const enProgreso = userSkills.filter(
+      (skill) => skill.estado === 'En_progreso',
+    ).length;
+
+    const totalUserSkills = userSkills.length;
+
+    const computedGapPorcentual =
+      totalUserSkills > 0
+        ? clampPercent((faltantes / totalUserSkills) * 100)
+        : null;
+
+    const fallbackGaps = userSkills
+      .filter((skill) => skill.estado === 'Faltante')
+      .map((skill) => ({
+        habilidad_id: skill.habilidad.habilidad_id,
+        nombre: skill.habilidad.nombre,
+        categoria: skill.habilidad.categoria,
+        area_principal: skill.habilidad.area_principal,
+        estado: skill.estado,
+      }));
+
     const response = {
       habilidades: userSkills.map((us) => ({
         habilidad_id: us.habilidad.habilidad_id,
         nombre: us.habilidad.nombre,
         categoria: us.habilidad.categoria,
         area_principal: us.habilidad.area_principal,
-        estado:
-          us.estado === 'En_progreso' ? 'En progreso' : us.estado,
+        estado: us.estado === 'En_progreso' ? 'En progreso' : us.estado,
       })),
-      gaps: orientacion?.gap_items ?? [],
+      gaps: orientacion?.gap_items ?? fallbackGaps,
       mercadoHabilidades,
       resumen: {
-        adquiridas: userSkills.filter((s) => s.estado === 'Adquirida').length,
-        faltantes: userSkills.filter((s) => s.estado === 'Faltante').length,
-        enProgreso: userSkills.filter((s) => s.estado === 'En_progreso').length,
+        adquiridas,
+        faltantes,
+        enProgreso,
         totalMercado: mercadoHabilidades.length,
       },
       orientacion: orientacion
         ? {
-            gap_porcentual: Number(orientacion.gap_porcentual),
-            trayectoria_sugerida:
-              orientacion.trayectoria_sugerida as unknown[],
+            gap_porcentual: clampPercent(Number(orientacion.gap_porcentual)),
+            trayectoria_sugerida: orientacion.trayectoria_sugerida as unknown[],
           }
-        : null,
+        : computedGapPorcentual != null
+          ? {
+              gap_porcentual: computedGapPorcentual,
+              trayectoria_sugerida: [],
+            }
+          : null,
     };
 
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching skills data:', error);
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

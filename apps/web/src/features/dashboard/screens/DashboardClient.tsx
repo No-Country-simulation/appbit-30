@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
 import { HeroBanner } from '../components/HeroBanner';
@@ -19,47 +20,145 @@ interface Props {
   shouldOpenOnboarding: boolean;
 }
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error loading ${url}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasGeneratedRecommendations(dashboard: DashboardResponse) {
+  return dashboard.planAccion.length > 0;
+}
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
 }: Props) {
+  const t = useTranslations('Dashboard');
+
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
+
+  const [onboardingCompletedClient, setOnboardingCompletedClient] =
+    useState(false);
+
+  const shouldShowOnboarding =
+    shouldOpenOnboarding && !onboardingCompletedClient;
+
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(
+    () => !shouldShowOnboarding,
+  );
+
+  const [dashboardError, setDashboardError] = useState(false);
+
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
   const [checkinMood, setCheckinMood] = useState('');
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
-  const [onboardingOpen, setOnboardingOpen] = useState(shouldOpenOnboarding);
+  const [checkinModalKey, setCheckinModalKey] = useState(0);
+
+  const loadDashboard = useCallback(
+    async (
+      options: {
+        waitForRecommendations?: boolean;
+        force?: boolean;
+      } = {},
+    ) => {
+      if (shouldShowOnboarding && !options.force) {
+        return;
+      }
+
+      const maxAttempts = options.waitForRecommendations ? 12 : 1;
+      const delayMs = 1500;
+
+      try {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const [dash, skills] = await Promise.all([
+            fetchJson<DashboardResponse>('/api/dashboard'),
+            fetchJson<SkillsResponse>('/api/skills'),
+          ]);
+
+          setData(dash);
+          setSkillsData(skills);
+          setDashboardError(false);
+
+          if (
+            !options.waitForRecommendations ||
+            hasGeneratedRecommendations(dash)
+          ) {
+            break;
+          }
+
+          if (attempt < maxAttempts) {
+            await sleep(delayMs);
+          }
+        }
+      } catch (error) {
+        console.error('Dashboard fetch error:', error);
+        setDashboardError(true);
+      } finally {
+        setIsLoadingDashboard(false);
+      }
+    },
+    [shouldShowOnboarding],
+  );
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/dashboard').then((res) => {
-        if (!res.ok) throw new Error('Error al cargar dashboard');
-        return res.json() as Promise<DashboardResponse>;
-      }),
-      fetch('/api/skills').then((res) => {
-        if (!res.ok) throw new Error('Error al cargar skills');
-        return res.json() as Promise<SkillsResponse>;
-      }),
-    ])
-      .then(([dash, skills]) => {
-        setData(dash);
-        setSkillsData(skills);
-      })
-      .catch((err) => console.error('Dashboard fetch error:', err));
-  }, []);
+    if (shouldOpenOnboarding) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void loadDashboard();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [loadDashboard, shouldOpenOnboarding]);
+
+  async function handleOnboardingCompleted() {
+    setOnboardingCompletedClient(true);
+    setData(null);
+    setSkillsData(null);
+    setDashboardError(false);
+    setIsLoadingDashboard(true);
+
+    await loadDashboard({
+      force: true,
+      waitForRecommendations: true,
+    });
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }
 
   const nombre = data?.usuario?.nombre_completo ?? nombreProp;
-  const cursosPendientes =
-    data?.planAccion?.filter((p) => !p.completado).length ?? 0;
-  const vacantesDisponibles = Array.isArray(
-    data?.orientacion?.vacantes_compatibles,
-  )
-    ? data.orientacion.vacantes_compatibles.length
-    : 0;
+  const avatarUrl = data?.usuario?.avatar_url ?? null;
 
-  const actionItems: ActionItem[] | undefined = data?.planAccion?.map(
-    (item) => ({
+  const cursosPendientes = isLoadingDashboard
+    ? undefined
+    : (data?.planAccion?.filter((p) => !p.completado).length ?? 0);
+
+  const vacantesDisponibles = isLoadingDashboard
+    ? undefined
+    : Array.isArray(data?.orientacion?.vacantes_compatibles)
+      ? data.orientacion.vacantes_compatibles.length
+      : 0;
+
+  const actionItems: ActionItem[] =
+    data?.planAccion?.map((item) => ({
       title: item.titulo,
       priority: item.completado
         ? ('completado' as const)
@@ -67,64 +166,120 @@ export default function DashboardClient({
           ? ('alta' as const)
           : ('media' as const),
       actionLabel:
-        item.accion_label ?? (item.curso ? 'Iniciar curso' : 'Ver temario'),
+        item.accion_label ??
+        (item.curso ? t('actionLabelIniciar') : t('actionLabelVerTemario')),
       actionIcon: item.curso ? ('play' as const) : ('book' as const),
       completed: item.completado,
-    }),
-  );
+    })) ?? [];
 
-  const promedioSemanal = data?.bienestar?.notaPromedio ?? undefined;
-  const skillsGapPorcentaje = data?.orientacion?.gap_porcentual ?? undefined;
+  const promedioSemanal = isLoadingDashboard
+    ? undefined
+    : (data?.bienestar?.notaPromedio ?? 0);
+
+  const skillsGapFromUserSkills = (() => {
+    const resumen = skillsData?.resumen;
+
+    if (!resumen) {
+      return undefined;
+    }
+
+    const total = resumen.adquiridas + resumen.faltantes + resumen.enProgreso;
+
+    if (total === 0) {
+      return undefined;
+    }
+
+    return Math.round((resumen.faltantes / total) * 100);
+  })();
+
+  const skillsGapPorcentaje = isLoadingDashboard
+    ? undefined
+    : (data?.orientacion?.gap_porcentual ??
+      skillsData?.orientacion?.gap_porcentual ??
+      skillsGapFromUserSkills);
+
   const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
-    : undefined;
+    : Array.isArray(skillsData?.orientacion?.trayectoria_sugerida)
+      ? (skillsData.orientacion.trayectoria_sugerida[0] as string | undefined)
+      : undefined;
 
-  const skillsRows: SkillRow[] | undefined = skillsData?.habilidades?.map((h) => ({
-    habilidad: h.nombre,
-    estado: h.estado as SkillRow['estado'],
-  }));
+  const skillsRows: SkillRow[] =
+    skillsData?.habilidades?.map((h) => ({
+      habilidad: h.nombre,
+      estado: h.estado as SkillRow['estado'],
+    })) ?? [];
 
-  const perfilCompletado = data?.perfil_completado ?? undefined;
-  const perfilBreakdown = data?.perfil_breakdown;
+  const perfilCompletado = isLoadingDashboard
+    ? undefined
+    : (data?.perfil_completado ?? 0);
+
+  const perfilBreakdown = isLoadingDashboard
+    ? undefined
+    : data?.perfil_breakdown;
 
   return (
     <AppShell
       onCheckinClick={() => {
         setCheckinMood('');
         setCheckinStartStep(1);
+        setCheckinModalKey((key) => key + 1);
         setCheckinModalOpen(true);
       }}
+      userName={nombre}
+      avatarUrl={avatarUrl}
       profilePercent={perfilCompletado}
       perfilBreakdown={perfilBreakdown}
     >
       <div className='space-y-6'>
+        {dashboardError && (
+          <div className='rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-4 text-sm text-[var(--color-danger-text)]'>
+            {t('dashboardLoadError')}
+          </div>
+        )}
+
         <HeroBanner
           nombre={nombre}
           cursosPendientes={cursosPendientes}
           vacantesDisponibles={vacantesDisponibles}
+          isLoading={isLoadingDashboard}
         />
 
-        <RadarBanner vacantesCompatibles={vacantesDisponibles} />
+        <RadarBanner
+          vacantesCompatibles={vacantesDisponibles}
+          isLoading={isLoadingDashboard}
+        />
 
         <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
           <SkillsGapCard
             porcentaje={skillsGapPorcentaje}
             puesto={skillsPuesto}
+            isLoading={isLoadingDashboard}
             onVerDetalles={() => setSkillsModalOpen(true)}
           />
-          <ActionPlanCard items={actionItems} />
+
+          <ActionPlanCard items={actionItems} isLoading={isLoadingDashboard} />
+
           <WellbeingCard
             promedioSemanal={promedioSemanal}
+            isLoading={isLoadingDashboard}
             onEmojiClick={(moodId) => {
               setCheckinMood(moodId);
               setCheckinStartStep(2);
+              setCheckinModalKey((key) => key + 1);
               setCheckinModalOpen(true);
             }}
           />
         </div>
       </div>
 
-      {onboardingOpen && <OnboardingModal defaultOpen locked />}
+      {shouldShowOnboarding && (
+        <OnboardingModal
+          defaultOpen
+          locked
+          onCompleted={handleOnboardingCompleted}
+        />
+      )}
 
       <SkillsGapModal
         open={skillsModalOpen}
@@ -132,19 +287,27 @@ export default function DashboardClient({
         puesto={skillsPuesto}
         porcentaje={skillsGapPorcentaje}
         skills={skillsRows}
+        isLoading={isLoadingDashboard}
       />
 
       <CheckinModal
+        key={checkinModalKey}
         open={checkinModalOpen}
-        onOpenChange={(v) => {
-          setCheckinModalOpen(v);
-          if (!v) {
+        onOpenChange={(nextOpen) => {
+          setCheckinModalOpen(nextOpen);
+
+          if (!nextOpen) {
             setCheckinMood('');
             setCheckinStartStep(1);
           }
         }}
         initialMood={checkinMood}
         startAtStep={checkinStartStep}
+        onSaved={() =>
+          loadDashboard({
+            force: true,
+          })
+        }
       />
     </AppShell>
   );

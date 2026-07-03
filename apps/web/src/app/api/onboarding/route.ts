@@ -360,7 +360,7 @@ export async function POST(request: Request) {
             gap_inicial:
               data.nivelExperienciaTecnologia === 'Desde_cero' ? 100 : null,
           }),
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(20000),
         });
       } catch {
         console.warn(

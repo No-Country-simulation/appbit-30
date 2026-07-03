@@ -1,29 +1,19 @@
 import { getCurrentUserState } from '@/src/server/auth/get-current-user-state';
 import DashboardClient from './DashboardClient';
 
+type UserState = Awaited<ReturnType<typeof getCurrentUserState>>;
+
 type Props = {
-  params: Promise<{
-    locale: string;
-  }>;
-  searchParams?: Promise<{
-    onboarding?: string;
-  }>;
+  state: UserState;
 };
 
-export default async function DashboardScreen({
-  params,
-  searchParams,
-}: Props) {
-  const query = await searchParams;
+export default async function DashboardScreen({ state }: Props) {
+  const nombre =
+    state.usuario?.nombre_completo ??
+    state.authUser?.user_metadata?.full_name ??
+    'Usuario';
 
-  const state = await getCurrentUserState();
-
-  const nombre = state.isAuthenticated
-    ? (state.authUser?.user_metadata?.full_name ?? 'Usuario')
-    : 'Invitado';
-
-  const shouldOpenOnboarding =
-    state.isAuthenticated && (state.needsOnboarding || query?.onboarding === '1');
+  const shouldOpenOnboarding = state.isAuthenticated && state.needsOnboarding;
 
   return (
     <DashboardClient
