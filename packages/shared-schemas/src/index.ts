@@ -203,3 +203,38 @@ export const onboardingResponseSchema = z.object({
   message: z.string(),
   userId: z.string(),
 });
+
+// --- HU 9.1: MATCH EMPLEABILIDAD ---
+export const jobMatchRequestSchema = z.object({
+  userId: z.string(),
+  userProfile: z.object({
+    skills: z.array(z.string()),
+    education: z.string(),
+    englishLevel: z.string()
+  }),
+  jobVacancy: z.object({
+    id: z.string(),
+    title: z.string(),
+    requiredSkills: z.array(z.string()),
+    requiredEducation: z.string(),
+    requiredEnglishLevel: z.string(),
+    active: z.boolean().default(true)
+  }),
+  commuteScore: z.number().min(0).max(100)
+});
+
+// --- HU 9.2: RUTAS DE APRENDIZAJE ---
+export const learningPathRequestSchema = z.object({
+  userId: z.string(),
+  currentSkills: z.array(z.string()),
+  targetJob: z.string(),
+  gapItems: z.array(z.string()),
+  courseCatalog: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    habilidad_principal: z.string(),
+    activo: z.boolean(),
+    es_gratis: z.boolean(),
+    duracion_horas: z.number()
+  }))
+});
