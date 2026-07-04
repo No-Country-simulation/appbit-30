@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../web/src/server/generated/prisma/index.js';
+import { PrismaClient } from '@prisma/client/edge';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL!;

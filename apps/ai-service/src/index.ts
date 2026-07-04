@@ -10,11 +10,21 @@ import {
 } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
 import { dbClient } from './db.client.js';
-import {
-  EstadoHabilidadEnum,
-  PrioridadPlanEnum,
-  IdiomaAppEnum,
-} from '../../web/src/server/generated/prisma/index.js';
+
+enum EstadoHabilidadEnum {
+  Faltante = 'Faltante',
+}
+
+enum PrioridadPlanEnum {
+  Alta_prioridad = 'Alta_prioridad',
+  Media_prioridad = 'Media_prioridad',
+  Baja_prioridad = 'Baja_prioridad',
+}
+
+enum IdiomaAppEnum {
+  es = 'es',
+  pt = 'pt',
+}
 
 const app = new Hono();
 
@@ -313,10 +323,17 @@ app.post('/api/onboarding', async (c) => {
 
     const idiomaRespuesta = data.locale === 'pt' ? 'Portugués' : 'Español';
 
+    // --- Paso 4 del onboarding: 3 escenarios de nivel de conocimiento ---
+    const nivelInicial = data.nivel_inicial ?? 'automatico';
+    const esSinConocimiento = nivelInicial === 'sin_conocimiento';
+    const esPersonalizado = nivelInicial === 'personalizado';
+
+    const habilidadesDeclaradas = data.habilidades_usuario ?? [];
+
     const totalUserSkills = existingUserSkills.length;
 
     const faltantes = existingUserSkills.filter(
-      (skill) => skill.estado === EstadoHabilidadEnum.Faltante,
+      (skill: typeof existingUserSkills[0]) => skill.estado === EstadoHabilidadEnum.Faltante,
     ).length;
 
     const dbGapPorcentual =
@@ -325,14 +342,37 @@ app.post('/api/onboarding', async (c) => {
         : null;
 
     const fallbackGapItems = existingUserSkills
-      .filter((skill) => skill.estado === EstadoHabilidadEnum.Faltante)
-      .map((skill) => ({
+      .filter((skill: typeof existingUserSkills[0]) => skill.estado === EstadoHabilidadEnum.Faltante)
+      .map((skill: typeof existingUserSkills[0]) => ({
         habilidad: skill.habilidad.nombre,
         nivel_requerido: 'Mercado',
         nivel_actual: 'Pendiente',
       }));
 
+    let modoInstruccion: string;
+    if (esSinConocimiento) {
+      modoInstruccion = `MODO: SIN CONOCIMIENTO PREVIO.
+El usuario declaró NO tener conocimientos técnicos. Tratá TODAS las habilidades del mercado como "Faltante" y asumí un gap del 100%.
+Diseñá un plan de acción desde los fundamentos absolutos (conceptos básicos y primeros pasos), sin dar por sentada ninguna experiencia previa.`;
+    } else if (esPersonalizado) {
+      modoInstruccion = `MODO: PERSONALIZADO.
+El usuario ya clasificó manualmente sus habilidades (ver "HABILIDADES YA REGISTRADAS POR EL ONBOARDING WEB"). NO reclasifiques, borres ni contradigas esos estados.
+Respetá las habilidades ya "Adquirida" y enfocá la orientación y el plan de acción exclusivamente en cerrar las brechas de las habilidades marcadas como "Faltante".`;
+    } else {
+      modoInstruccion = `MODO: AUTOMÁTICO.
+Clasificá y evaluá el perfil del usuario de forma automática según el mercado, infiriendo su nivel a partir de los datos declarados.`;
+    }
+
+    const habilidadesDeclaradasTexto =
+      habilidadesDeclaradas.length > 0
+        ? habilidadesDeclaradas
+            .map((h) => `- ${h.nombre}: ${h.estado}`)
+            .join('\n')
+        : 'No especificadas';
+
     const prompt = `Actuá como asesor profesional de la App BiT para Latinoamérica.
+
+${modoInstruccion}
 Generá el gemelo digital de este usuario basándote en su perfil y el mercado laboral disponible.
 
 PERFIL DEL USUARIO:
@@ -366,18 +406,26 @@ PERFIL DEL USUARIO:
 HABILIDADES DEL MERCADO DISPONIBLES:
 ${habilidadesMercado
   .map(
-    (h) =>
+    (h: { nombre: string; categoria: string | null; area_principal: string | null }) =>
       `- ${h.nombre} (${h.categoria ?? 'General'}) [${h.area_principal ?? 'Multiárea'}]`,
   )
   .join('\n')}
 
 HABILIDADES YA REGISTRADAS POR EL ONBOARDING WEB:
 ${existingUserSkills
-  .map((h) => `- ${h.habilidad.nombre}: ${h.estado}`)
+  .map(
+    (h: { habilidad: { nombre: string }; estado: string }) =>
+      `- ${h.habilidad.nombre}: ${h.estado}`,
+  )
   .join('\n')}
 
+HABILIDADES DECLARADAS EN EL PASO 4 DEL ONBOARDING:
+${habilidadesDeclaradasTexto}
+
 CURSOS DISPONIBLES:
-${cursosDisponibles.map((c) => `- ${c.titulo} (${c.area})`).join('\n')}
+${cursosDisponibles
+  .map((c: { titulo: string; area: string }) => `- ${c.titulo} (${c.area})`)
+  .join('\n')}
 
 Instrucciones:
 1. No borres ni contradigas las habilidades registradas por el onboarding web.
@@ -430,7 +478,24 @@ Respuesta JSON estricta, sin markdown:
       ? aiResponse.gap_items
       : [];
 
-    const safeGapItems = aiGapItems.length > 0 ? aiGapItems : fallbackGapItems;
+    // Escenario "sin_conocimiento": todas las habilidades quedan como Faltante.
+    const sinConocimientoGapItems = (
+      existingUserSkills.length > 0
+        ? existingUserSkills.map((skill: typeof existingUserSkills[number]) => skill.habilidad.nombre)
+        : habilidadesMercado.map((h: { nombre: string }) => h.nombre)
+    ).map((nombre: string) => ({
+      habilidad: nombre,
+      nivel_requerido: 'Mercado',
+      nivel_actual: data.locale === 'pt' ? 'Sem conhecimento' : 'Sin conocimiento',
+    }));
+
+    const safeGapItems = esSinConocimiento
+      ? sinConocimientoGapItems.length > 0
+        ? sinConocimientoGapItems
+        : aiGapItems
+      : aiGapItems.length > 0
+        ? aiGapItems
+        : fallbackGapItems;
 
     const safeTrayectoriaSugerida =
       Array.isArray(aiResponse.trayectoria_sugerida) &&
@@ -458,12 +523,16 @@ Respuesta JSON estricta, sin markdown:
     const safePlanAccion =
       aiPlanAccion.length > 0 ? aiPlanAccion : fallbackPlanAccion;
 
-    const safeGapPorcentual = clampPercent(
-      data.gap_inicial ?? dbGapPorcentual ?? Number(aiResponse.gap_porcentual),
-    );
+    const safeGapPorcentual = esSinConocimiento
+      ? 100
+      : clampPercent(
+          data.gap_inicial ??
+            dbGapPorcentual ??
+            Number(aiResponse.gap_porcentual),
+        );
 
     const cursoIdByExactTitle = new Map(
-      cursosDisponibles.map((curso) => [
+      cursosDisponibles.map((curso: { titulo: string; curso_id: string }) => [
         curso.titulo.trim().toLowerCase(),
         curso.curso_id,
       ]),
@@ -486,7 +555,20 @@ Respuesta JSON estricta, sin markdown:
     });
 
     const orientacion = await dbClient.$transaction(
-      async (tx) => {
+      async (tx: any) => {
+        // Escenario "sin_conocimiento": aseguramos que todas las habilidades
+        // del usuario queden marcadas como Faltante (gap 100%).
+        if (esSinConocimiento) {
+          await tx.usuarioHabilidades.updateMany({
+            where: { usuario_id: userId },
+            data: { estado: EstadoHabilidadEnum.Faltante },
+          });
+        }
+        // Escenario "personalizado": las habilidades ya fueron guardadas por el
+        // onboarding web; NO se tocan aquí. Solo se genera orientación + plan.
+        // Escenario "automatico": comportamiento por defecto (no se modifican
+        // las habilidades del usuario en esta transacción).
+
         await tx.planAccion.deleteMany({
           where: {
             usuario_id: userId,
@@ -535,6 +617,8 @@ Respuesta JSON estricta, sin markdown:
       orientacionId: orientacion.orient.orientacion_id,
       planAccionCount: orientacion.planCreados,
       habilidadesCount: existingUserSkills.length,
+      nivelInicial,
+      gapPorcentual: safeGapPorcentual,
     });
   } catch (error) {
     console.error('Error en onboarding AI:', error);
