@@ -472,8 +472,26 @@ export const onboardingAIRequestSchema = z.object({
     )
     .min(1),
   locale: z.string().optional(),
+  // Paso 4 del onboarding: modo de evaluación del nivel de conocimiento.
+  // - automatico     -> Gemini clasifica todo (comportamiento por defecto).
+  // - sin_conocimiento -> el usuario marcó "No sé nada": todas las skills Faltante, gap 100%.
+  // - personalizado  -> el usuario ya eligió sus skills (guardadas en DB por el onboarding web).
+  // Se normaliza el valor legado 'con_conocimientos_previos' a 'personalizado'
+  // para mantener compatibilidad con el frontend actual.
   nivel_inicial: z
-    .enum(['sin_conocimiento', 'con_conocimientos_previos'] as const)
+    .preprocess((val) => {
+      if (val === 'con_conocimientos_previos') return 'personalizado';
+      if (val == null) return 'automatico';
+      return val;
+    }, z.enum(['automatico', 'sin_conocimiento', 'personalizado'] as const))
+    .default('automatico'),
+  habilidades_usuario: z
+    .array(
+      z.object({
+        nombre: z.string(),
+        estado: z.string(),
+      }),
+    )
     .optional(),
   gap_inicial: z.number().nullable().optional(),
 });
