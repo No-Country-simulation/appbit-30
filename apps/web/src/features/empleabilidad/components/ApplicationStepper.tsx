@@ -6,6 +6,12 @@ type Estado = 'Enviada' | 'Vista' | 'En_revision' | 'Rechazada' | 'Aceptada' | '
 
 const STEPS = ['Enviada', 'Vista', 'En_revision'] as const;
 
+const STEP_TRANSLATION_KEYS: Record<string, string> = {
+  Enviada: 'estadoEnviada',
+  Vista: 'estadoVista',
+  En_revision: 'estadoEnRevision',
+};
+
 function getStepIndex(estado: Estado): number {
   if (estado === 'Enviada') return 0;
   if (estado === 'Vista') return 1;
@@ -52,7 +58,7 @@ export function ApplicationStepper({ estadoActual }: Props) {
                     : 'text-[var(--color-text-muted)]'
                 }`}
               >
-                {t(`estado${step}` as any)}
+                {t(STEP_TRANSLATION_KEYS[step])}
               </span>
             </div>
 
