@@ -165,3 +165,28 @@ h5,
 h6 {
   overflow-wrap: anywhere;
 }
+
+.onboarding-form,
+.onboarding-form * {
+  min-width: 0;
+}
+
+.onboarding-form input,
+.onboarding-form select,
+.onboarding-form button,
+.onboarding-form [data-slot='select-trigger'] {
+  max-width: 100%;
+}
+
+.onboarding-form [data-slot='select-value'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onboarding-form p,
+.onboarding-form span,
+.onboarding-form label,
+.onboarding-form button {
+  overflow-wrap: anywhere;
+}
