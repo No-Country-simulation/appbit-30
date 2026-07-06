@@ -24,6 +24,13 @@ import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingMod
 
 import { TabBar } from '@/src/components/app/TabBar';
 
+import { JobCard } from '@/src/features/empleabilidad/components/JobCard';
+import { SkillCompatibilityList } from '@/src/features/empleabilidad/components/SkillCompatibilityList';
+import { ApplicationStepper } from '@/src/features/empleabilidad/components/ApplicationStepper';
+import { ApplicationCard } from '@/src/features/empleabilidad/components/ApplicationCard';
+import { PostulationForm } from '@/src/features/empleabilidad/components/PostulationForm';
+import { JobDetailModal } from '@/src/features/empleabilidad/components/JobDetailModal';
+
 import { useState } from 'react';
 
 import { useTranslations } from 'next-intl';
@@ -33,6 +40,54 @@ export default function PlaygroundScreen() {
   const [key, setKey] = useState(0);
   const [selectedChip, setSelectedChip] = useState('react');
   const [tabBarTab, setTabBarTab] = useState('recomendados');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<{
+    id: string;
+    titulo: string;
+    empresa: string;
+    empresaDescripcion?: string;
+    logoUrl?: string;
+    area: string;
+    nivel: string;
+    modalidad: string;
+    modalidadDetallada?: string;
+    ubicacion: string;
+    distancia?: string;
+    matchPorcentaje: number;
+    descripcion: string;
+    fechaPublicacion?: string;
+    educacionRequerida: string[];
+    experienciaSolicitada: string[];
+    idioma: string[];
+    jornada: string[];
+    skills: { nombre: string; laTienes: boolean }[];
+  } | null>(null);
+
+  const demoVacante = {
+    id: 'demo-1',
+    titulo: 'Data Analyst Jr.',
+    empresa: 'TechCorp Latam',
+    empresaDescripcion: 'Fintech líder en LATAM · 500-1000 empleados · Buenos Aires',
+    logoUrl: '',
+    area: 'Data Analytics',
+    nivel: 'Jr. / Entry Level',
+    modalidad: 'Híbrido',
+    modalidadDetallada: 'Híbrido – 2 días en oficina',
+    ubicacion: 'Buenos Aires, CABA',
+    matchPorcentaje: 75,
+    distancia: '~25 min de tu zona',
+    fechaPublicacion: '1 de julio de 2026',
+    descripcion: 'Buscamos una persona proactiva para unirse al equipo de datos. Trabajarás limpiando datasets, armando queries en SQL y diseñando tableros de control para la gerencia. Valoramos personas con ganas de aprender y crecer en un entorno ágil.',
+    educacionRequerida: ['Secundario completo', 'Universitario en curso OK'],
+    experienciaSolicitada: ['Sin experiencia previa', 'Proyectos personales valorados'],
+    idioma: ['Español – Nativo', 'Inglés A2 / B1'],
+    jornada: ['Jornada completa', 'Relación de dependencia'],
+    skills: [
+      { nombre: 'SQL', laTienes: true },
+      { nombre: 'Excel Avanzado', laTienes: true },
+      { nombre: 'Tableau', laTienes: false },
+    ],
+  };
 
   return (
     <AppShell>
@@ -362,6 +417,102 @@ export default function PlaygroundScreen() {
               className='size-12 text-[var(--color-text-muted)] sm:size-16 lg:size-20'
             />
           </div>
+        </section>
+
+        {/* ====================================================== */}
+        {/* VACANTES (Empleabilidad) */}
+        {/* ====================================================== */}
+
+        <section className="space-y-4">
+          <H2>Vacantes — Empleabilidad</H2>
+
+          <H3>JobCard</H3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <JobCard
+              titulo={demoVacante.titulo}
+              empresa={demoVacante.empresa}
+              logoUrl={demoVacante.logoUrl}
+              modalidad={demoVacante.modalidad}
+              ubicacion={demoVacante.ubicacion}
+              matchPorcentaje={demoVacante.matchPorcentaje}
+              skills={demoVacante.skills.map((s) => s.nombre)}
+              distancia="~25 min"
+              onClick={() => { setSelectedJob(demoVacante); setModalOpen(true); }}
+              onAplicar={() => { setSelectedJob(demoVacante); setModalOpen(true); }}
+            />
+            <JobCard
+              titulo="Data Analyst Jr"
+              empresa="DataMetrics"
+              logoUrl=""
+              modalidad="Híbrido"
+              ubicacion="CABA, Argentina"
+              matchPorcentaje={72}
+              skills={['SQL', 'Python', 'Power BI']}
+              distancia="~10 min"
+              onClick={() => {}}
+              onAplicar={() => {}}
+            />
+          </div>
+
+          <H3>SkillCompatibilityList</H3>
+          <SkillCompatibilityList skills={demoVacante.skills} />
+
+          <H3>ApplicationStepper</H3>
+          <div className="space-y-4">
+            <ApplicationStepper estadoActual="Enviada" />
+            <ApplicationStepper estadoActual="Vista" />
+            <ApplicationStepper estadoActual="En_revision" />
+            <ApplicationStepper estadoActual="Rechazada" />
+            <ApplicationStepper estadoActual="Aceptada" />
+            <ApplicationStepper estadoActual="Cerrado" />
+          </div>
+
+          <H3>ApplicationCard</H3>
+          <div className="space-y-4">
+            <ApplicationCard
+              titulo="Analista de Datos Jr."
+              empresa="Nubank"
+              estado="En_revision"
+              mensajesNuevos={1}
+              onVerMensajes={() => {}}
+            />
+            <ApplicationCard
+              titulo="Data Analyst Trainee"
+              empresa="Globant"
+              estado="Rechazada"
+              feedback="Hola Maria. Nos encantó tu perfil y tu motivación. En esta ocasión avanzamos con candidatos con mayor dominio de PowerBI. Te animamos a fortalecer esa skill y volver a intentarlo en el futuro. ¡Mucho éxito!"
+              skillRechazada="PowerBI"
+              onFortalecer={() => {}}
+            />
+            <ApplicationCard
+              titulo="SQL Developer"
+              empresa="Tech Solutions"
+              estado="Cerrado"
+            />
+          </div>
+
+          <H3>PostulationForm</H3>
+          <div className="max-w-md">
+            <PostulationForm onSubmit={(data) => console.log('Postular:', data)} />
+          </div>
+
+          <H3>JobDetailModal</H3>
+          <AppButton onClick={() => { setSelectedJob(demoVacante); setModalOpen(true); }}>
+            Abrir modal de vacante
+          </AppButton>
+
+          {selectedJob && (
+            <JobDetailModal
+              open={modalOpen}
+              onOpenChange={(open) => { setModalOpen(open); if (!open) setSelectedJob(null); }}
+              vacante={selectedJob}
+              onPostular={(data) => {
+                console.log('Postular:', data);
+                setModalOpen(false);
+                setSelectedJob(null);
+              }}
+            />
+          )}
         </section>
 
         {/* ====================================================== */}
