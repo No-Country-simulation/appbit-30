@@ -934,7 +934,7 @@ export function OnboardingModal({
 
                     <div>
                       <Body>{t('ubicacionTrabajoLabel')}</Body>
-                      <div className='mt-2 flex min-w-0 max-w-full flex-wrap gap-2 overflow-x-hidden'>
+                      <div className='mt-2 flex min-w-0 max-w-full flex-wrap gap-2 overflow-x-hidden mb-6'>
                         {ubicacionTrabajoOptions.map((opt) => (
                           <ChoiceChip
                             key={opt.value}
@@ -959,7 +959,7 @@ export function OnboardingModal({
 
                 {/* ===== STEP 3 ===== */}
                 {step === 3 && (
-                  <div className='space-y-5'>
+                  <div className='space-y-5 mb-6'>
                     <div>
                       <Body>{t('nivelExperienciaTecnologiaLabel')}</Body>
                       <div className='mt-2 flex min-w-0 max-w-full flex-wrap gap-2 overflow-x-hidden'>
