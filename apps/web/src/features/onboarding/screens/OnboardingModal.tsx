@@ -1273,7 +1273,7 @@ export function OnboardingModal({
                         </Caption>
                       </div>
                       {hasPartialWhatsapp() && (
-                        <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
+                        <div className='flex items-start gap-1.5 text-[var(--color-danger)] mb-6'>
                           <AlertCircleIcon className='size-4 shrink-0' />
                           <Caption className='text-[var(--color-danger)]'>
                             {t('whatsappPairError')}
