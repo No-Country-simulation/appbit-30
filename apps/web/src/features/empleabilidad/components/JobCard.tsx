@@ -1,9 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { MapPin, Percent } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
-import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
+import { cn } from '@/lib/utils';
 
 interface Props {
   titulo: string;
@@ -33,46 +34,74 @@ export function JobCard({
   const t = useTranslations('Empleabilidad');
 
   return (
-    <AppCard hover className='grid cursor-pointer grid-cols-2 gap-4'>
-      <div className='space-y-3' onClick={onClick}>
-        <div className='flex items-center gap-3'>
-          <div className='flex size-10 items-center justify-center rounded-full bg-[var(--color-primary-pale)] text-sm font-bold text-[var(--color-primary)]'>
+    <AppCard hover className='flex cursor-pointer flex-col gap-4'>
+      <div onClick={onClick}>
+        <div className='flex items-start gap-4'>
+          <div className='flex size-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-pale)] text-lg font-bold text-[var(--color-primary)]'>
             {logoUrl ? (
-              <img src={logoUrl} alt={empresa} className='size-10 rounded-full object-cover' />
+              <img
+                src={logoUrl}
+                alt={empresa}
+                className='size-12 rounded-xl object-cover'
+              />
             ) : (
               empresa.charAt(0).toUpperCase()
             )}
           </div>
-          <div>
-            <h3 className='font-medium text-[var(--color-text)]'>{titulo}</h3>
-            <p className='text-xs text-[var(--color-text-muted)]'>{empresa}</p>
+          <div className='min-w-0'>
+            <h3 className='truncate text-base font-semibold text-[var(--color-text)]'>
+              {titulo}
+            </h3>
+            <p className='text-sm text-[var(--color-text-muted)]'>
+              {empresa} <span className='mx-1'>·</span> {modalidad}
+            </p>
           </div>
-        </div>
-        <div className='flex flex-wrap gap-2'>
-          <AppBadge variant='primary'>{modalidad}</AppBadge>
-          <span className='text-xs text-[var(--color-text-muted)]'>{ubicacion}</span>
-          {distancia && (
-            <span className='text-xs text-[var(--color-text-muted)]'>{distancia}</span>
-          )}
         </div>
       </div>
 
-      <div className='flex flex-col items-end justify-between' onClick={onClick}>
-        <AppBadge variant='success'>{matchPorcentaje}% match</AppBadge>
-        <div className='flex flex-wrap justify-end gap-1'>
-          {skills.slice(0, 3).map((s) => (
-            <AppBadge key={s} variant='primary'>
-              {s}
-            </AppBadge>
-          ))}
-          {skills.length > 3 && (
-            <AppBadge variant='primary'>+{skills.length - 3}</AppBadge>
+      <div className='flex items-center gap-2'>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+            matchPorcentaje >= 70
+              ? 'bg-green-100 text-green-700'
+              : 'bg-amber-100 text-amber-700',
           )}
-        </div>
-        <AppButton variant='primary' onClick={(e) => { e.stopPropagation(); onAplicar(); }}>
-          {t('verYAplicar')}
-        </AppButton>
+        >
+          <Percent className='size-3.5' />
+          {matchPorcentaje}% Match
+        </span>
+        {distancia && (
+          <span className='inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700'>
+            <MapPin className='size-3.5' />
+            {distancia}
+          </span>
+        )}
       </div>
+
+      {skills.length > 0 && (
+        <div className='flex flex-wrap gap-2'>
+          {skills.map((skill) => (
+            <span
+              key={skill}
+              className='rounded-full bg-[var(--color-primary-pale)] px-3 py-1 text-xs font-medium text-[var(--color-primary)]'
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <AppButton
+        variant='primary'
+        className='w-full'
+        onClick={(e) => {
+          e.stopPropagation();
+          onAplicar();
+        }}
+      >
+        {t('verYAplicar')}
+      </AppButton>
     </AppCard>
   );
 }
