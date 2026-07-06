@@ -40,9 +40,9 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+      <DialogContent className='max-h-[90vh] overflow-x-hidden overflow-y-auto sm:max-w-2xl'>
         {/* Header */}
-        <div className='-mx-4 -mt-4 rounded-t-xl bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] p-6 text-white sm:-mx-6 sm:-mt-6 sm:px-8 sm:pt-8'>
+        <div className='rounded-t-xl bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] p-6 text-white -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 sm:px-8 sm:pt-8'>
           <div className='flex items-start justify-between'>
             <div className='flex items-start gap-4'>
               <div className='flex size-16 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold backdrop-blur-sm sm:size-20 sm:text-3xl'>
