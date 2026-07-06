@@ -175,8 +175,8 @@ export function SkillsGapModal({
           )}
         </div>
 
-        <DialogFooter className='shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6 relative'>
-          <AppButton variant='primary' className='w-full' disabled={!hasSkills}>
+        <DialogFooter className='relative shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
+          <AppButton variant='primary' disabled={!hasSkills}>
             {t('skillsModalButton')}
           </AppButton>
         </DialogFooter>
