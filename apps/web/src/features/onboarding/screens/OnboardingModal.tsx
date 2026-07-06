@@ -395,9 +395,29 @@ export function OnboardingModal({
         locale,
       }),
     })
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(t('submitError'));
+      .then(async (response) => {
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          const requestIdText = result?.requestId
+            ? `\nCódigo: ${result.requestId}`
+            : '';
+
+          if (result?.fieldErrors) {
+            const fieldMessages = Object.values(
+              result.fieldErrors as Record<string, string[]>,
+            )
+              .flat()
+              .join('\n');
+
+            throw new Error(
+              `${result.message || 'No pudimos completar el onboarding.'}\n${fieldMessages}${requestIdText}`,
+            );
+          }
+
+          throw new Error(
+            `${result?.message || 'No pudimos completar el onboarding.'}${requestIdText}`,
+          );
         }
 
         if (onCompleted) {

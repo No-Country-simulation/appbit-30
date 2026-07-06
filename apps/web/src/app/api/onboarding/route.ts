@@ -7,6 +7,12 @@ import {
   NivelIdiomaEnum,
 } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
+import {
+  apiErrorResponse,
+  formatZodFieldErrors,
+  getRequestId,
+  logApiError,
+} from '@/src/server/api/api-error';
 
 const NIVEL_IDIOMA_MAP: Partial<Record<string, NivelIdiomaEnum>> = {
   A1: NivelIdiomaEnum.A1_Basico,
@@ -50,9 +56,41 @@ function getAvatarUrl(authUser: { user_metadata?: Record<string, unknown> }) {
   return typeof avatarUrl === 'string' ? avatarUrl : null;
 }
 
+function getRequestLocale(rawBody: unknown): 'es' | 'pt' {
+  if (!rawBody || typeof rawBody !== 'object') {
+    return 'es';
+  }
+
+  const locale = (rawBody as { locale?: unknown }).locale;
+
+  return locale === 'pt' ? 'pt' : 'es';
+}
+
+function normalizeOnboardingRawBody(rawBody: unknown) {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return rawBody;
+  }
+
+  const normalizedBody: Record<string, unknown> = {
+    ...(rawBody as Record<string, unknown>),
+  };
+
+  if (
+    normalizedBody.whatsappCodigo === '' &&
+    normalizedBody.whatsappNumero === ''
+  ) {
+    normalizedBody.whatsappCodigo = undefined;
+    normalizedBody.whatsappNumero = undefined;
+  }
+
+  return normalizedBody;
+}
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+
   try {
     const authUser = await getCurrentAuthUser();
 
@@ -76,9 +114,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const rawBody: Record<string, unknown> = await request.json();
+    let rawBody: unknown;
 
-    const requestLocale = rawBody.locale === 'pt' ? 'pt' : 'es';
+    try {
+      rawBody = await request.json();
+    } catch (error) {
+      logApiError({
+        route: 'POST /api/onboarding',
+        requestId,
+        error,
+        context: {
+          step: 'parse_json',
+        },
+      });
+
+      return apiErrorResponse({
+        status: 400,
+        code: 'INVALID_JSON',
+        message:
+          'No pudimos leer los datos enviados. Revisá el formulario e intentá de nuevo.',
+        requestId,
+      });
+    }
+
+    const normalizedBody = normalizeOnboardingRawBody(rawBody);
+
+    const requestLocale = getRequestLocale(normalizedBody);
 
     const authUid = authUser.id;
     const email = authUser.email;
@@ -87,22 +148,50 @@ export async function POST(request: Request) {
     const idiomaApp =
       requestLocale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es;
 
-    if (rawBody.whatsappCodigo === '' && rawBody.whatsappNumero === '') {
-      rawBody.whatsappCodigo = undefined;
-      rawBody.whatsappNumero = undefined;
-    }
-
-    const parsed = onboardingSchema.safeParse(rawBody);
+    const parsed = onboardingSchema.safeParse(normalizedBody);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Datos inválidos',
-          errors: parsed.error.flatten().fieldErrors,
+      const fieldErrors = formatZodFieldErrors(parsed.error, {
+        nombreCompleto: 'Nombre completo',
+        fechaNacimiento: 'Fecha de nacimiento',
+        genero: 'Género',
+        pais: 'País',
+        provinciaEstado: 'Provincia / Estado',
+        ciudad: 'Ciudad',
+        zonaResidencia: 'Zona de residencia',
+        nivelEducacion: 'Nivel educativo',
+        momentoProfesional: 'Momento profesional',
+        areasInteres: 'Áreas de interés',
+        nivelExperienciaTecnologia: 'Nivel de experiencia',
+        habilidadesTecnicas: 'Habilidades técnicas',
+        habilidadesBlandas: 'Habilidades blandas',
+        idiomas: 'Idiomas',
+        disponibilidad: 'Disponibilidad',
+        ubicacionTrabajo: 'Ubicación de trabajo',
+        tipoConexion: 'Tipo de conexión',
+        dispositivos: 'Dispositivos',
+        objetivos: 'Objetivos',
+      });
+
+      logApiError({
+        route: 'POST /api/onboarding',
+        requestId,
+        error: parsed.error,
+        context: {
+          code: 'VALIDATION_ERROR',
+          fields: Object.keys(fieldErrors),
         },
-        { status: 400 },
-      );
+      });
+
+      return apiErrorResponse({
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'Hay campos obligatorios o inválidos en el onboarding.',
+        requestId,
+        details: {
+          fieldErrors,
+        },
+      });
     }
 
     const data = parsed.data;
@@ -369,15 +458,21 @@ export async function POST(request: Request) {
       nextPath: '/dashboard',
     });
   } catch (error) {
-    console.error('Error en onboarding:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : 'Error interno del servidor',
+    logApiError({
+      route: 'POST /api/onboarding',
+      requestId,
+      error,
+      context: {
+        code: 'ONBOARDING_SAVE_FAILED',
       },
-      { status: 500 },
-    );
+    });
+
+    return apiErrorResponse({
+      status: 500,
+      code: 'ONBOARDING_SAVE_FAILED',
+      message:
+        'No pudimos guardar tu onboarding. Intentá de nuevo. Si vuelve a pasar, reportá el código de error.',
+      requestId,
+    });
   }
 }

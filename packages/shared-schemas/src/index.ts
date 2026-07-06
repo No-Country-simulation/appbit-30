@@ -373,6 +373,9 @@ export const dashboardResponseSchema = z.object({
       mobility_pattern: z.string().nullable(),
     })
     .nullable(),
+  success: z.boolean().optional(),
+  requestId: z.string().optional(),
+  degradedSections: z.array(z.string()).optional(),
 });
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
