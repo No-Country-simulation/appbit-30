@@ -54,9 +54,9 @@ export function WellbeingCard({
     : null;
 
   return (
-    <AppCard className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between gap-3'>
-        <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
+    <AppCard className='flex min-w-0 flex-col gap-4'>
+      <div className='flex min-w-0 items-start justify-between gap-3'>
+        <h3 className='min-w-0 break-words font-heading text-base font-bold text-[var(--color-text)]'>
           {t('wellbeingTitle')}
         </h3>
 
@@ -69,19 +69,19 @@ export function WellbeingCard({
         </button>
       </div>
 
-      <p className='text-sm text-[var(--color-text-muted)]'>
+      <p className='break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
         {hasCheckinToday ? t('checkinAlreadyDoneToday') : t('wellbeingDesc')}
       </p>
 
       {hasCheckinToday && selectedEmoji && (
-        <div className='rounded-[var(--radius-md)] border border-[var(--color-success)] bg-[var(--color-success-bg)] px-3 py-2 text-sm text-[var(--color-success-text)]'>
+        <div className='break-words rounded-[var(--radius-md)] border border-[var(--color-success)] bg-[var(--color-success-bg)] px-3 py-2 text-sm leading-relaxed text-[var(--color-success-text)]'>
           {t('todayCheckinRegistered', {
             mood: t(selectedEmoji.key),
           })}
         </div>
       )}
 
-      <div className='flex justify-between gap-1'>
+      <div className='grid grid-cols-5 gap-1'>
         {emojis.map((item) => {
           const isSelectedToday = selectedEmoji?.id === item.id;
 
@@ -92,15 +92,15 @@ export function WellbeingCard({
               disabled={isLoading || hasCheckinToday}
               onClick={() => onEmojiClick?.(item.id)}
               className={cn(
-                'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1.5 py-2 transition-all duration-200',
+                'flex min-w-0 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1 py-2 transition-colors duration-200',
                 hasCheckinToday || isLoading
                   ? 'cursor-not-allowed opacity-45'
-                  : 'hover:scale-105 hover:bg-[var(--color-primary-pale)]',
+                  : 'hover:bg-[var(--color-primary-pale)]',
                 isSelectedToday &&
                   'opacity-100 ring-2 ring-[var(--color-success)] ring-offset-2 ring-offset-[var(--color-card)]',
               )}
             >
-              <span className='text-2xl'>{item.emoji}</span>
+              <span className='text-xl sm:text-2xl'>{item.emoji}</span>
 
               <span className='max-w-full truncate text-[10px] font-medium text-[var(--color-text-muted)]'>
                 {t(item.key)}
@@ -112,9 +112,9 @@ export function WellbeingCard({
 
       <div className='mt-auto border-t border-[var(--color-border)] pt-3'>
         {isLoading ? (
-          <div className='mx-auto h-4 w-44 animate-pulse rounded bg-[var(--color-border)]' />
+          <div className='mx-auto h-4 w-44 max-w-full animate-pulse rounded bg-[var(--color-border)]' />
         ) : (
-          <p className='text-center text-sm text-[var(--color-text-muted)]'>
+          <p className='break-words text-center text-sm leading-relaxed text-[var(--color-text-muted)]'>
             {t('promedioSemanal', {
               promedio: promedio.toString().slice(0, 4),
               mensaje: promedio ? mensaje : '',

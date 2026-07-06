@@ -131,3 +131,37 @@
     @apply font-sans;
   }
 }
+
+/* Layout safety */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 320px;
+}
+
+/* Evita el zoom automático en mobile cuando se enfoca un input/select */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Evita desbordes por textos largos en cards/botones */
+button,
+a,
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: anywhere;
+}

@@ -266,32 +266,41 @@ export default function DashboardClient({
           isLoading={isLoadingDashboard}
         />
 
-        <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-          <SkillsGapCard
-            porcentaje={skillsMatchPorcentaje}
-            puesto={skillsPuesto}
-            isLoading={isLoadingDashboard}
-            onVerDetalles={() => setSkillsModalOpen(true)}
-          />
+        <div className='grid min-w-0 grid-cols-1 gap-4 md:gap-5 xl:grid-cols-12'>
+          <div className='xl:col-span-4'>
+            <SkillsGapCard
+              porcentaje={skillsMatchPorcentaje}
+              puesto={skillsPuesto}
+              isLoading={isLoadingDashboard}
+              onVerDetalles={() => setSkillsModalOpen(true)}
+            />
+          </div>
 
-          <ActionPlanCard items={actionItems} isLoading={isLoadingDashboard} />
+          <div className='xl:col-span-5'>
+            <ActionPlanCard
+              items={actionItems}
+              isLoading={isLoadingDashboard}
+            />
+          </div>
 
-          <WellbeingCard
-            promedioSemanal={promedioSemanal}
-            isLoading={isLoadingDashboard}
-            hasCheckinToday={hasCheckinToday}
-            todayCheckin={todayCheckin}
-            onEmojiClick={(moodId) => {
-              if (hasCheckinToday) {
-                return;
-              }
+          <div className='xl:col-span-3'>
+            <WellbeingCard
+              promedioSemanal={promedioSemanal}
+              isLoading={isLoadingDashboard}
+              hasCheckinToday={hasCheckinToday}
+              todayCheckin={todayCheckin}
+              onEmojiClick={(moodId) => {
+                if (hasCheckinToday) {
+                  return;
+                }
 
-              setCheckinMood(moodId);
-              setCheckinStartStep(2);
-              setCheckinModalKey((key) => key + 1);
-              setCheckinModalOpen(true);
-            }}
-          />
+                setCheckinMood(moodId);
+                setCheckinStartStep(2);
+                setCheckinModalKey((key) => key + 1);
+                setCheckinModalOpen(true);
+              }}
+            />
+          </div>
         </div>
       </div>
 

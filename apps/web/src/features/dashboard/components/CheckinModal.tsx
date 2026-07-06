@@ -317,7 +317,7 @@ export function CheckinModal({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className='relative'>
           {step > 1 && (
             <AppButton
               variant='outline'

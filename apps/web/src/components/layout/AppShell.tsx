@@ -56,8 +56,8 @@ export function AppShell({
   }, [isSidebarOpen]);
 
   return (
-    <div className='min-h-screen bg-[var(--color-body)]'>
-      <div className='flex min-h-screen'>
+    <div className='min-h-screen overflow-x-hidden bg-[var(--color-body)]'>
+      <div className='flex min-h-screen min-w-0'>
         <div className='hidden shrink-0 lg:block'>
           <AppSidebar userName={userName} avatarUrl={avatarUrl} />
         </div>
@@ -82,7 +82,7 @@ export function AppShell({
           </div>
         )}
 
-        <div className='flex min-w-0 flex-1 flex-col'>
+        <div className='flex min-w-0 flex-1 flex-col overflow-x-hidden'>
           <AppHeader
             onMenuClick={() => setIsSidebarOpen(true)}
             onCheckinClick={onCheckinClick}
@@ -90,7 +90,9 @@ export function AppShell({
             perfilBreakdown={perfilBreakdown}
           />
 
-          <main className='flex-1 px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
+          <main className='min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-8'>
+            <div className='mx-auto w-full max-w-[1440px]'>{children}</div>
+          </main>
         </div>
       </div>
     </div>
