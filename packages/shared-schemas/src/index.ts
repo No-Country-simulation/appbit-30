@@ -102,7 +102,7 @@ export const onboardingStep1Schema = z
     pais: z.string().min(2).max(100),
     provinciaEstado: z.string().min(2).max(100).optional(),
     ciudad: z.string().min(2).max(100),
-    zonaResidencia: z.string().min(2).max(100).optional(),
+    zonaResidencia: z.string().max(100).optional(),
   })
   .strip();
 
@@ -186,36 +186,8 @@ export const onboardingStep3Schema = z
       'Desde_cero',
       'Con_conocimientos_previos',
     ] as const),
-
-    habilidadesTecnicas: z
-      .array(
-        z.enum([
-          'React_Frontend',
-          'Python',
-          'Java_CSharp',
-          'SQL_Bases_Datos',
-          'Node_Backend',
-          'Excel_Avanzado',
-          'PowerBI_Tableau',
-          'AWS_Cloud',
-          'Figma_Diseno_UX',
-        ] as const),
-      )
-      .default([]),
-
-    habilidadesBlandas: z
-      .array(
-        z.enum([
-          'Comunicacion_Asertiva',
-          'Trabajo_Equipo',
-          'Liderazgo',
-          'Gestion_Tiempo',
-          'Resolucion_Problemas',
-          'Pensamiento_Critico',
-          'Adaptabilidad',
-        ] as const),
-      )
-      .default([]),
+    habilidadesTecnicas: z.array(z.string().trim().min(1)).default([]),
+    habilidadesBlandas: z.array(z.string().trim().min(1)).default([]),
   })
   .strip();
 

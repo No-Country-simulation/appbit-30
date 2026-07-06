@@ -30,6 +30,14 @@ import {
 import { Body, Caption } from '@/src/components/typography';
 import { FieldError } from '@/src/features/onboarding/components';
 import { AlertCircleIcon, ShieldCheckIcon } from 'lucide-react';
+import {
+  MARKET_SKILL_LEVELS,
+  MARKET_SKILL_LEVEL_LABEL_KEYS,
+  MARKET_SKILLS_BY_AREA,
+  getHardSkillValuesForAreas,
+  getSoftSkillValuesForAreas,
+  isAreaInteresValue,
+} from '@/src/features/onboarding/data/market-skills';
 
 const SELECT_TRIGGER_CLASSES =
   'w-full px-4 py-[14px] rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] data-[size=default]:!h-auto';
@@ -219,6 +227,30 @@ export function OnboardingModal({
         ? prev[field].filter((v) => v !== value)
         : [...prev[field], value],
     }));
+    setShowErrors(false);
+  }
+
+  function handleAreasInteresToggle(value: string) {
+    setFormData((prev) => {
+      const nextAreas = prev.areasInteres.includes(value)
+        ? prev.areasInteres.filter((area) => area !== value)
+        : [...prev.areasInteres, value];
+
+      const allowedHardSkills = getHardSkillValuesForAreas(nextAreas);
+      const allowedSoftSkills = getSoftSkillValuesForAreas(nextAreas);
+
+      return {
+        ...prev,
+        areasInteres: nextAreas,
+        habilidadesTecnicas: prev.habilidadesTecnicas.filter((skill) =>
+          allowedHardSkills.has(skill),
+        ),
+        habilidadesBlandas: prev.habilidadesBlandas.filter((skill) =>
+          allowedSoftSkills.has(skill),
+        ),
+      };
+    });
+
     setShowErrors(false);
   }
 
@@ -467,28 +499,6 @@ export function OnboardingModal({
     },
   ];
 
-  const habilidadesTecnicasOptions = [
-    { value: 'React_Frontend', label: t('habilidadesTecnicasOption1') },
-    { value: 'Python', label: t('habilidadesTecnicasOption2') },
-    { value: 'Java_CSharp', label: t('habilidadesTecnicasOption3') },
-    { value: 'SQL_Bases_Datos', label: t('habilidadesTecnicasOption4') },
-    { value: 'Node_Backend', label: t('habilidadesTecnicasOption5') },
-    { value: 'Excel_Avanzado', label: t('habilidadesTecnicasOption6') },
-    { value: 'PowerBI_Tableau', label: t('habilidadesTecnicasOption7') },
-    { value: 'AWS_Cloud', label: t('habilidadesTecnicasOption8') },
-    { value: 'Figma_Diseno_UX', label: t('habilidadesTecnicasOption9') },
-  ];
-
-  const habilidadesBlandasOptions = [
-    { value: 'Comunicacion_Asertiva', label: t('habilidadesBlandasOption1') },
-    { value: 'Trabajo_Equipo', label: t('habilidadesBlandasOption2') },
-    { value: 'Liderazgo', label: t('habilidadesBlandasOption3') },
-    { value: 'Gestion_Tiempo', label: t('habilidadesBlandasOption4') },
-    { value: 'Resolucion_Problemas', label: t('habilidadesBlandasOption5') },
-    { value: 'Pensamiento_Critico', label: t('habilidadesBlandasOption6') },
-    { value: 'Adaptabilidad', label: t('habilidadesBlandasOption7') },
-  ];
-
   const objetivosOptions = [
     { value: 'Primer_empleo_IT', label: t('objetivosOption1') },
     { value: 'Reconversion_laboral', label: t('objetivosOption2') },
@@ -530,6 +540,8 @@ export function OnboardingModal({
         : step === 3
           ? t('step3Subtitle')
           : t('step4Subtitle');
+
+  const selectedMarketAreas = formData.areasInteres.filter(isAreaInteresValue);
 
   return (
     <>
@@ -794,7 +806,7 @@ export function OnboardingModal({
                         key={opt.value}
                         label={opt.label}
                         selected={formData.areasInteres.includes(opt.value)}
-                        onClick={() => toggleArray('areasInteres', opt.value)}
+                        onClick={() => handleAreasInteresToggle(opt.value)}
                       />
                     ))}
                   </div>
@@ -929,20 +941,54 @@ export function OnboardingModal({
                           {t('habilidadesTecnicasHint')}
                         </span>
                       </Body>
-                      <div className='mt-2 flex flex-wrap gap-2'>
-                        {habilidadesTecnicasOptions.map((opt) => (
-                          <ChoiceChip
-                            key={opt.value}
-                            label={opt.label}
-                            selected={formData.habilidadesTecnicas.includes(
-                              opt.value,
-                            )}
-                            onClick={() =>
-                              toggleArray('habilidadesTecnicas', opt.value)
-                            }
-                          />
-                        ))}
+
+                      <div className='mt-3 space-y-4'>
+                        {selectedMarketAreas.map((area) => {
+                          const areaConfig = MARKET_SKILLS_BY_AREA[area];
+
+                          return (
+                            <div
+                              key={area}
+                              className='rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
+                            >
+                              <p className='mb-3 text-sm font-bold text-[var(--color-text)]'>
+                                {t(areaConfig.labelKey)}
+                              </p>
+
+                              <div className='space-y-3'>
+                                {MARKET_SKILL_LEVELS.map((level) => (
+                                  <div key={level}>
+                                    <p className='mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                                      {t(MARKET_SKILL_LEVEL_LABEL_KEYS[level])}
+                                    </p>
+
+                                    <div className='flex flex-wrap gap-2'>
+                                      {areaConfig.hardSkills[level].map(
+                                        (skill) => (
+                                          <ChoiceChip
+                                            key={skill.value}
+                                            label={t(skill.labelKey)}
+                                            selected={formData.habilidadesTecnicas.includes(
+                                              skill.value,
+                                            )}
+                                            onClick={() =>
+                                              toggleArray(
+                                                'habilidadesTecnicas',
+                                                skill.value,
+                                              )
+                                            }
+                                          />
+                                        ),
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+
                       <FieldError
                         show={
                           showErrors &&
@@ -960,20 +1006,54 @@ export function OnboardingModal({
                           {t('habilidadesBlandasHint')}
                         </span>
                       </Body>
-                      <div className='mt-2 flex flex-wrap gap-2'>
-                        {habilidadesBlandasOptions.map((opt) => (
-                          <ChoiceChip
-                            key={opt.value}
-                            label={opt.label}
-                            selected={formData.habilidadesBlandas.includes(
-                              opt.value,
-                            )}
-                            onClick={() =>
-                              toggleArray('habilidadesBlandas', opt.value)
-                            }
-                          />
-                        ))}
+
+                      <div className='mt-3 space-y-4'>
+                        {selectedMarketAreas.map((area) => {
+                          const areaConfig = MARKET_SKILLS_BY_AREA[area];
+
+                          return (
+                            <div
+                              key={area}
+                              className='rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
+                            >
+                              <p className='mb-3 text-sm font-bold text-[var(--color-text)]'>
+                                {t(areaConfig.labelKey)}
+                              </p>
+
+                              <div className='space-y-3'>
+                                {MARKET_SKILL_LEVELS.map((level) => (
+                                  <div key={level}>
+                                    <p className='mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                                      {t(MARKET_SKILL_LEVEL_LABEL_KEYS[level])}
+                                    </p>
+
+                                    <div className='flex flex-wrap gap-2'>
+                                      {areaConfig.softSkills[level].map(
+                                        (skill) => (
+                                          <ChoiceChip
+                                            key={skill.value}
+                                            label={t(skill.labelKey)}
+                                            selected={formData.habilidadesBlandas.includes(
+                                              skill.value,
+                                            )}
+                                            onClick={() =>
+                                              toggleArray(
+                                                'habilidadesBlandas',
+                                                skill.value,
+                                              )
+                                            }
+                                          />
+                                        ),
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+
                       <FieldError
                         show={
                           showErrors &&
