@@ -176,7 +176,11 @@ export default function DashboardClient({
     ? undefined
     : (data?.bienestar?.notaPromedio ?? 0);
 
-  const skillsGapFromUserSkills = (() => {
+  function clampPercent(value: number) {
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  const skillsMatchFromUserSkills = (() => {
     const resumen = skillsData?.resumen;
 
     if (!resumen) {
@@ -189,14 +193,19 @@ export default function DashboardClient({
       return undefined;
     }
 
-    return Math.round((resumen.faltantes / total) * 100);
+    return clampPercent((resumen.adquiridas / total) * 100);
   })();
 
-  const skillsGapPorcentaje = isLoadingDashboard
+  const orientacionGapPorcentual =
+    data?.orientacion?.gap_porcentual ??
+    skillsData?.orientacion?.gap_porcentual ??
+    null;
+
+  const skillsMatchPorcentaje = isLoadingDashboard
     ? undefined
-    : (data?.orientacion?.gap_porcentual ??
-      skillsData?.orientacion?.gap_porcentual ??
-      skillsGapFromUserSkills);
+    : orientacionGapPorcentual != null
+      ? clampPercent(100 - Number(orientacionGapPorcentual))
+      : skillsMatchFromUserSkills;
 
   const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
@@ -252,7 +261,7 @@ export default function DashboardClient({
 
         <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
           <SkillsGapCard
-            porcentaje={skillsGapPorcentaje}
+            porcentaje={skillsMatchPorcentaje}
             puesto={skillsPuesto}
             isLoading={isLoadingDashboard}
             onVerDetalles={() => setSkillsModalOpen(true)}
@@ -285,7 +294,7 @@ export default function DashboardClient({
         open={skillsModalOpen}
         onOpenChange={setSkillsModalOpen}
         puesto={skillsPuesto}
-        porcentaje={skillsGapPorcentaje}
+        porcentaje={skillsMatchPorcentaje}
         skills={skillsRows}
         isLoading={isLoadingDashboard}
       />
