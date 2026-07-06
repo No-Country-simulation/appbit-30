@@ -10,7 +10,8 @@
     "playground": "Playground",
     "auth": "Acceso",
     "onboarding": "Onboarding",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "empleabilidad": "Empleos"
   },
   "Playground": {
     "title": "Design System",
@@ -148,6 +149,32 @@
     "fieldRequired": "Este campo es obligatorio",
     "generoPlaceholderSelect": "Seleccionar...",
     "paisPlaceholderSelect": "Seleccionar..."
+  },
+  "Empleabilidad": {
+    "title": "Oportunidades Laborales",
+    "recomendados": "Recomendados",
+    "misAplicaciones": "Mis Aplicaciones",
+    "verYAplicar": "Ver y Aplicar",
+    "quienOfrece": "Quién Ofrece",
+    "descripcionBusqueda": "Descripción de la Búsqueda",
+    "educacionRequerida": "Educación Requerida",
+    "experienciaSolicitada": "Experiencia Solicitada",
+    "ubicacionModalidad": "Ubicación / Modalidad",
+    "analisisCompatibilidad": "Análisis de Compatibilidad",
+    "postulateAhora": "Postúlate Ahora",
+    "mensajeReclutador": "Mensaje para el reclutador (opcional)",
+    "usarCvGuardado": "Usar mi CV guardado en BiT",
+    "enviarPostulacion": "Enviar Postulación",
+    "estadoEnviada": "Enviada",
+    "estadoVista": "Vista",
+    "estadoEnProceso": "En proceso",
+    "estadoRechazada": "Rechazada",
+    "estadoAceptada": "Aceptada",
+    "verMensajes": "Ver mensajes",
+    "irAFortalecer": "Ir a fortalecer {skill}",
+    "loTienes": "Lo tenés",
+    "teFalta": "Te falta",
+    "postulacionExitosa": "¡Postulación enviada con éxito!"
   },
   "Auth": {
     "heroTitleLine1": "Tu talento",
