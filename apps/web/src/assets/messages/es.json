@@ -490,7 +490,9 @@
     "profileAvatarAlt": "Foto de perfil de {nombre}",
     "checkinStepEstado": "Estado",
     "checkinStepMotivo": "Motivo",
-    "checkinStepContexto": "Contexto"
+    "checkinStepContexto": "Contexto",
+    "cerrarSesion": "Cerrar sesión",
+    "cerrandoSesion": "Cerrando sesión..."
   },
   "Error": {
     "title": "Servicio temporalmente no disponible",

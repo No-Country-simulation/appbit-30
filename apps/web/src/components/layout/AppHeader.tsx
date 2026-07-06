@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BellIcon, Info } from 'lucide-react';
 import { AppIcon, AppLanguageSwitcher } from '@/src/components';
-import { AppButton } from '@/src/components/app/AppButton';
 import { AppBadge } from '@/src/components/app/AppBadge';
 import {
   Dialog,
@@ -23,14 +22,17 @@ interface PerfilBreakdown {
 
 interface Props {
   onMenuClick?: () => void;
+
+  // Lo dejamos por compatibilidad con AppShell/DashboardClient.
+  // El header ya no lo usa visualmente.
   onCheckinClick?: () => void;
+
   profilePercent?: number;
   perfilBreakdown?: PerfilBreakdown;
 }
 
 export function AppHeader({
   onMenuClick,
-  onCheckinClick,
   profilePercent,
   perfilBreakdown,
 }: Props) {
@@ -38,6 +40,7 @@ export function AppHeader({
   const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const hasProfilePercent = typeof profilePercent === 'number';
+
   const safeProfilePercent = hasProfilePercent
     ? Math.max(0, Math.min(100, profilePercent))
     : 0;
@@ -49,35 +52,51 @@ export function AppHeader({
           label: t('perfilBreakdownOnboarding'),
           points: 50,
         },
-        { key: 'movilidad', label: t('perfilBreakdownMovilidad'), points: 20 },
-        { key: 'avatar', label: t('perfilBreakdownAvatar'), points: 10 },
-        { key: 'ubicacion', label: t('perfilBreakdownUbicacion'), points: 10 },
-        { key: 'whatsapp', label: t('perfilBreakdownWhatsapp'), points: 10 },
+        {
+          key: 'movilidad',
+          label: t('perfilBreakdownMovilidad'),
+          points: 20,
+        },
+        {
+          key: 'avatar',
+          label: t('perfilBreakdownAvatar'),
+          points: 10,
+        },
+        {
+          key: 'ubicacion',
+          label: t('perfilBreakdownUbicacion'),
+          points: 10,
+        },
+        {
+          key: 'whatsapp',
+          label: t('perfilBreakdownWhatsapp'),
+          points: 10,
+        },
       ]
     : [];
 
   return (
-    <header className='flex h-16 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-card)] px-4 sm:px-6'>
-      <div className='flex min-w-0 items-center gap-3'>
+    <header className='sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-card)] px-4 sm:px-6'>
+      <div className='flex min-w-0 flex-1 items-center gap-3'>
         <button
           type='button'
           aria-label={t('openMenu')}
           onClick={onMenuClick}
-          className='inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text)] lg:hidden'
+          className='inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text)] transition-colors hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)] lg:hidden'
         >
           <AppIcon name='menu' className='size-5' />
         </button>
 
-        <div className='flex min-w-0 items-center gap-2'>
+        <div className='flex min-w-0 flex-1 items-center gap-2'>
           {hasProfilePercent ? (
             <>
-              <span className='whitespace-nowrap text-[11px] font-semibold text-[var(--color-success-text)] sm:text-xs'>
+              <span className='shrink-0 whitespace-nowrap text-[11px] font-semibold text-[var(--color-success-text)] sm:text-xs'>
                 {t('perfilProgreso', {
                   porcentaje: safeProfilePercent.toString(),
                 })}
               </span>
 
-              <div className='hidden h-2 w-16 overflow-hidden rounded-full bg-[var(--color-border)] sm:block sm:w-24'>
+              <div className='hidden h-2 w-20 overflow-hidden rounded-full bg-[var(--color-border)] sm:block md:w-28'>
                 <div
                   className='h-full rounded-full bg-[var(--color-success)] transition-all duration-500'
                   style={{ width: `${safeProfilePercent}%` }}
@@ -89,43 +108,37 @@ export function AppHeader({
                   type='button'
                   aria-label={t('perfilBreakdownTitle')}
                   onClick={() => setBreakdownOpen(true)}
-                  className='inline-flex size-5 shrink-0 items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                  className='inline-flex size-7 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
                 >
                   <Info className='size-4' />
                 </button>
               )}
             </>
           ) : (
-            <div className='flex items-center gap-2'>
+            <div className='flex min-w-0 items-center gap-2'>
               <div className='h-3 w-20 animate-pulse rounded bg-[var(--color-border)]' />
-              <div className='hidden h-2 w-16 animate-pulse rounded bg-[var(--color-border)] sm:block' />
+              <div className='hidden h-2 w-20 animate-pulse rounded bg-[var(--color-border)] sm:block' />
             </div>
           )}
         </div>
       </div>
 
       <div className='flex shrink-0 items-center gap-2'>
-        <div className='hidden md:block'>
+        <div className='hidden xl:block'>
           <AppBadge variant='warning'>{t('offlineSuggested')}</AppBadge>
         </div>
-
-        <AppButton
-          variant='primary'
-          className='!hidden !px-4 !py-2 text-xs sm:!inline-flex'
-          onClick={onCheckinClick}
-        >
-          {t('checkinButton')}
-        </AppButton>
 
         <button
           type='button'
           aria-label={t('notifications')}
-          className='inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
+          className='inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
         >
           <BellIcon className='size-5' />
         </button>
 
-        <AppLanguageSwitcher />
+        <div className='min-w-0 shrink-0'>
+          <AppLanguageSwitcher />
+        </div>
       </div>
 
       <Dialog open={breakdownOpen} onOpenChange={setBreakdownOpen}>

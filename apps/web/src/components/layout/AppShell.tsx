@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
@@ -33,10 +33,32 @@ export function AppShell({
   const t = useTranslations('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSidebarOpen]);
+
   return (
     <div className='min-h-screen bg-[var(--color-body)]'>
       <div className='flex min-h-screen'>
-        <div className='hidden lg:block'>
+        <div className='hidden shrink-0 lg:block'>
           <AppSidebar userName={userName} avatarUrl={avatarUrl} />
         </div>
 
@@ -49,8 +71,13 @@ export function AppShell({
               onClick={() => setIsSidebarOpen(false)}
             />
 
-            <div className='relative h-full w-[var(--sidebar-width)] max-w-[85vw]'>
-              <AppSidebar userName={userName} avatarUrl={avatarUrl} />
+            <div className='absolute inset-y-0 left-0 z-10 w-[min(var(--sidebar-width),85vw)] max-w-[85vw]'>
+              <AppSidebar
+                userName={userName}
+                avatarUrl={avatarUrl}
+                className='w-full shadow-2xl'
+                onNavigate={() => setIsSidebarOpen(false)}
+              />
             </div>
           </div>
         )}
