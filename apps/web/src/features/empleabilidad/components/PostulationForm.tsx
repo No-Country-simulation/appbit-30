@@ -52,8 +52,8 @@ export function PostulationForm({ onSubmit }: Props) {
         </button>
       </div>
 
-      <AppButton type='submit' variant='primary' className='w-full'>
-        <Send className='mr-2 size-4' />
+      <AppButton type='submit' variant='primary' className='inline-flex w-full items-center justify-center gap-2'>
+        <Send className='size-4' />
         {t('enviarPostulacion')}
       </AppButton>
     </form>
