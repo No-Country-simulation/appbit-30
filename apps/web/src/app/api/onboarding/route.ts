@@ -78,12 +78,14 @@ export async function POST(request: Request) {
 
     const rawBody: Record<string, unknown> = await request.json();
 
+    const requestLocale = rawBody.locale === 'pt' ? 'pt' : 'es';
+
     const authUid = authUser.id;
     const email = authUser.email;
     const nombreCompleto = getAuthDisplayName(authUser);
     const avatarUrl = getAvatarUrl(authUser);
     const idiomaApp =
-      rawBody.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es;
+      requestLocale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es;
 
     if (rawBody.whatsappCodigo === '' && rawBody.whatsappNumero === '') {
       rawBody.whatsappCodigo = undefined;
@@ -343,6 +345,7 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             usuarioId: result.usuarioId,
             ...data,
+            locale: requestLocale,
             nivel_inicial:
               data.nivelExperienciaTecnologia === 'Desde_cero'
                 ? 'sin_conocimiento'
