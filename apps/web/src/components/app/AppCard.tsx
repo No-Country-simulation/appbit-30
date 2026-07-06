@@ -10,12 +10,9 @@ export function AppCard({ children, hover = false, className }: Props) {
   return (
     <div
       className={cn(
-        'bg-[var(--color-card)]',
-        'p-6',
-        'rounded-[var(--radius-md)]',
-        'shadow-[var(--shadow-md)]',
+        'min-w-0 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-md)] sm:p-6',
         hover &&
-          'transition-all duration-300 hover:-translate-y-[5px] hover:shadow-[var(--shadow-lg)]',
+          'transition-shadow duration-300 hover:shadow-[var(--shadow-lg)]',
         className,
       )}
     >

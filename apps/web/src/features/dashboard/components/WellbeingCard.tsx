@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { AppCard } from '@/src/components/app/AppCard';
+import { cn } from '@/lib/utils';
 
 const emojis = [
   { id: 'agotado', emoji: '😩', key: 'moodAgotado' },
@@ -11,9 +12,18 @@ const emojis = [
   { id: 'genial', emoji: '😄', key: 'moodGenial' },
 ];
 
+interface TodayCheckin {
+  checkin_id: string;
+  emoji: string;
+  nota_diaria: number;
+  creado_en: string;
+}
+
 interface Props {
   promedioSemanal?: number;
   isLoading?: boolean;
+  hasCheckinToday?: boolean;
+  todayCheckin?: TodayCheckin | null;
   onEmojiClick?: (moodId: string) => void;
   onHistorialClick?: () => void;
 }
@@ -21,6 +31,8 @@ interface Props {
 export function WellbeingCard({
   promedioSemanal,
   isLoading = false,
+  hasCheckinToday = false,
+  todayCheckin = null,
   onEmojiClick,
   onHistorialClick,
 }: Props) {
@@ -37,48 +49,72 @@ export function WellbeingCard({
 
   const mensaje = t(mensajeKey);
 
+  const selectedEmoji = todayCheckin
+    ? emojis.find((item) => item.id === todayCheckin.emoji)
+    : null;
+
   return (
-    <AppCard className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between'>
-        <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
+    <AppCard className='flex min-w-0 flex-col gap-4'>
+      <div className='flex min-w-0 items-start justify-between gap-3'>
+        <h3 className='min-w-0 break-words font-heading text-base font-bold text-[var(--color-text)]'>
           {t('wellbeingTitle')}
         </h3>
 
         <button
           type='button'
           onClick={onHistorialClick}
-          className='text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
+          className='shrink-0 text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
         >
           {t('historial')}
         </button>
       </div>
 
-      <p className='text-sm text-[var(--color-text-muted)]'>
-        {t('wellbeingDesc')}
+      <p className='break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
+        {hasCheckinToday ? t('checkinAlreadyDoneToday') : t('wellbeingDesc')}
       </p>
 
-      <div className='flex justify-between'>
-        {emojis.map((item) => (
-          <button
-            key={item.id}
-            type='button'
-            onClick={() => onEmojiClick?.(item.id)}
-            className='flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-2 py-2 transition-all duration-200 hover:scale-110 hover:bg-[var(--color-primary-pale)]'
-          >
-            <span className='text-2xl'>{item.emoji}</span>
+      {hasCheckinToday && selectedEmoji && (
+        <div className='break-words rounded-[var(--radius-md)] border border-[var(--color-success)] bg-[var(--color-success-bg)] px-3 py-2 text-sm leading-relaxed text-[var(--color-success-text)]'>
+          {t('todayCheckinRegistered', {
+            mood: t(selectedEmoji.key),
+          })}
+        </div>
+      )}
 
-            <span className='text-[10px] font-medium text-[var(--color-text-muted)]'>
-              {t(item.key)}
-            </span>
-          </button>
-        ))}
+      <div className='grid grid-cols-5 gap-1'>
+        {emojis.map((item) => {
+          const isSelectedToday = selectedEmoji?.id === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type='button'
+              disabled={isLoading || hasCheckinToday}
+              onClick={() => onEmojiClick?.(item.id)}
+              className={cn(
+                'flex min-w-0 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1 py-2 transition-colors duration-200',
+                hasCheckinToday || isLoading
+                  ? 'cursor-not-allowed opacity-45'
+                  : 'hover:bg-[var(--color-primary-pale)]',
+                isSelectedToday &&
+                  'opacity-100 ring-2 ring-[var(--color-success)] ring-offset-2 ring-offset-[var(--color-card)]',
+              )}
+            >
+              <span className='text-xl sm:text-2xl'>{item.emoji}</span>
+
+              <span className='max-w-full truncate text-[10px] font-medium text-[var(--color-text-muted)]'>
+                {t(item.key)}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className='mt-auto border-t border-[var(--color-border)] pt-3'>
         {isLoading ? (
-          <div className='mx-auto h-4 w-44 animate-pulse rounded bg-[var(--color-border)]' />
+          <div className='mx-auto h-4 w-44 max-w-full animate-pulse rounded bg-[var(--color-border)]' />
         ) : (
-          <p className='text-center text-sm text-[var(--color-text-muted)]'>
+          <p className='break-words text-center text-sm leading-relaxed text-[var(--color-text-muted)]'>
             {t('promedioSemanal', {
               promedio: promedio.toString().slice(0, 4),
               mensaje: promedio ? mensaje : '',

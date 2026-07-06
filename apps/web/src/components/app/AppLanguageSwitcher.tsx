@@ -14,15 +14,15 @@ export function AppLanguageSwitcher() {
   }
 
   return (
-    <div className='flex items-center gap-2'>
-      <span className='font-body text-sm font-medium text-[var(--color-text-muted)]'>
+    <div className='flex min-w-0 items-center gap-2'>
+      <span className='hidden font-body text-sm font-medium text-[var(--color-text-muted)] sm:inline'>
         {t('language')}
       </span>
 
       <select
         value={locale}
         onChange={(event) => handleChange(event.target.value)}
-        className='rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 font-body text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)]'
+        className='min-h-10 max-w-[128px] rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 font-body text-base text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] sm:max-w-[160px] sm:text-sm'
       >
         <option value='es'>{t('spanish')}</option>
         <option value='pt'>{t('portuguese')}</option>

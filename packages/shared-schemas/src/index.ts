@@ -69,16 +69,15 @@ export const checkinRequestSchema = z.object({
   emoji: z.enum(EMOJIS_CHECKIN, {
     error: 'El estado emocional seleccionado no es válido.',
   }),
-
   motivos: z
     .array(z.string().trim().min(1, 'El motivo no puede estar vacío'))
     .max(10, 'Se permiten como máximo 10 motivos.'),
-
   contexto: z
     .string()
     .trim()
     .max(500, 'El contexto no puede superar los 500 caracteres.')
     .optional(),
+  timezone: z.string().trim().min(1).max(100).optional(),
 });
 
 export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
@@ -102,7 +101,7 @@ export const onboardingStep1Schema = z
     pais: z.string().min(2).max(100),
     provinciaEstado: z.string().min(2).max(100).optional(),
     ciudad: z.string().min(2).max(100),
-    zonaResidencia: z.string().min(2).max(100).optional(),
+    zonaResidencia: z.string().max(100).optional(),
   })
   .strip();
 
@@ -186,36 +185,8 @@ export const onboardingStep3Schema = z
       'Desde_cero',
       'Con_conocimientos_previos',
     ] as const),
-
-    habilidadesTecnicas: z
-      .array(
-        z.enum([
-          'React_Frontend',
-          'Python',
-          'Java_CSharp',
-          'SQL_Bases_Datos',
-          'Node_Backend',
-          'Excel_Avanzado',
-          'PowerBI_Tableau',
-          'AWS_Cloud',
-          'Figma_Diseno_UX',
-        ] as const),
-      )
-      .default([]),
-
-    habilidadesBlandas: z
-      .array(
-        z.enum([
-          'Comunicacion_Asertiva',
-          'Trabajo_Equipo',
-          'Liderazgo',
-          'Gestion_Tiempo',
-          'Resolucion_Problemas',
-          'Pensamiento_Critico',
-          'Adaptabilidad',
-        ] as const),
-      )
-      .default([]),
+    habilidadesTecnicas: z.array(z.string().trim().min(1)).default([]),
+    habilidadesBlandas: z.array(z.string().trim().min(1)).default([]),
   })
   .strip();
 
@@ -384,6 +355,15 @@ export const dashboardResponseSchema = z.object({
   bienestar: z.object({
     notaPromedio: z.number(),
     totalCheckins: z.number(),
+    hasCheckinToday: z.boolean(),
+    todayCheckin: z
+      .object({
+        checkin_id: z.string(),
+        emoji: z.string(),
+        nota_diaria: z.number(),
+        creado_en: z.string(),
+      })
+      .nullable(),
   }),
   notificacionesNoLeidas: z.number(),
   perfilMovilidad: z
@@ -393,6 +373,9 @@ export const dashboardResponseSchema = z.object({
       mobility_pattern: z.string().nullable(),
     })
     .nullable(),
+  success: z.boolean().optional(),
+  requestId: z.string().optional(),
+  degradedSections: z.array(z.string()).optional(),
 });
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;

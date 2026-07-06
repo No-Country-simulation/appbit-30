@@ -21,15 +21,15 @@ export function HeroBanner({
   const resolvedNombre = nombre || t('heroFallbackName');
 
   return (
-    <section className='relative overflow-hidden rounded-[var(--radius-lg)] bg-[#1a1a2e] p-6 text-white sm:p-8'>
-      <div className='absolute -right-16 -top-16 size-64 rounded-full bg-[#c9a84c]/80' />
+    <section className='relative min-w-0 overflow-hidden rounded-[var(--radius-lg)] bg-[#1a1a2e] px-4 py-6 text-white sm:px-6 sm:py-7 lg:px-8 lg:py-8'>
+      <div className='pointer-events-none absolute -right-16 -top-10 size-40 rounded-full bg-[#c9a84c]/75 sm:-right-14 sm:-top-16 sm:size-56 lg:-right-12 lg:size-72' />
 
-      <div className='relative z-10'>
-        <h1 className='font-heading text-2xl font-black sm:text-3xl'>
+      <div className='relative z-10 max-w-[760px]'>
+        <h1 className='break-words font-heading text-2xl font-black leading-tight sm:text-3xl lg:text-4xl'>
           {t('heroBannerTitle', { nombre: resolvedNombre })}
         </h1>
 
-        <p className='mt-2 max-w-xl text-sm text-white/80'>
+        <p className='mt-3 max-w-xl break-words text-sm leading-relaxed text-white/80 sm:text-base'>
           {isLoading
             ? t('heroBannerLoadingDesc')
             : t('heroBannerDesc', {
@@ -38,14 +38,14 @@ export function HeroBanner({
               })}
         </p>
 
-        <div className='mt-5 flex flex-wrap gap-3'>
-          <AppButton className='!border-[#c9a84c] !bg-[#c9a84c] !text-[#1a1a2e] hover:!bg-[#d4b85a]'>
+        <div className='mt-5 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap'>
+          <AppButton className='w-full !border-[#c9a84c] !bg-[#c9a84c] !text-[#1a1a2e] hover:!bg-[#d4b85a] sm:w-auto'>
             {t('continuarRuta')}
           </AppButton>
 
           <AppButton
             variant='outline'
-            className='!border-white/30 !text-white hover:!border-white hover:!bg-white/10'
+            className='w-full !border-white/30 !text-white hover:!border-white hover:!bg-white/10 sm:w-auto'
           >
             {t('verVacantes')}
           </AppButton>

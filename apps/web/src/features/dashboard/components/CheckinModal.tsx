@@ -171,6 +171,7 @@ export function CheckinModal({
           emoji: selectedMood,
           motivos: selectedMotivos,
           contexto: contexto.trim() || undefined,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 
@@ -316,7 +317,7 @@ export function CheckinModal({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className='relative'>
           {step > 1 && (
             <AppButton
               variant='outline'
