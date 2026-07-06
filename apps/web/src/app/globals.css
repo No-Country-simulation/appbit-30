@@ -190,3 +190,35 @@ h6 {
 .onboarding-form button {
   overflow-wrap: anywhere;
 }
+
+.safe-modal-content,
+.safe-modal-content * {
+  min-width: 0;
+}
+
+.safe-modal-content input,
+.safe-modal-content textarea,
+.safe-modal-content select,
+.safe-modal-content button,
+.safe-modal-content [data-slot='select-trigger'] {
+  max-width: 100%;
+}
+
+.safe-modal-content p,
+.safe-modal-content span,
+.safe-modal-content label,
+.safe-modal-content h1,
+.safe-modal-content h2,
+.safe-modal-content h3,
+.safe-modal-content h4,
+.safe-modal-content button {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .safe-modal-content input,
+  .safe-modal-content textarea,
+  .safe-modal-content select {
+    font-size: 16px !important;
+  }
+}
