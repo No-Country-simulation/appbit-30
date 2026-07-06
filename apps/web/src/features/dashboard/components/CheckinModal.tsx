@@ -171,6 +171,7 @@ export function CheckinModal({
           emoji: selectedMood,
           motivos: selectedMotivos,
           contexto: contexto.trim() || undefined,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 

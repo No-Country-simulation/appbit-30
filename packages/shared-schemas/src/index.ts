@@ -69,16 +69,15 @@ export const checkinRequestSchema = z.object({
   emoji: z.enum(EMOJIS_CHECKIN, {
     error: 'El estado emocional seleccionado no es válido.',
   }),
-
   motivos: z
     .array(z.string().trim().min(1, 'El motivo no puede estar vacío'))
     .max(10, 'Se permiten como máximo 10 motivos.'),
-
   contexto: z
     .string()
     .trim()
     .max(500, 'El contexto no puede superar los 500 caracteres.')
     .optional(),
+  timezone: z.string().trim().min(1).max(100).optional(),
 });
 
 export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
@@ -356,6 +355,15 @@ export const dashboardResponseSchema = z.object({
   bienestar: z.object({
     notaPromedio: z.number(),
     totalCheckins: z.number(),
+    hasCheckinToday: z.boolean(),
+    todayCheckin: z
+      .object({
+        checkin_id: z.string(),
+        emoji: z.string(),
+        nota_diaria: z.number(),
+        creado_en: z.string(),
+      })
+      .nullable(),
   }),
   notificacionesNoLeidas: z.number(),
   perfilMovilidad: z

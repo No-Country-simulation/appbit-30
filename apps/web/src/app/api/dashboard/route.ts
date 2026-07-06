@@ -9,6 +9,84 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'shortOffset',
+  });
+
+  const timeZoneName = formatter
+    .formatToParts(date)
+    .find((part) => part.type === 'timeZoneName')?.value;
+
+  if (!timeZoneName || timeZoneName === 'GMT') {
+    return 0;
+  }
+
+  const match = timeZoneName.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+
+  if (!match) {
+    return 0;
+  }
+
+  const sign = match[1] === '-' ? -1 : 1;
+  const hours = Number(match[2] ?? 0);
+  const minutes = Number(match[3] ?? 0);
+
+  return sign * ((hours * 60 + minutes) * 60 * 1000);
+}
+
+function getUserDayRange(timeZone?: string) {
+  const safeTimeZone = timeZone || 'UTC';
+
+  try {
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: safeTimeZone,
+    }).format();
+
+    const now = new Date();
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: safeTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== 'literal')
+        .map((part) => [part.type, part.value]),
+    );
+
+    const year = Number(values.year);
+    const month = Number(values.month);
+    const day = Number(values.day);
+
+    const startLocalAsUtc = new Date(Date.UTC(year, month - 1, day));
+    const endLocalAsUtc = new Date(Date.UTC(year, month - 1, day + 1));
+
+    const startOffset = getTimeZoneOffsetMs(startLocalAsUtc, safeTimeZone);
+    const endOffset = getTimeZoneOffsetMs(endLocalAsUtc, safeTimeZone);
+
+    return {
+      start: new Date(startLocalAsUtc.getTime() - startOffset),
+      end: new Date(endLocalAsUtc.getTime() - endOffset),
+    };
+  } catch {
+    const now = new Date();
+
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+
+    return { start, end };
+  }
+}
+
 const dashboardUsuarioSelect = {
   usuario_id: true,
   nombre_completo: true,
@@ -20,7 +98,7 @@ const dashboardUsuarioSelect = {
   onboarding_status: true,
 } as const;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const authUser = await getCurrentAuthUser();
 
@@ -37,6 +115,10 @@ export async function GET() {
       );
     }
 
+    const url = new URL(request.url);
+    const timezone = url.searchParams.get('timezone') ?? undefined;
+    const { start: todayStart, end: todayEnd } = getUserDayRange(timezone);
+
     const userId = usuario.usuario_id;
 
     const sevenDaysAgo = new Date();
@@ -46,6 +128,7 @@ export async function GET() {
       orientacion,
       planAccion,
       bienestarAgg,
+      todayCheckin,
       notificacionesNoLeidas,
       perfilMovilidad,
       userSkills,
@@ -90,6 +173,25 @@ export async function GET() {
           nota_diaria: true,
         },
         _count: true,
+      }),
+
+      dbClient.checkIns.findFirst({
+        where: {
+          usuario_id: userId,
+          creado_en: {
+            gte: todayStart,
+            lt: todayEnd,
+          },
+        },
+        orderBy: {
+          creado_en: 'desc',
+        },
+        select: {
+          checkin_id: true,
+          emoji: true,
+          nota_diaria: true,
+          creado_en: true,
+        },
       }),
 
       dbClient.notificacionesRadar.count({
@@ -221,6 +323,15 @@ export async function GET() {
             ? Number(bienestarAgg._avg.nota_diaria)
             : 0,
         totalCheckins: bienestarAgg._count,
+        hasCheckinToday: Boolean(todayCheckin),
+        todayCheckin: todayCheckin
+          ? {
+              checkin_id: todayCheckin.checkin_id,
+              emoji: todayCheckin.emoji.toLowerCase(),
+              nota_diaria: Number(todayCheckin.nota_diaria),
+              creado_en: todayCheckin.creado_en.toISOString(),
+            }
+          : null,
       },
       notificacionesNoLeidas,
       perfilMovilidad,

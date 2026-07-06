@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { AppCard } from '@/src/components/app/AppCard';
+import { cn } from '@/lib/utils';
 
 const emojis = [
   { id: 'agotado', emoji: '😩', key: 'moodAgotado' },
@@ -11,9 +12,18 @@ const emojis = [
   { id: 'genial', emoji: '😄', key: 'moodGenial' },
 ];
 
+interface TodayCheckin {
+  checkin_id: string;
+  emoji: string;
+  nota_diaria: number;
+  creado_en: string;
+}
+
 interface Props {
   promedioSemanal?: number;
   isLoading?: boolean;
+  hasCheckinToday?: boolean;
+  todayCheckin?: TodayCheckin | null;
   onEmojiClick?: (moodId: string) => void;
   onHistorialClick?: () => void;
 }
@@ -21,6 +31,8 @@ interface Props {
 export function WellbeingCard({
   promedioSemanal,
   isLoading = false,
+  hasCheckinToday = false,
+  todayCheckin = null,
   onEmojiClick,
   onHistorialClick,
 }: Props) {
@@ -37,9 +49,13 @@ export function WellbeingCard({
 
   const mensaje = t(mensajeKey);
 
+  const selectedEmoji = todayCheckin
+    ? emojis.find((item) => item.id === todayCheckin.emoji)
+    : null;
+
   return (
     <AppCard className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between gap-3'>
         <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
           {t('wellbeingTitle')}
         </h3>
@@ -47,31 +63,51 @@ export function WellbeingCard({
         <button
           type='button'
           onClick={onHistorialClick}
-          className='text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
+          className='shrink-0 text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
         >
           {t('historial')}
         </button>
       </div>
 
       <p className='text-sm text-[var(--color-text-muted)]'>
-        {t('wellbeingDesc')}
+        {hasCheckinToday ? t('checkinAlreadyDoneToday') : t('wellbeingDesc')}
       </p>
 
-      <div className='flex justify-between'>
-        {emojis.map((item) => (
-          <button
-            key={item.id}
-            type='button'
-            onClick={() => onEmojiClick?.(item.id)}
-            className='flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-2 py-2 transition-all duration-200 hover:scale-110 hover:bg-[var(--color-primary-pale)]'
-          >
-            <span className='text-2xl'>{item.emoji}</span>
+      {hasCheckinToday && selectedEmoji && (
+        <div className='rounded-[var(--radius-md)] border border-[var(--color-success)] bg-[var(--color-success-bg)] px-3 py-2 text-sm text-[var(--color-success-text)]'>
+          {t('todayCheckinRegistered', {
+            mood: t(selectedEmoji.key),
+          })}
+        </div>
+      )}
 
-            <span className='text-[10px] font-medium text-[var(--color-text-muted)]'>
-              {t(item.key)}
-            </span>
-          </button>
-        ))}
+      <div className='flex justify-between gap-1'>
+        {emojis.map((item) => {
+          const isSelectedToday = selectedEmoji?.id === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type='button'
+              disabled={isLoading || hasCheckinToday}
+              onClick={() => onEmojiClick?.(item.id)}
+              className={cn(
+                'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1.5 py-2 transition-all duration-200',
+                hasCheckinToday || isLoading
+                  ? 'cursor-not-allowed opacity-45'
+                  : 'hover:scale-105 hover:bg-[var(--color-primary-pale)]',
+                isSelectedToday &&
+                  'opacity-100 ring-2 ring-[var(--color-success)] ring-offset-2 ring-offset-[var(--color-card)]',
+              )}
+            >
+              <span className='text-2xl'>{item.emoji}</span>
+
+              <span className='max-w-full truncate text-[10px] font-medium text-[var(--color-text-muted)]'>
+                {t(item.key)}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className='mt-auto border-t border-[var(--color-border)] pt-3'>

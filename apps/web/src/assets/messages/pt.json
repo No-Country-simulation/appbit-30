@@ -492,7 +492,9 @@
     "checkinStepMotivo": "Motivo",
     "checkinStepContexto": "Contexto",
     "cerrarSesion": "Sair",
-    "cerrandoSesion": "Saindo..."
+    "cerrandoSesion": "Saindo...",
+    "checkinAlreadyDoneToday": "Você já registrou seu check-in de bem-estar hoje. Volte amanhã para registrar outro.",
+    "todayCheckinRegistered": "Registro de hoje: {mood}"
   },
   "Error": {
     "title": "Serviço temporariamente indisponível",

@@ -84,7 +84,11 @@ export default function DashboardClient({
       try {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const [dash, skills] = await Promise.all([
-            fetchJson<DashboardResponse>('/api/dashboard'),
+            fetchJson<DashboardResponse>(
+              `/api/dashboard?timezone=${encodeURIComponent(
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+              )}`,
+            ),
             fetchJson<SkillsResponse>('/api/skills'),
           ]);
 
@@ -227,6 +231,9 @@ export default function DashboardClient({
     ? undefined
     : data?.perfil_breakdown;
 
+  const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
+  const todayCheckin = data?.bienestar?.todayCheckin ?? null;
+
   return (
     <AppShell
       onCheckinClick={() => {
@@ -272,7 +279,13 @@ export default function DashboardClient({
           <WellbeingCard
             promedioSemanal={promedioSemanal}
             isLoading={isLoadingDashboard}
+            hasCheckinToday={hasCheckinToday}
+            todayCheckin={todayCheckin}
             onEmojiClick={(moodId) => {
+              if (hasCheckinToday) {
+                return;
+              }
+
               setCheckinMood(moodId);
               setCheckinStartStep(2);
               setCheckinModalKey((key) => key + 1);
