@@ -19,9 +19,11 @@ export function StepIndicator({
   const steps = Array.from({ length: totalSteps }, (_, index) => index + 1);
 
   return (
-    <div className={cn('w-full px-1 sm:px-3', className)}>
+    <div
+      className={cn('w-full min-w-0 overflow-hidden px-1 sm:px-3', className)}
+    >
       <div
-        className='grid w-full'
+        className='grid w-full min-w-0'
         style={{
           gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))`,
         }}
@@ -49,9 +51,7 @@ export function StepIndicator({
 
               <div
                 className={cn(
-                  'relative z-10 flex size-9 items-center justify-center rounded-full border-2',
-                  'bg-[var(--color-card)] font-body text-sm font-bold',
-                  'transition-all duration-300',
+                  'relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-[var(--color-card)] font-body text-sm font-bold transition-colors duration-200',
                   isCompleted &&
                     'border-[var(--color-success)] bg-[var(--color-success)] text-white',
                   isCurrent &&
@@ -66,11 +66,12 @@ export function StepIndicator({
 
               <span
                 className={cn(
-                  'mt-2 block max-w-[72px] text-center font-body text-[10px] font-semibold leading-tight sm:max-w-none sm:text-xs',
+                  'mt-2 block max-w-[80px] truncate text-center font-body text-[10px] font-semibold leading-tight sm:max-w-[120px] sm:text-xs',
                   isCurrent
                     ? 'text-[var(--color-primary)]'
                     : 'text-[var(--color-text-muted)]',
                 )}
+                title={labels[index]}
               >
                 {labels[index]}
               </span>
