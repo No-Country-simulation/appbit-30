@@ -97,6 +97,23 @@ export async function GET(
 
     const ubicacion = [vacante.ciudad, vacante.pais].filter(Boolean).join(', ');
 
+    const areaLabels: Record<string, string> = {
+      Data_Analytics: 'Data Analytics',
+      Desarrollo_Web: 'Desarrollo Web',
+      UX_UI_Design: 'UX/UI Design',
+      Ciberseguridad: 'Ciberseguridad',
+      Cloud_DevOps: 'Cloud DevOps',
+      Inteligencia_Artificial: 'Inteligencia Artificial',
+      Marketing_Digital: 'Marketing Digital',
+      Product_Management: 'Product Management',
+    };
+
+    const nivelLabels: Record<string, string> = {
+      Jr_Entry_Level: 'Jr. / Entry Level',
+      Semi_Senior: 'Semi Senior',
+      Senior: 'Senior',
+    };
+
     const modalidadLabels: Record<string, string> = {
       Presencial: 'Presencial',
       Hibrido: 'Híbrido',
@@ -132,8 +149,8 @@ export async function GET(
       empresa: vacante.empresa.nombre,
       empresaDescripcion: empresaDescripcion || null,
       logoUrl: vacante.empresa.logo_url,
-      area: vacante.area,
-      nivel: vacante.nivel,
+      area: areaLabels[vacante.area] ?? vacante.area,
+      nivel: nivelLabels[vacante.nivel] ?? vacante.nivel,
       modalidad: modalidadLabels[vacante.modalidad] ?? vacante.modalidad,
       modalidadDetallada: vacante.detalle_modalidad ?? null,
       ubicacion,
