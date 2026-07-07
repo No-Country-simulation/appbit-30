@@ -406,7 +406,7 @@
     "radarDesc": "Hay {cantidad} vacantes híbridas a menos de 30 min de tu zona. ¡Aprovechá la cercanía!",
     "radarButton": "Ver vacantes recomendadas",
     "skillsGapTitle": "Tu Match de Skills",
-    "skillsGapDesc": "Cumplís con el {porcentaje}% de las habilidades técnicas solicitadas por el mercado para {puesto}.",
+    "skillsGapDesc": "Cumplís con el {porcentaje}% de las habilidades técnicas solicitadas por el mercado para tu ruta: {puesto}.",
     "skillsGapButton": "Ver Análisis Detallado",
     "actionPlanTitle": "Plan de Acción Sugerido",
     "altaPrioridad": "Alta prioridad",
