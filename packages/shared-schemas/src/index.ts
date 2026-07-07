@@ -349,5 +349,80 @@ export const onboardingAIResponseSchema = z.object({
   habilidadesCount: z.number().optional(),
 });
 
+// --- SCHEMAS PARA EMPLEABILIDAD (FE-004) ---
+export const postulacionRequestSchema = z.object({
+  vacante_id: z.string().uuid(),
+  mensaje_motivacion: z.string().max(2000).optional(),
+  usar_cv_guardado: z.boolean(),
+});
+
+export type PostulacionRequest = z.infer<typeof postulacionRequestSchema>;
+
+export const vacanteSkillSchema = z.object({
+  nombre: z.string(),
+  laTienes: z.boolean(),
+});
+
+export type VacanteSkill = z.infer<typeof vacanteSkillSchema>;
+
+export const vacanteItemSchema = z.object({
+  id: z.string(),
+  titulo: z.string(),
+  empresa: z.string(),
+  empresaDescripcion: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  area: z.string(),
+  nivel: z.string(),
+  modalidad: z.string(),
+  modalidadDetallada: z.string().nullable(),
+  ubicacion: z.string(),
+  distancia: z.string().nullable(),
+  matchPorcentaje: z.number(),
+  fechaPublicacion: z.string(),
+  descripcion: z.string().nullable(),
+  educacionRequerida: z.array(z.string()),
+  experienciaSolicitada: z.array(z.string()),
+  idioma: z.array(z.string()),
+  jornada: z.array(z.string()),
+  skills: z.array(vacanteSkillSchema),
+});
+
+export type VacanteItem = z.infer<typeof vacanteItemSchema>;
+
+export const vacantesResponseSchema = z.object({
+  vacantes: z.array(vacanteItemSchema),
+});
+
+export type VacantesResponse = z.infer<typeof vacantesResponseSchema>;
+
+export const postulacionItemSchema = z.object({
+  id: z.string(),
+  titulo: z.string(),
+  empresa: z.string(),
+  logoUrl: z.string().nullable(),
+  estado: z.string(),
+  matchPorcentaje: z.number().nullable(),
+  feedback: z.string().nullable(),
+  skillRechazada: z.string().nullable(),
+  mensajesNuevos: z.number(),
+  creadoEn: z.string(),
+});
+
+export type PostulacionItem = z.infer<typeof postulacionItemSchema>;
+
+export const postulacionesResponseSchema = z.object({
+  postulaciones: z.array(postulacionItemSchema),
+});
+
+export type PostulacionesResponse = z.infer<typeof postulacionesResponseSchema>;
+
+export const postulacionCreateResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  postulacionId: z.string(),
+});
+
+export type PostulacionCreateResponse = z.infer<typeof postulacionCreateResponseSchema>;
+
 export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
 export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
