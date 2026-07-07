@@ -222,3 +222,28 @@ h6 {
     font-size: 16px !important;
   }
 }
+
+/* Responsive hardening */
+[data-slot='dialog-content'] {
+  box-sizing: border-box;
+}
+
+[data-slot='dialog-content'] * {
+  box-sizing: border-box;
+}
+
+.safe-modal-content {
+  max-width: calc(100vw - 1rem);
+}
+
+@media (min-width: 640px) {
+  .safe-modal-content {
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+@media (min-width: 1536px) {
+  .safe-modal-content {
+    max-height: min(820px, 90dvh);
+  }
+}
