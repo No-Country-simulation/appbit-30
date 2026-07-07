@@ -4,7 +4,6 @@
 
 import { useTranslations } from 'next-intl';
 import { Star, User } from 'lucide-react';
-import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
 
 interface Props {
@@ -44,10 +43,8 @@ export function MentorCard({
         )}
 
         {esTopMentor && (
-          <div className='absolute left-3 top-3'>
-            <AppBadge variant='success' className='shadow-sm'>
-              ⭐ {t('topMentor')}
-            </AppBadge>
+          <div className='absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gray-900 px-2.5 py-1 text-xs font-medium text-white shadow-sm'>
+            ⭐ {t('topMentor')}
           </div>
         )}
       </div>
@@ -62,7 +59,7 @@ export function MentorCard({
           {skills.map((skill) => (
             <span
               key={skill}
-              className='rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700'
+              className='rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700'
             >
               {skill}
             </span>
@@ -79,7 +76,7 @@ export function MentorCard({
           </div>
           <AppButton
             variant='primary'
-            className='bg-emerald-600 text-white hover:bg-emerald-700 shadow-none'
+            className='bg-gray-900 text-white hover:bg-gray-800 shadow-none'
             onClick={onAgendar}
           >
             {t('agendar')}

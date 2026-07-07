@@ -30,21 +30,21 @@ export function BeMentorModal({ open, onOpenChange, onSubmit }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-md p-6'>
         <div className='flex flex-col items-center text-center'>
-          <div className='mb-4 flex size-14 items-center justify-center rounded-full bg-violet-100'>
+          <div className='mb-5 flex size-14 items-center justify-center rounded-full bg-violet-100'>
             <Plus className='size-7 text-violet-600' />
           </div>
 
           <h2 className='text-lg font-bold text-[var(--color-text)]'>
             {t('seUnMentor')}
           </h2>
-          <p className='mt-2 text-sm text-[var(--color-text-muted)]'>
+          <p className='mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]'>
             {t('seUnMentorDesc')}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form onSubmit={handleSubmit} className='mt-6 space-y-5'>
           <div className='space-y-2'>
             <label className='text-sm font-medium text-[var(--color-text)]'>
               {t('tusSkills')}
@@ -63,9 +63,9 @@ export function BeMentorModal({ open, onOpenChange, onSubmit }: Props) {
             <textarea
               value={experiencia}
               onChange={(e) => setExperiencia(e.target.value)}
-              rows={3}
+              rows={4}
               placeholder={t('experienciaPlaceholder')}
-              className='w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-pale)]'
+              className='w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-pale)]'
             />
           </div>
 

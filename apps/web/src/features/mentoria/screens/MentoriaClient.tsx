@@ -31,7 +31,7 @@ const mockMentors = [
     skills: ['React', 'TypeScript', 'UX'],
     rating: 4.8,
     totalResenas: 23,
-    esTopMentor: false,
+    esTopMentor: true,
   },
   {
     id: '3',
@@ -42,7 +42,7 @@ const mockMentors = [
     skills: ['UX Research', 'Figma'],
     rating: 4.7,
     totalResenas: 10,
-    esTopMentor: false,
+    esTopMentor: true,
   },
 ];
 
@@ -84,7 +84,7 @@ export default function MentoriaClient() {
             onClick={() => setTab('explorar')}
             className={`pb-3 text-sm font-medium transition-colors ${
               tab === 'explorar'
-                ? 'border-b-2 border-blue-500 text-blue-600'
+                ? 'border-b-2 border-violet-500 text-violet-600'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
@@ -94,7 +94,7 @@ export default function MentoriaClient() {
             onClick={() => setTab('historial')}
             className={`pb-3 text-sm font-medium transition-colors ${
               tab === 'historial'
-                ? 'border-b-2 border-blue-500 text-blue-600'
+                ? 'border-b-2 border-violet-500 text-violet-600'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
             }`}
           >
@@ -108,20 +108,23 @@ export default function MentoriaClient() {
               <h2 className='mb-4 text-lg font-bold text-[var(--color-text)]'>{t('title')}</h2>
               <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
                 {mockMentors.map((mentor) => (
-                  <MentorCard
-                    key={mentor.id}
-                    foto={mentor.foto}
-                    nombre={mentor.nombre}
-                    rol={mentor.rol}
-                    empresa={mentor.empresa}
-                    skills={mentor.skills}
-                    rating={mentor.rating}
-                    totalResenas={mentor.totalResenas}
-                    esTopMentor={mentor.esTopMentor}
-                    onAgendar={() => {}}
-                  />
+                  <div key={mentor.id} className='mx-auto w-full max-w-sm'>
+                    <MentorCard
+                      foto={mentor.foto}
+                      nombre={mentor.nombre}
+                      rol={mentor.rol}
+                      empresa={mentor.empresa}
+                      skills={mentor.skills}
+                      rating={mentor.rating}
+                      totalResenas={mentor.totalResenas}
+                      esTopMentor={mentor.esTopMentor}
+                      onAgendar={() => {}}
+                    />
+                  </div>
                 ))}
-                <BeMentorCard onClick={() => setBeMentorModalOpen(true)} />
+                <div className='mx-auto w-full max-w-sm'>
+                  <BeMentorCard onClick={() => setBeMentorModalOpen(true)} />
+                </div>
               </div>
             </section>
 
