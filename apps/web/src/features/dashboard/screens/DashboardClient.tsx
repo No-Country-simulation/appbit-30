@@ -40,11 +40,35 @@ function hasGeneratedRecommendations(dashboard: DashboardResponse) {
   return dashboard.planAccion.length > 0;
 }
 
+const AREA_LABEL_KEYS = {
+  Data_Analytics: 'areasInteresOption1',
+  Desarrollo_Web: 'areasInteresOption2',
+  UX_UI_Design: 'areasInteresOption3',
+  Ciberseguridad: 'areasInteresOption4',
+  Cloud_DevOps: 'areasInteresOption5',
+  Inteligencia_Artificial: 'areasInteresOption6',
+  Marketing_Digital: 'areasInteresOption7',
+  Product_Management: 'areasInteresOption8',
+} as const;
+
+function formatAreaValue(area: string) {
+  return area.replaceAll('_', ' ');
+}
+
+function compactAreaList(labels: string[]) {
+  if (labels.length <= 2) {
+    return labels.join(' + ');
+  }
+
+  return `${labels.slice(0, 2).join(' + ')} +${labels.length - 2}`;
+}
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
 }: Props) {
   const t = useTranslations('Dashboard');
+  const tOnboarding = useTranslations('Onboarding');
 
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
@@ -225,11 +249,32 @@ export default function DashboardClient({
       ? clampPercent(100 - Number(orientacionGapPorcentual))
       : skillsMatchFromUserSkills;
 
-  const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
+  const aiSuggestedRole = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
     : Array.isArray(skillsData?.orientacion?.trayectoria_sugerida)
       ? (skillsData.orientacion.trayectoria_sugerida[0] as string | undefined)
       : undefined;
+
+  const selectedAreaLabels = Array.from(
+    new Set(
+      (skillsData?.habilidades ?? [])
+        .map((skill) => skill.area_principal)
+        .filter((area): area is string => Boolean(area))
+        .map((area) => {
+          const labelKey =
+            AREA_LABEL_KEYS[area as keyof typeof AREA_LABEL_KEYS];
+
+          return labelKey
+            ? tOnboarding(labelKey as never)
+            : formatAreaValue(area);
+        }),
+    ),
+  );
+
+  const skillsPuesto =
+    selectedAreaLabels.length > 1
+      ? compactAreaList(selectedAreaLabels)
+      : (aiSuggestedRole ?? selectedAreaLabels[0]);
 
   const skillsRows: SkillRow[] =
     skillsData?.habilidades?.map((h) => ({

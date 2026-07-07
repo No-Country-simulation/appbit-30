@@ -117,15 +117,27 @@ export function SkillsGapModal({
                 {skills.map((skill) => (
                   <div
                     key={skill.habilidad}
-                    className='grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
+                    className='min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
                   >
-                    <p className='min-w-0 break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
-                      {skill.habilidad}
-                    </p>
+                    <div className='min-w-0'>
+                      <p className='text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                        {t('habilidadRequerida')}
+                      </p>
 
-                    <AppBadge variant={badgeVariant[skill.estado]}>
-                      {skill.estado}
-                    </AppBadge>
+                      <p className='mt-1 min-w-0 break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
+                        {skill.habilidad}
+                      </p>
+                    </div>
+
+                    <div className='mt-3 min-w-0'>
+                      <p className='mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                        {t('estado')}
+                      </p>
+
+                      <AppBadge variant={badgeVariant[skill.estado]}>
+                        {skill.estado}
+                      </AppBadge>
+                    </div>
                   </div>
                 ))}
               </div>
