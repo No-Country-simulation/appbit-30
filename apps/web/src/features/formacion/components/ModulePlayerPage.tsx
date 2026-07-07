@@ -62,18 +62,25 @@ export function ModulePlayerPage({
   return (
     <AppShell>
       <div className='space-y-6'>
-        <button
-          onClick={onVolver}
-          className='inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-        >
-          <ArrowLeft className='size-4' />
-          {t('title')}
-        </button>
+        <div className='flex items-center gap-3'>
+          <button
+            onClick={onVolver}
+            className='inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+          >
+            <ArrowLeft className='size-4' />
+            {t('title')}
+          </button>
+          <span className='rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700'>
+            {t('moduloEnCurso')}
+          </span>
+        </div>
 
         <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
           <div className='space-y-6 lg:col-span-2'>
             <VideoPlayer
               titulo={leccionActual}
+              leccionNumero={lecciones.find((l) => l.estado === 'en_progreso')?.numero}
+              totalLecciones={lecciones.length}
               duracionActual={duracionActual}
               duracionTotal={duracionTotal}
               progreso={progresoLeccion}
