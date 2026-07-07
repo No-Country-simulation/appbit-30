@@ -86,16 +86,14 @@ export function SkillsGapModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='safe-modal-content flex max-h-[90dvh] w-[min(calc(100vw-1rem),32rem)] max-w-none flex-col overflow-hidden p-0'>
-        <div className='shrink-0 border-b border-[var(--color-border)] px-4 py-4 sm:px-6'>
-          <DialogHeader className='text-left'>
-            <DialogTitle className='break-words leading-tight'>
+      <DialogContent className='safe-modal-content w-[min(calc(100vw-1rem),46rem)] p-0'>
+        <div className='shrink-0 border-b border-[var(--color-border)] px-4 py-4 pr-11 sm:px-6'>
+          <DialogHeader>
+            <DialogTitle>
               {t('skillsModalTitle', { puesto: resolvedPuesto })}
             </DialogTitle>
 
-            <DialogDescription className='break-words leading-relaxed'>
-              {t('skillsModalDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('skillsModalDesc')}</DialogDescription>
           </DialogHeader>
         </div>
 
@@ -110,53 +108,49 @@ export function SkillsGapModal({
               <div className='flex flex-col items-center gap-4 pb-4'>
                 <CircularProgress value={porcentaje} />
 
-                <p className='break-words text-center text-sm leading-relaxed text-[var(--color-text-muted)]'>
+                <p className='max-w-[34rem] break-words text-center text-sm leading-relaxed text-[var(--color-text-muted)]'>
                   {t(porcentaje < 50 ? 'skillsModalBajo' : 'skillsModalAlto')}
                 </p>
               </div>
 
-              {/* Mobile: cards */}
-              <div className='space-y-2 sm:hidden'>
+              <div className='space-y-2 lg:hidden'>
                 {skills.map((skill) => (
                   <div
                     key={skill.habilidad}
-                    className='rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
+                    className='grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
                   >
-                    <p className='break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
+                    <p className='min-w-0 break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
                       {skill.habilidad}
                     </p>
 
-                    <div className='mt-2'>
-                      <AppBadge variant={badgeVariant[skill.estado]}>
-                        {skill.estado}
-                      </AppBadge>
-                    </div>
+                    <AppBadge variant={badgeVariant[skill.estado]}>
+                      {skill.estado}
+                    </AppBadge>
                   </div>
                 ))}
               </div>
 
-              {/* Tablet/Desktop: table */}
-              <div className='hidden overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] sm:block'>
-                <div className='max-h-[44dvh] overflow-y-auto overflow-x-hidden'>
+              <div className='hidden overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)] lg:block'>
+                <div className='max-h-[42dvh] overflow-y-auto overflow-x-hidden'>
                   <table className='w-full table-fixed text-sm'>
                     <thead className='sticky top-0 z-10'>
                       <tr className='bg-[var(--color-body)] text-left text-xs font-semibold text-[var(--color-text-muted)]'>
-                        <th className='w-[65%] px-4 py-2.5'>
+                        <th className='w-[70%] px-4 py-3'>
                           {t('habilidadRequerida')}
                         </th>
 
-                        <th className='w-[35%] px-4 py-2.5'>{t('estado')}</th>
+                        <th className='w-[30%] px-4 py-3'>{t('estado')}</th>
                       </tr>
                     </thead>
 
                     <tbody className='divide-y divide-[var(--color-border)]'>
                       {skills.map((skill) => (
                         <tr key={skill.habilidad}>
-                          <td className='break-words px-4 py-2.5 font-medium leading-snug text-[var(--color-text)]'>
+                          <td className='break-words px-4 py-3 font-medium leading-snug text-[var(--color-text)]'>
                             {skill.habilidad}
                           </td>
 
-                          <td className='px-4 py-2.5'>
+                          <td className='px-4 py-3'>
                             <AppBadge variant={badgeVariant[skill.estado]}>
                               {skill.estado}
                             </AppBadge>
@@ -175,8 +169,12 @@ export function SkillsGapModal({
           )}
         </div>
 
-        <DialogFooter className='relative shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
-          <AppButton variant='primary' disabled={!hasSkills}>
+        <DialogFooter className='border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
+          <AppButton
+            variant='primary'
+            className='w-full sm:w-auto'
+            disabled={!hasSkills}
+          >
             {t('skillsModalButton')}
           </AppButton>
         </DialogFooter>
