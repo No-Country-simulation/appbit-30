@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUserState } from '@/src/server/auth/get-current-user-state';
 import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavailable';
+import ModulePlayerScreen from '@/src/features/formacion/components/ModulePlayerPage';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,5 +29,5 @@ export default async function ModulePage({ params }: Props) {
     redirect(`/${locale}/auth`);
   }
 
-  return <div />;
+  return <ModulePlayerScreen />;
 }

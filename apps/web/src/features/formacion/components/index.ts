@@ -1,1 +1,15 @@
-export {};
+export * from './InclusionDigitalBanner';
+export * from './CurrentModuleCard';
+export * from './ModulesGrid';
+export * from './ModuleCardItem';
+export * from './PaidCoursesSection';
+export * from './PaidCourseCard';
+export * from './ExternalCourseValidation';
+export * from './CertificadoExternoModal';
+export * from './OfflineDownloadModal';
+export * from './VideoPlayer';
+export * from './LessonItem';
+export * from './LessonList';
+export * from './ModuleSidebar';
+export * from './CompletionReward';
+export * from './ModulePlayerPage';
