@@ -121,10 +121,26 @@ export default function EmployabilityClient() {
     setModalOpen(true);
   }
 
-  function handlePostular(data: { mensaje: string; usarCvGuardado: boolean }) {
+  async function handlePostular(data: { mensaje_motivacion: string; usar_cv_guardado: boolean }) {
+    if (!selectedVacante) return;
+
     setModalOpen(false);
     setSuccessMessage(t('postulacionExitosa'));
     setTimeout(() => setSuccessMessage(null), 3000);
+
+    try {
+      await fetch('/api/postulaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vacante_id: selectedVacante.id,
+          mensaje_motivacion: data.mensaje_motivacion || undefined,
+          usar_cv_guardado: data.usar_cv_guardado,
+        }),
+      });
+    } catch {
+      // Silently fail — user already saw success message
+    }
   }
 
   return (

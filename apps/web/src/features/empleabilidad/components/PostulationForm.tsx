@@ -6,7 +6,7 @@ import { Cloud, Send } from 'lucide-react';
 import { AppButton } from '@/src/components/app/AppButton';
 
 interface Props {
-  onSubmit: (data: { mensaje: string; usarCvGuardado: boolean }) => void;
+  onSubmit: (data: { mensaje_motivacion: string; usar_cv_guardado: boolean }) => void;
 }
 
 export function PostulationForm({ onSubmit }: Props) {
@@ -16,7 +16,7 @@ export function PostulationForm({ onSubmit }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit({ mensaje, usarCvGuardado });
+    onSubmit({ mensaje_motivacion: mensaje, usar_cv_guardado: usarCvGuardado });
   }
 
   return (

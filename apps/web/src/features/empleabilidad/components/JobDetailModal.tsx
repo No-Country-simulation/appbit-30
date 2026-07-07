@@ -32,7 +32,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vacante: VacanteData;
-  onPostular: (data: { mensaje: string; usarCvGuardado: boolean }) => void;
+  onPostular: (data: { mensaje_motivacion: string; usar_cv_guardado: boolean }) => void;
 }
 
 export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Props) {
