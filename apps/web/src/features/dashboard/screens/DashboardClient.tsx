@@ -48,6 +48,7 @@ export default function DashboardClient({
 
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
 
   const [onboardingCompletedClient, setOnboardingCompletedClient] =
     useState(false);
@@ -67,6 +68,23 @@ export default function DashboardClient({
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
   const [checkinModalKey, setCheckinModalKey] = useState(0);
 
+  const loadSkills = useCallback(async () => {
+    if (skillsData || isLoadingSkills) {
+      return;
+    }
+
+    setIsLoadingSkills(true);
+
+    try {
+      const skills = await fetchJson<SkillsResponse>('/api/skills');
+      setSkillsData(skills);
+    } catch (error) {
+      console.error('Error fetching skills data:', error);
+    } finally {
+      setIsLoadingSkills(false);
+    }
+  }, [skillsData, isLoadingSkills]);
+
   const loadDashboard = useCallback(
     async (
       options: {
@@ -83,17 +101,13 @@ export default function DashboardClient({
 
       try {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          const [dash, skills] = await Promise.all([
-            fetchJson<DashboardResponse>(
-              `/api/dashboard?timezone=${encodeURIComponent(
-                Intl.DateTimeFormat().resolvedOptions().timeZone,
-              )}`,
-            ),
-            fetchJson<SkillsResponse>('/api/skills'),
-          ]);
+          const dash = await fetchJson<DashboardResponse>(
+            `/api/dashboard?timezone=${encodeURIComponent(
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
+            )}`,
+          );
 
           setData(dash);
-          setSkillsData(skills);
           setDashboardError(false);
 
           if (
@@ -272,7 +286,10 @@ export default function DashboardClient({
               porcentaje={skillsMatchPorcentaje}
               puesto={skillsPuesto}
               isLoading={isLoadingDashboard}
-              onVerDetalles={() => setSkillsModalOpen(true)}
+              onVerDetalles={() => {
+                setSkillsModalOpen(true);
+                void loadSkills();
+              }}
             />
           </div>
 
@@ -314,11 +331,17 @@ export default function DashboardClient({
 
       <SkillsGapModal
         open={skillsModalOpen}
-        onOpenChange={setSkillsModalOpen}
+        onOpenChange={(nextOpen) => {
+          setSkillsModalOpen(nextOpen);
+
+          if (nextOpen) {
+            void loadSkills();
+          }
+        }}
         puesto={skillsPuesto}
         porcentaje={skillsMatchPorcentaje}
         skills={skillsRows}
-        isLoading={isLoadingDashboard}
+        isLoading={isLoadingDashboard || isLoadingSkills}
       />
 
       <CheckinModal
