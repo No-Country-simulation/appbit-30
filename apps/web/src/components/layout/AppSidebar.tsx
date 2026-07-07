@@ -20,7 +20,7 @@ const navGroups = [
   [
     { labelKey: 'navInicio', icon: LayoutDashboard, href: '/dashboard' },
     { labelKey: 'navEmpleos', icon: Briefcase, href: '#' },
-    { labelKey: 'navFormacion', icon: GraduationCap, href: '#' },
+    { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
     { labelKey: 'navExperiencias', icon: Star, href: '#' },
