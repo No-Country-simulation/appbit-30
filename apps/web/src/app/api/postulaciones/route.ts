@@ -32,7 +32,7 @@ function calcularMatchPorcentaje(
 const estadoLabels: Record<string, string> = {
   Enviada: 'Enviada',
   Vista: 'Vista',
-  En_proceso: 'En revisión',
+  En_proceso: 'En_revision',
   Rechazada: 'Rechazada',
   Aceptada: 'Aceptada',
 };
