@@ -7,3 +7,6 @@ export * from './AppChoiceChips';
 export * from './ChoiceChip';
 export * from './StepIndicator';
 export * from './CountryCodeSelect';
+export * from './ProgressBar';
+export * from './StreakBadge';
+export * from './TabBar';
