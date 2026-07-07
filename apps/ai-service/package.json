@@ -8,9 +8,8 @@
   "scripts": {
     "dev:vercel": "vercel dev",
     "typecheck": "tsc --noEmit",
-    "build": "pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build && tsc --noEmit"
+    "build": "pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build && pnpm --filter web db:generate && tsc --noEmit"
   },
-  
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -74,6 +74,52 @@ const INITIAL_FORM_DATA: FormData = {
   whatsappNumero: '',
 };
 
+const STORAGE_KEY = 'onboarding_form_data';
+const STORAGE_KEY_STEP = 'onboarding_step';
+
+const FORM_DATA_KEYS: (keyof FormData)[] = [
+  'fechaNacimiento',
+  'genero',
+  'pais',
+  'provinciaEstado',
+  'ciudad',
+  'zonaResidencia',
+  'nivelEducacion',
+  'momentoProfesional',
+  'areasInteres',
+  'idiomas',
+  'disponibilidad',
+  'ubicacionTrabajo',
+  'nivelExperienciaTecnologia',
+  'habilidadesTecnicas',
+  'habilidadesBlandas',
+  'objetivos',
+  'dispositivos',
+  'tipoConexion',
+  'whatsappCodigo',
+  'whatsappNumero',
+];
+
+function getStoredFormData(): FormData {
+  if (typeof window === 'undefined') return INITIAL_FORM_DATA;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return INITIAL_FORM_DATA;
+    const parsed = JSON.parse(raw);
+    const valid = FORM_DATA_KEYS.every((key) => key in parsed);
+    if (!valid) return INITIAL_FORM_DATA;
+    return parsed as FormData;
+  } catch {
+    return INITIAL_FORM_DATA;
+  }
+}
+
+function clearStorage() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_STEP);
+}
+
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox='0 0 24 24' fill='currentColor'>
@@ -84,20 +130,28 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 type Step = 1 | 2 | 3;
 
-const STEP_LABELS = ['Personales', 'Educación', 'Objetivos'];
+const STEP_LABEL_KEYS = [
+  'stepLabelPersonales',
+  'stepLabelEducacion',
+  'stepLabelSkills',
+  'stepLabelObjetivos',
+] as const;
 
 interface OnboardingModalProps {
   children?: React.ReactNode;
   defaultOpen?: boolean;
   locked?: boolean;
+  onCompleted?: () => void | Promise<void>;
 }
 
 export function OnboardingModal({
   children,
   defaultOpen = false,
   locked = false,
+  onCompleted,
 }: OnboardingModalProps) {
   const t = useTranslations('Onboarding');
+  const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
   const [step, setStep] = useState<Step>(1);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -223,14 +277,16 @@ export function OnboardingModal({
       }),
     })
       .then(async (res) => {
-        const json = await res.json();
-
         if (!res.ok) {
-          throw new Error(json.message || 'Error al completar onboarding');
+          throw new Error(t('submitError'));
         }
 
-        setOpen(false);
-        resetForm();
+        if (onCompleted) {
+          setOpen(false);
+          resetForm();
+          await onCompleted();
+          return;
+        }
 
         router.replace('/dashboard', { locale });
         router.refresh();
@@ -383,8 +439,8 @@ export function OnboardingModal({
           <div className='py-2'>
             <StepIndicator
               currentStep={step}
-              totalSteps={3}
-              labels={STEP_LABELS}
+              totalSteps={4}
+              labels={stepLabels}
             />
           </div>
 
@@ -698,21 +754,16 @@ export function OnboardingModal({
                       <ChoiceChip
                         key={opt.value}
                         label={opt.label}
-                        selected={formData.ubicacionTrabajo === opt.value}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            ubicacionTrabajo:
-                              prev.ubicacionTrabajo === opt.value
-                                ? ''
-                                : opt.value,
-                          }));
-                          setShowErrors(false);
-                        }}
+                        selected={formData.ubicacionTrabajo.includes(opt.value)}
+                        onClick={() =>
+                          toggleArray('ubicacionTrabajo', opt.value)
+                        }
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.ubicacionTrabajo} />
+                  <FieldError
+                    show={showErrors && formData.ubicacionTrabajo.length === 0}
+                  />
                 </div>
               </div>
             )}
@@ -783,7 +834,9 @@ export function OnboardingModal({
                       />
                     ))}
                   </div>
-                  <FieldError show={showErrors && !formData.tipoConexion} />
+                  <FieldError
+                    show={showErrors && formData.tipoConexion.length === 0}
+                  />
                 </div>
 
                 <div>
@@ -823,12 +876,30 @@ export function OnboardingModal({
                       />
                     </div>
                   </div>
-                  <div className='mt-3 flex items-center gap-1.5 mb-6'>
+                  {formData.whatsappCodigo && (
+                    <Caption className='mt-1.5 text-[var(--color-text-muted)]'>
+                      {t('phoneFormatHint', {
+                        hint:
+                          countries.find(
+                            (c) => c.code === formData.whatsappCodigo,
+                          )?.phoneHint ?? '',
+                      })}
+                    </Caption>
+                  )}
+                  <div className='mt-3 flex items-center gap-1.5 mb-4'>
                     <WhatsAppIcon className='size-4 shrink-0 text-[#25D366]' />
                     <Caption className='text-[var(--color-text-muted)]'>
                       {t('whatsappInfo')}
                     </Caption>
                   </div>
+                  {hasPartialWhatsapp() && (
+                    <div className='flex items-start gap-1.5 text-[var(--color-danger)]'>
+                      <AlertCircleIcon className='size-4 shrink-0' />
+                      <Caption className='text-[var(--color-danger)]'>
+                        {t('whatsappPairError')}
+                      </Caption>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -848,9 +919,11 @@ export function OnboardingModal({
               </AppButton>
             )}
             {submitError && (
-              <div className='flex items-center gap-1.5 mt-2 text-[var(--color-error)]'>
+              <div className='mt-2 flex items-center gap-1.5 text-[var(--color-danger)]'>
                 <AlertCircleIcon className='size-4 shrink-0' />
-                <Caption>{submitError}</Caption>
+                <Caption className='text-[var(--color-danger)]'>
+                  {submitError}
+                </Caption>
               </div>
             )}
           </DialogFooter>

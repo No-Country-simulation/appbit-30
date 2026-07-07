@@ -280,7 +280,7 @@ export async function POST(request: Request) {
             usuarioId: result.usuarioId,
             ...data,
           }),
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(20000),
         });
       } catch {
         console.warn(

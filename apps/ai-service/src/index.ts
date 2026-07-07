@@ -1,4 +1,5 @@
 /// <reference types="node" />
+
 import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { cors } from 'hono/cors';
@@ -8,7 +9,7 @@ import {
   onboardingAIRequestSchema,
 } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
-import { dbClient } from './db.client';
+import { dbClient } from './db.client.js';
 import {
   EstadoHabilidadEnum,
   PrioridadPlanEnum,
@@ -19,9 +20,120 @@ const app = new Hono();
 
 app.use('*', cors());
 
-app.get('/', (c) => c.text('AppBit AI Service - Operational'));
+app.get('/health', (c) =>
+  c.json({ status: 'up', text: 'AppBit AI Service - Operational' }),
+);
 
-app.get('/health', (c) => c.json({ status: 'up' }));
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function parseGeminiJson<T>(raw: string): T {
+  const cleanJson = raw.replace(/```json|```/g, '').trim();
+  return JSON.parse(cleanJson) as T;
+}
+
+function truncateText(value: unknown, maxLength: number) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const cleaned = value.trim().replace(/\s+/g, ' ');
+
+  if (!cleaned) {
+    return null;
+  }
+
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  return cleaned.slice(0, maxLength - 1).trimEnd();
+}
+
+function fallbackPlanTitle(locale?: string) {
+  return locale === 'pt' ? 'Plano de ação' : 'Plan de acción';
+}
+
+type SafePlanItem = {
+  titulo: string;
+  prioridad: string;
+  curso_sugerido: string | null;
+  accion_label: string | null;
+};
+
+function normalizePlanItems(items: unknown, locale?: string): SafePlanItem[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.slice(0, 5).map((item, index) => {
+    const rawItem =
+      item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+
+    return {
+      titulo:
+        truncateText(rawItem.titulo, 255) ??
+        `${fallbackPlanTitle(locale)} ${index + 1}`,
+      prioridad: truncateText(rawItem.prioridad, 50) ?? 'Media_prioridad',
+      curso_sugerido: truncateText(rawItem.curso_sugerido, 255),
+      accion_label: truncateText(rawItem.accion_label, 100),
+    };
+  });
+}
+
+function buildFallbackPlanItems(params: {
+  fallbackGapItems: { habilidad: string }[];
+  cursosDisponibles: { titulo: string }[];
+  locale?: string;
+}): SafePlanItem[] {
+  const { fallbackGapItems, cursosDisponibles, locale } = params;
+  const defaultCourse = cursosDisponibles[0]?.titulo ?? null;
+
+  const itemsFromGap = fallbackGapItems.slice(0, 3).map((item, index) => ({
+    titulo:
+      locale === 'pt'
+        ? `Reforçar fundamentos de ${item.habilidad}`
+        : `Reforzar fundamentos de ${item.habilidad}`,
+    prioridad: index === 0 ? 'Alta_prioridad' : 'Media_prioridad',
+    curso_sugerido: defaultCourse,
+    accion_label: locale === 'pt' ? 'Começar agora' : 'Empezar ahora',
+  }));
+
+  if (itemsFromGap.length > 0) {
+    return itemsFromGap;
+  }
+
+  return [
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Completar o primeiro curso recomendado'
+          : 'Completar el primer curso recomendado',
+      prioridad: 'Alta_prioridad',
+      curso_sugerido: defaultCourse,
+      accion_label: locale === 'pt' ? 'Ver curso' : 'Ver curso',
+    },
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Construir um projeto simples para praticar'
+          : 'Construir un proyecto simple para practicar',
+      prioridad: 'Media_prioridad',
+      curso_sugerido: null,
+      accion_label: locale === 'pt' ? 'Planejar projeto' : 'Planear proyecto',
+    },
+    {
+      titulo:
+        locale === 'pt'
+          ? 'Atualizar o perfil com novas habilidades'
+          : 'Actualizar el perfil con nuevas habilidades',
+      prioridad: 'Baja_prioridad',
+      curso_sugerido: null,
+      accion_label: locale === 'pt' ? 'Atualizar perfil' : 'Actualizar perfil',
+    },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // POST /wellbeing/analyze
@@ -65,40 +177,43 @@ app.post('/wellbeing/analyze', async (c) => {
 
     let derivar_cvv =
       nota_semanal < 4.0 || (tendencia_baja && nota_semanal < 5.0);
-    let alerta = nota_semanal < 5.5 || tendencia_baja;
+    const alerta = nota_semanal < 5.5 || tendencia_baja;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `Actúa como psicólogo experto de la App BiT.
-    Analiza este check-in emocional:
-    - Estado: ${emoji} (Nota: ${nota_actual}/10)
-    - Motivo: "${motivo || 'No proporcionado'}"
-    - Contexto: "${contexto || 'No proporcionado'}"
-    - Promedio semanal: ${nota_semanal}/10
-    - Tendencia bajista: ${tendencia_baja ? 'Sí' : 'No'}
-    - Idioma de respuesta: ${idioma}
+Analiza este check-in emocional:
+- Estado: ${emoji} (Nota: ${nota_actual}/10)
+- Motivo: "${motivo || 'No proporcionado'}"
+- Contexto: "${contexto || 'No proporcionado'}"
+- Promedio semanal: ${nota_semanal}/10
+- Tendencia bajista: ${tendencia_baja ? 'Sí' : 'No'}
+- Idioma de respuesta: ${idioma}
 
-    Instrucciones:
-    1. Si el texto sugiere autolesión, ideación suicida o crisis aguda, pon "emergencia" en true.
-    2. Genera un mensaje empático corto (máx 150 caracteres).
-    3. Sugiere una acción concreta y alcanzable para mejorar su estado.
+Instrucciones:
+1. Si el texto sugiere autolesión, ideación suicida o crisis aguda, pon "emergencia" en true.
+2. Genera un mensaje empático corto (máx 150 caracteres).
+3. Sugiere una acción concreta y alcanzable para mejorar su estado.
 
-    Respuesta JSON estricta:
-    {
-      "emergencia": boolean,
-      "mensaje": "string",
-      "accion_sugerida": "string"
-    }`;
+Respuesta JSON estricta:
+{
+  "emergencia": boolean,
+  "mensaje": "string",
+  "accion_sugerida": "string"
+}`;
 
     const result = await model.generateContent(prompt);
-    const cleanJson = result.response
-      .text()
-      .replace(/```json|```/g, '')
-      .trim();
-    const aiResponse = JSON.parse(cleanJson);
 
-    if (aiResponse.emergencia) derivar_cvv = true;
+    const aiResponse = parseGeminiJson<{
+      emergencia: boolean;
+      mensaje: string;
+      accion_sugerida: string;
+    }>(result.response.text());
+
+    if (aiResponse.emergencia) {
+      derivar_cvv = true;
+    }
 
     return c.json({
       nota_actual,
@@ -110,6 +225,7 @@ app.post('/wellbeing/analyze', async (c) => {
     });
   } catch (error) {
     console.error('DETALLE DEL ERROR:', error);
+
     return c.json({
       nota_actual: 5.0,
       nota_semanal: 5.0,
@@ -122,7 +238,7 @@ app.post('/wellbeing/analyze', async (c) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/onboarding  —  Generar gemelo digital del usuario
+// POST /api/onboarding
 // ---------------------------------------------------------------------------
 app.post('/api/onboarding', async (c) => {
   try {
@@ -139,41 +255,83 @@ app.post('/api/onboarding', async (c) => {
     const data = validation.data;
     const userId = data.usuarioId;
 
-    // Verificar que el usuario existe
     const usuario = await dbClient.usuarios.findUnique({
       where: { usuario_id: userId },
       select: { usuario_id: true },
     });
+
     if (!usuario) {
       return c.json({ error: 'Usuario no encontrado' }, 404);
     }
 
-    // Consultar habilidades de mercado + cursos en paralelo
-    const [habilidadesMercado, cursosDisponibles] = await Promise.all([
-      dbClient.habilidadesMercado.findMany({
-        where: {
-          area_principal: data.areasInteres.length
-            ? { in: data.areasInteres as any }
-            : undefined,
-        },
-        orderBy: { nombre: 'asc' },
-        select: { nombre: true, categoria: true, area_principal: true },
-      }),
-      dbClient.cursos.findMany({
-        where: {
-          activo: true,
-          area: data.areasInteres.length
-            ? { in: data.areasInteres as any }
-            : undefined,
-        },
-        orderBy: { titulo: 'asc' },
-        select: { titulo: true, area: true },
-      }),
-    ]);
+    const [habilidadesMercado, cursosDisponibles, existingUserSkills] =
+      await Promise.all([
+        dbClient.habilidadesMercado.findMany({
+          where: {
+            area_principal: data.areasInteres.length
+              ? { in: data.areasInteres as any }
+              : undefined,
+          },
+          orderBy: { nombre: 'asc' },
+          select: {
+            habilidad_id: true,
+            nombre: true,
+            categoria: true,
+            area_principal: true,
+          },
+        }),
+
+        dbClient.cursos.findMany({
+          where: {
+            activo: true,
+            area: data.areasInteres.length
+              ? { in: data.areasInteres as any }
+              : undefined,
+          },
+          orderBy: { titulo: 'asc' },
+          select: {
+            curso_id: true,
+            titulo: true,
+            area: true,
+          },
+        }),
+
+        dbClient.usuarioHabilidades.findMany({
+          where: { usuario_id: userId },
+          include: {
+            habilidad: {
+              select: {
+                habilidad_id: true,
+                nombre: true,
+                categoria: true,
+                area_principal: true,
+              },
+            },
+          },
+        }),
+      ]);
 
     const idiomaRespuesta = data.locale === 'pt' ? 'Portugués' : 'Español';
 
-    // Construir prompt para Gemini
+    const totalUserSkills = existingUserSkills.length;
+
+    const faltantes = existingUserSkills.filter(
+      (skill) => skill.estado === EstadoHabilidadEnum.Faltante,
+    ).length;
+
+    const dbGapPorcentual =
+      totalUserSkills > 0
+        ? clampPercent((faltantes / totalUserSkills) * 100)
+        : null;
+
+    const fallbackGapItems = existingUserSkills
+      .filter((skill) => skill.estado === EstadoHabilidadEnum.Faltante)
+      .map((skill) => ({
+        habilidad: skill.habilidad.nombre,
+        nivel_requerido: 'Mercado',
+        nivel_actual: 'Pendiente',
+      }));
+
     const prompt = `Actuá como asesor profesional de la App BiT para Latinoamérica.
 Generá el gemelo digital de este usuario basándote en su perfil y el mercado laboral disponible.
 
@@ -184,6 +342,21 @@ PERFIL DEL USUARIO:
 - Idiomas: ${data.idiomas.map((i) => `${i.idioma} (${i.nivel})`).join(', ')}
 - Disponibilidad: ${data.disponibilidad.join(', ')}
 - Ubicación trabajo preferida: ${data.ubicacionTrabajo}
+- Nivel inicial declarado: ${data.nivel_inicial ?? 'No especificado'}
+- Experiencia en tecnología: ${data.nivelExperienciaTecnologia}
+- Habilidades técnicas declaradas: ${
+      data.habilidadesTecnicas.length > 0
+        ? data.habilidadesTecnicas.join(', ')
+        : 'Ninguna'
+    }
+- Habilidades blandas declaradas: ${
+      data.habilidadesBlandas.length > 0
+        ? data.habilidadesBlandas.join(', ')
+        : 'Ninguna'
+    }
+- Gap inicial declarado: ${
+      data.gap_inicial != null ? `${data.gap_inicial}%` : 'No especificado'
+    }
 - Objetivos: ${data.objetivos.join(', ')}
 - Dispositivos disponibles: ${data.dispositivos.join(', ')}
 - Tipos de conexión: ${data.tipoConexion.join(', ')}
@@ -191,23 +364,33 @@ PERFIL DEL USUARIO:
 - Idioma de respuesta: ${idiomaRespuesta}
 
 HABILIDADES DEL MERCADO DISPONIBLES:
-${habilidadesMercado.map((h) => `- ${h.nombre} (${h.categoria ?? 'General'}) [${h.area_principal ?? 'Multiárea'}]`).join('\n')}
+${habilidadesMercado
+  .map(
+    (h) =>
+      `- ${h.nombre} (${h.categoria ?? 'General'}) [${h.area_principal ?? 'Multiárea'}]`,
+  )
+  .join('\n')}
+
+HABILIDADES YA REGISTRADAS POR EL ONBOARDING WEB:
+${existingUserSkills
+  .map((h) => `- ${h.habilidad.nombre}: ${h.estado}`)
+  .join('\n')}
 
 CURSOS DISPONIBLES:
 ${cursosDisponibles.map((c) => `- ${c.titulo} (${c.area})`).join('\n')}
 
 Instrucciones:
-1. Determiná qué habilidades del mercado el usuario YA TIENE (estado: "Adquirida"),
-   cuáles necesita aprender (estado: "Faltante") y cuáles está desarrollando (estado: "En_progreso").
-   Sé realista: un perfil sin experiencia tendrá mayoría "Faltante".
-2. Calculá el gap porcentual como: (habilidades_faltantes / total_habilidades_relevantes) * 100.
-3. Sugerí una trayectoria profesional de 1 a 3 títulos de puesto.
-4. Generá un plan de acción con 3 a 5 items priorizados. Cada item debe tener un curso_sugerido
-   que coincida con el título de algún curso disponible (dejalo vacío si no hay curso que corresponda).
+1. No borres ni contradigas las habilidades registradas por el onboarding web.
+2. Si el nivel inicial declarado es "sin_conocimiento", asumí que el usuario necesita empezar desde fundamentos.
+3. Calculá una trayectoria profesional realista de 1 a 3 títulos de puesto.
+4. Generá un plan de acción con 3 a 5 items priorizados.
+5. Cada título del plan debe tener máximo 90 caracteres.
+6. Cada accion_label debe tener máximo 35 caracteres.
+7. Cada curso_sugerido debe coincidir exactamente con el título de algún curso disponible. Si no hay curso aplicable, usá null.
+8. Respondé en ${idiomaRespuesta}.
 
-Respuesta JSON estricta (sin markdown, sin acentos en las claves):
+Respuesta JSON estricta, sin markdown:
 {
-  "habilidades": [{ "nombre": "string", "estado": "Adquirida"|"Faltante"|"En_progreso" }],
   "gap_porcentual": 45,
   "gap_items": [{ "habilidad": "string", "nivel_requerido": "string", "nivel_actual": "string" }],
   "trayectoria_sugerida": ["string"],
@@ -224,13 +407,8 @@ Respuesta JSON estricta (sin markdown, sin acentos en las claves):
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(prompt);
-    const cleanJson = result.response
-      .text()
-      .replace(/```json|```/g, '')
-      .trim();
 
     interface GeminiResponse {
-      habilidades: { nombre: string; estado: string }[];
       gap_porcentual: number;
       gap_items: {
         habilidad: string;
@@ -246,86 +424,121 @@ Respuesta JSON estricta (sin markdown, sin acentos en las claves):
       }[];
     }
 
-    const aiResponse: GeminiResponse = JSON.parse(cleanJson);
+    const aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
 
-    // Escribir en DB en una transacción
-    const orientacion = await dbClient.$transaction(async (tx) => {
-      // Limpiar datos previos del usuario
-      await tx.usuarioHabilidades.deleteMany({ where: { usuario_id: userId } });
-      await tx.orientaciones.deleteMany({ where: { usuario_id: userId } });
-      await tx.planAccion.deleteMany({ where: { usuario_id: userId } });
+    const aiGapItems = Array.isArray(aiResponse.gap_items)
+      ? aiResponse.gap_items
+      : [];
 
-      // Insertar habilidades del usuario
-      let habilidadesCreadas = 0;
-      for (const h of aiResponse.habilidades) {
-        const skill = await tx.habilidadesMercado.findUnique({
-          where: { nombre: h.nombre },
-        });
-        if (skill) {
-          await tx.usuarioHabilidades.create({
-            data: {
-              usuario_id: userId,
-              habilidad_id: skill.habilidad_id,
-              estado: normalizeEstado(h.estado),
-            },
-          });
-          habilidadesCreadas++;
-        }
-      }
+    const safeGapItems = aiGapItems.length > 0 ? aiGapItems : fallbackGapItems;
 
-      // Insertar orientación
-      const orient = await tx.orientaciones.create({
-        data: {
-          usuario_id: userId,
-          gap_porcentual: aiResponse.gap_porcentual,
-          gap_items: aiResponse.gap_items as any,
-          trayectoria_sugerida: aiResponse.trayectoria_sugerida as any,
-          vacantes_compatibles: [],
-          confianza: 0.85,
-          idioma_respuesta:
-            data.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es,
-        },
-      });
+    const safeTrayectoriaSugerida =
+      Array.isArray(aiResponse.trayectoria_sugerida) &&
+      aiResponse.trayectoria_sugerida.length > 0
+        ? aiResponse.trayectoria_sugerida.slice(0, 3)
+        : [
+            data.areasInteres[0]
+              ? `${data.areasInteres[0]} Jr`
+              : data.locale === 'pt'
+                ? 'Perfil tecnológico inicial'
+                : 'Perfil tecnológico inicial',
+          ];
 
-      // Insertar items del plan de acción
-      let planCreados = 0;
-      for (let i = 0; i < aiResponse.plan_accion.length; i++) {
-        const item = aiResponse.plan_accion[i]!;
-        let cursoId: string | null = null;
-        if (item.curso_sugerido) {
-          const curso = await tx.cursos.findFirst({
-            where: {
-              titulo: { contains: item.curso_sugerido, mode: 'insensitive' },
-            },
-            select: { curso_id: true },
-          });
-          cursoId = curso?.curso_id ?? null;
-        }
-        await tx.planAccion.create({
-          data: {
+    const aiPlanAccion = normalizePlanItems(
+      aiResponse.plan_accion,
+      data.locale,
+    );
+
+    const fallbackPlanAccion = buildFallbackPlanItems({
+      fallbackGapItems,
+      cursosDisponibles,
+      locale: data.locale,
+    });
+
+    const safePlanAccion =
+      aiPlanAccion.length > 0 ? aiPlanAccion : fallbackPlanAccion;
+
+    const safeGapPorcentual = clampPercent(
+      data.gap_inicial ?? dbGapPorcentual ?? Number(aiResponse.gap_porcentual),
+    );
+
+    const cursoIdByExactTitle = new Map(
+      cursosDisponibles.map((curso) => [
+        curso.titulo.trim().toLowerCase(),
+        curso.curso_id,
+      ]),
+    );
+
+    const planRows = safePlanAccion.map((item, index) => {
+      const cursoKey = item.curso_sugerido?.trim().toLowerCase();
+      const cursoId = cursoKey
+        ? (cursoIdByExactTitle.get(cursoKey) ?? null)
+        : null;
+
+      return {
+        usuario_id: userId,
+        titulo: item.titulo,
+        prioridad: normalizePrioridad(item.prioridad),
+        orden: index + 1,
+        curso_vinculado_id: cursoId,
+        accion_label: item.accion_label,
+      };
+    });
+
+    const orientacion = await dbClient.$transaction(
+      async (tx) => {
+        await tx.planAccion.deleteMany({
+          where: {
             usuario_id: userId,
-            titulo: item.titulo,
-            prioridad: normalizePrioridad(item.prioridad),
-            orden: i + 1,
-            curso_vinculado_id: cursoId,
-            accion_label: item.accion_label ?? null,
           },
         });
-        planCreados++;
-      }
 
-      return { orient, habilidadesCreadas, planCreados };
-    });
+        await tx.orientaciones.deleteMany({
+          where: {
+            usuario_id: userId,
+          },
+        });
+
+        const orient = await tx.orientaciones.create({
+          data: {
+            usuario_id: userId,
+            gap_porcentual: safeGapPorcentual,
+            gap_items: safeGapItems as any,
+            trayectoria_sugerida: safeTrayectoriaSugerida as any,
+            vacantes_compatibles: [],
+            confianza: 0.85,
+            idioma_respuesta:
+              data.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es,
+          },
+        });
+
+        if (planRows.length > 0) {
+          await tx.planAccion.createMany({
+            data: planRows,
+          });
+        }
+
+        return {
+          orient,
+          planCreados: planRows.length,
+        };
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
 
     return c.json({
       success: true,
       usuarioId: userId,
       orientacionId: orientacion.orient.orientacion_id,
       planAccionCount: orientacion.planCreados,
-      habilidadesCount: orientacion.habilidadesCreadas,
+      habilidadesCount: existingUserSkills.length,
     });
   } catch (error) {
     console.error('Error en onboarding AI:', error);
+
     return c.json(
       {
         success: false,
@@ -340,25 +553,26 @@ Respuesta JSON estricta (sin markdown, sin acentos en las claves):
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function normalizeEstado(estado: string): EstadoHabilidadEnum {
-  const normalizado = estado.replace(' ', '_') as EstadoHabilidadEnum;
-  if (
-    normalizado === EstadoHabilidadEnum.Adquirida ||
-    normalizado === EstadoHabilidadEnum.En_progreso
-  ) {
-    return normalizado;
-  }
-  return EstadoHabilidadEnum.Faltante;
-}
-
 function normalizePrioridad(prioridad: string): PrioridadPlanEnum {
-  const normalizado = prioridad.replace(' ', '_') as PrioridadPlanEnum;
+  const normalizada = prioridad.trim().toLowerCase().replace(/\s+/g, '_');
+
   if (
-    normalizado === PrioridadPlanEnum.Alta_prioridad ||
-    normalizado === PrioridadPlanEnum.Baja_prioridad
+    normalizada === 'alta_prioridad' ||
+    normalizada === 'alta' ||
+    normalizada === 'alta_priority'
   ) {
-    return normalizado;
+    return PrioridadPlanEnum.Alta_prioridad;
   }
+
+  if (
+    normalizada === 'baja_prioridad' ||
+    normalizada === 'baja' ||
+    normalizada === 'baixa_prioridade' ||
+    normalizada === 'baixa'
+  ) {
+    return PrioridadPlanEnum.Baja_prioridad;
+  }
+
   return PrioridadPlanEnum.Media_prioridad;
 }
 
