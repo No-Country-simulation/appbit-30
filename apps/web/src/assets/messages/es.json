@@ -501,5 +501,26 @@
     "description": "No pudimos verificar tu sesión en este momento. Puede ser un problema temporal de conexión o del servicio.",
     "retry": "Intentar de nuevo",
     "goToLogin": "Ir a iniciar sesión"
+  },
+  "Mentoria": {
+    "title": "Mentorías 1-a-1",
+    "explorarMentores": "Explorar Mentores",
+    "historialSesiones": "Historial de Sesiones",
+    "topMentor": "Top Mentor",
+    "agendar": "Agendar",
+    "seUnMentor": "Sé un Mentor",
+    "seUnMentorDesc": "Compartí tu experiencia y ayudá a otros a crecer en tecnología.",
+    "encontraTuMentor": "Encontrá tu mentor",
+    "todos": "Todos",
+    "disponibleEstaSemana": "Disponible esta semana",
+    "verNotasCompartidas": "Ver notas compartidas",
+    "sinResultados": "No encontramos mentores con esos filtros.",
+    "reseñas": "reseñas",
+    "sesiones": "sesiones",
+    "remoto": "Remoto",
+    "idealTrayecto": "Ideal por tu trayecto",
+    "revisionCV": "Revisión de CV y Portafolio",
+    "orientacionCarrera": "Orientación en carrera Tech",
+    "preparacionEntrevistas": "Preparación de entrevistas técnicas"
   }
 }
