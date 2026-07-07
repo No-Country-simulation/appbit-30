@@ -36,7 +36,18 @@ export function ModuleCardItem({
       </div>
 
       <div className='flex items-center justify-between'>
-        <AppBadge variant='warning'>{nivel}</AppBadge>
+        <div className='flex items-center gap-3'>
+          <AppBadge variant='warning'>{nivel}</AppBadge>
+
+          {desbloqueado && (
+            <button
+              onClick={onValidarExterno}
+              className='text-xs font-medium text-[var(--color-primary)] underline-offset-2 hover:underline'
+            >
+              {t('yaDominas')}
+            </button>
+          )}
+        </div>
 
         {desbloqueado && (
           <AppButton
