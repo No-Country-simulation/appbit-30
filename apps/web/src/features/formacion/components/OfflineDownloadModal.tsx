@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Download, Wifi, FileVideo, FileText } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
+import { Download, Train } from 'lucide-react';
+import { Dialog, DialogContent } from '@/src/components/ui/dialog';
 import { AppButton } from '@/src/components/app/AppButton';
 
 interface DownloadItem {
@@ -25,34 +25,29 @@ export function OfflineDownloadModal({ open, onOpenChange, items, onDownload }: 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle className='flex items-center gap-2'>
-            <Wifi className='size-5 text-[var(--color-primary)]' />
+        <div className='flex flex-col items-center text-center'>
+          <div className='mb-4 flex size-14 items-center justify-center rounded-full bg-amber-100'>
+            <Train className='size-7 text-amber-500' />
+          </div>
+
+          <h2 className='text-lg font-bold text-[var(--color-text)]'>
             {t('saliendoDeCasa')}
-          </DialogTitle>
-        </DialogHeader>
+          </h2>
+          <p className='mt-2 text-sm text-[var(--color-text-muted)]'>
+            {t('descargarModuloDetalle')}
+          </p>
+        </div>
 
-        <p className='text-sm text-[var(--color-text-muted)]'>
-          {t('descargarModulo')}
-        </p>
-
-        <div className='space-y-3'>
+        <div className='rounded-xl bg-gray-50 p-4 space-y-2'>
           {items.map((item) => (
             <div
               key={item.titulo}
-              className='flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3'
+              className='flex items-center justify-between'
             >
-              <div className='flex items-center gap-3'>
-                {item.tipo === 'video' ? (
-                  <FileVideo className='size-5 text-[var(--color-primary)]' />
-                ) : (
-                  <FileText className='size-5 text-[var(--color-text-muted)]' />
-                )}
-                <span className='text-sm font-medium text-[var(--color-text)]'>
-                  {item.titulo}
-                </span>
-              </div>
-              <span className='text-xs text-[var(--color-text-muted)]'>
+              <span className='text-sm font-medium text-[var(--color-text)]'>
+                {item.titulo}
+              </span>
+              <span className='text-sm text-[var(--color-text-muted)]'>
                 {item.tamanioMb} {t('mb')}
               </span>
             </div>
