@@ -15,12 +15,15 @@ export function StreakBadge({ count, className }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700',
+        'inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-white',
         className,
       )}
     >
-      <Flame className='size-3.5' />
-      {count} {t('dias')} {t('racha')}
+      <Flame className='size-5' />
+      <div className='flex flex-col items-start leading-tight'>
+        <span className='text-sm font-bold'>{count} {t('dias')}</span>
+        <span className='text-[10px] text-white/70'>{t('racha')}</span>
+      </div>
     </span>
   );
 }

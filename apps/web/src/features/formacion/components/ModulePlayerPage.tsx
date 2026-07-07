@@ -80,15 +80,9 @@ export function ModulePlayerPage({
             />
 
             <LessonList lecciones={lecciones} />
-
-            <CompletionReward
-              certificado={certificado}
-              puntos={puntos}
-              desbloquea={desbloquea}
-            />
           </div>
 
-          <div className='lg:col-span-1'>
+          <div className='space-y-5 lg:col-span-1'>
             <ModuleSidebar
               cursoTitulo={cursoTitulo}
               ruta={ruta}
@@ -97,6 +91,12 @@ export function ModulePlayerPage({
               totalLecciones={lecciones.length}
               racha={racha}
               modulos={modulos}
+            />
+
+            <CompletionReward
+              certificado={certificado}
+              puntos={puntos}
+              desbloquea={desbloquea}
             />
           </div>
         </div>
@@ -124,9 +124,9 @@ export default function ModulePlayerScreen() {
         { numero: 5, titulo: 'Proyecto final: Análisis de ventas', duracion: '35:00', estado: 'bloqueada' },
       ]}
       modulos={[
-        { titulo: 'Fundamentos SQL', completado: true, leccionesCompletadas: 2, totalLecciones: 8 },
-        { titulo: 'SQL Avanzado', completado: false, leccionesCompletadas: 0, totalLecciones: 6 },
-        { titulo: 'Proyecto final', completado: false, leccionesCompletadas: 0, totalLecciones: 4 },
+        { titulo: 'Fundamentos SQL', completado: true, enProgreso: false, leccionesCompletadas: 2, totalLecciones: 8 },
+        { titulo: 'SQL Avanzado', completado: false, enProgreso: true, leccionesCompletadas: 2, totalLecciones: 6 },
+        { titulo: 'Proyecto final', completado: false, enProgreso: false, leccionesCompletadas: 0, totalLecciones: 4 },
       ]}
       racha={7}
       certificado='SQL Básico'

@@ -1,14 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { CheckCircle, Lock } from 'lucide-react';
-import { AppCard } from '@/src/components/app/AppCard';
 import { ProgressBar } from '@/src/components/app/ProgressBar';
-import { StreakBadge } from '@/src/components/app/StreakBadge';
 
 interface ModuloInfo {
   titulo: string;
   completado: boolean;
+  enProgreso: boolean;
   leccionesCompletadas: number;
   totalLecciones: number;
 }
@@ -36,50 +34,71 @@ export function ModuleSidebar({
 
   return (
     <aside className='space-y-5'>
-      <AppCard className='space-y-4'>
+      <div className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 space-y-4'>
         <div>
-          <p className='text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]'>
-            {cursoTitulo}
-          </p>
-          <p className='mt-1 text-sm text-[var(--color-text)]'>
+          <h3 className='text-base font-bold text-[var(--color-text)]'>{cursoTitulo}</h3>
+          <p className='mt-0.5 text-sm text-[var(--color-text-muted)]'>
             {t('ruta')}: {ruta}
           </p>
         </div>
 
         <div className='space-y-2'>
-          <div className='flex items-center justify-between text-sm text-[var(--color-text-muted)]'>
-            <span>{progreso}%</span>
-            <span>
-              {leccionesCompletadas}/{totalLecciones} {t('lecciones')}
-            </span>
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium text-[var(--color-text)]'>{t('progresoModulo')}</span>
+            <span className='text-sm font-bold text-violet-600'>{progreso}%</span>
           </div>
-          <ProgressBar value={progreso} />
+          <ProgressBar value={progreso} className='bg-gray-200' barClassName='bg-emerald-500' />
         </div>
 
-        <StreakBadge count={racha} />
-      </AppCard>
+        <div className='flex items-center justify-between text-sm text-[var(--color-text-muted)]'>
+          <span>{leccionesCompletadas} {t('de')} {totalLecciones} {t('lecciones')}</span>
+          <span>🔥 {racha} {t('diasDeRacha')}</span>
+        </div>
+      </div>
 
-      <AppCard className='space-y-3'>
+      <div className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 space-y-3'>
         <h4 className='text-sm font-bold text-[var(--color-text)]'>
           {t('modulosDelCurso')}
         </h4>
 
-        {modulos.map((modulo) => (
-          <div key={modulo.titulo} className='flex items-center gap-3'>
-            {modulo.completado ? (
-              <CheckCircle className='size-4 shrink-0 text-[var(--color-success)]' />
-            ) : (
-              <Lock className='size-4 shrink-0 text-[var(--color-text-muted)]' />
-            )}
-            <div className='flex-1 min-w-0'>
-              <p className='truncate text-sm text-[var(--color-text)]'>{modulo.titulo}</p>
-              <p className='text-xs text-[var(--color-text-muted)]'>
-                {modulo.leccionesCompletadas}/{modulo.totalLecciones} {t('lecciones')}
-              </p>
+        {modulos.map((modulo, index) => (
+          <div
+            key={modulo.titulo}
+            className={`rounded-lg border p-3 ${
+              modulo.enProgreso
+                ? 'border-violet-400 bg-violet-50'
+                : modulo.completado
+                  ? 'border-[var(--color-border)] bg-[var(--color-card)]'
+                  : 'border-[var(--color-border)] bg-gray-50'
+            }`}
+          >
+            <div className='flex items-center justify-between'>
+              <span className='text-sm font-bold text-[var(--color-text)]'>
+                {index + 1}. {modulo.titulo}
+              </span>
             </div>
+            {modulo.completado ? (
+              <div className='mt-2'>
+                <ProgressBar
+                  value={100}
+                  className='bg-gray-200'
+                  barClassName='bg-violet-500'
+                />
+              </div>
+            ) : modulo.enProgreso ? (
+              <div className='mt-2'>
+                <ProgressBar
+                  value={(modulo.leccionesCompletadas / modulo.totalLecciones) * 100}
+                  className='bg-gray-200'
+                  barClassName='bg-violet-500'
+                />
+              </div>
+            ) : (
+              <p className='mt-1 text-xs text-[var(--color-text-muted)]'>{t('bloqueado')}</p>
+            )}
           </div>
         ))}
-      </AppCard>
+      </div>
     </aside>
   );
 }

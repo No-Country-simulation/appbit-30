@@ -523,6 +523,8 @@
     "cursosSugeridosPago": "Cursos sugeridos pagos",
     "verDetalles": "Ver detalhes",
     "completasteCursoFuera": "Completou um curso fora da App BIT?",
+    "validarHabilidadTitulo": "Validar Habilidade e Atualizar Match",
+    "validarHabilidadDesc": "Insira o link do seu certificado (Coursera, Coderhouse, LinkedIn, etc.). A IA validará a habilidade e aumentará a porcentagem de compatibilidade com as vagas.",
     "enlaceCertificado": "Link do Certificado",
     "validarYActualizar": "Validar e Atualizar",
     "enviarAValidacion": "Enviar para Validação",
@@ -540,8 +542,11 @@
     "leccion": "Liçao",
     "de": "de",
     "modulosDelCurso": "Módulos do curso",
+    "progresoModulo": "Progresso do módulo",
+    "diasDeRacha": "dias de sequência",
     "alCompletarObtenes": "Ao completar você obtém",
     "certificado": "Certificado",
+    "verificadoPorBit": "Verificado por BiT",
     "puntosHabilidad": "pontos de habilidade",
     "desbloqueaModulo": "Desbloqueia próximo módulo"
   }

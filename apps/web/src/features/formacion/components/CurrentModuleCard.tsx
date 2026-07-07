@@ -25,7 +25,7 @@ export function CurrentModuleCard({
   const t = useTranslations('Formacion');
 
   return (
-    <div className='rounded-xl bg-gradient-to-br from-[#1a1a3e] to-[#2d1b69] p-6 text-white'>
+    <div className='rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 p-6 text-white'>
       <p className='mb-1 text-xs font-medium uppercase tracking-wider text-white/60'>
         {t('moduloActual')}
       </p>
@@ -37,13 +37,13 @@ export function CurrentModuleCard({
           <span className='text-white/80'>{progreso}%</span>
           <StreakBadge count={racha} className='bg-white/20 text-white' />
         </div>
-        <ProgressBar value={progreso} className='bg-white/20' barClassName='bg-white' />
+        <ProgressBar value={progreso} className='bg-white/20' barClassName='bg-amber-400' />
       </div>
 
       <div className='mt-5 flex gap-3'>
         <AppButton
           variant='primary'
-          className='inline-flex items-center gap-2 bg-white text-[#1a1a3e] hover:bg-white/90'
+          className='inline-flex items-center gap-2 bg-amber-400 text-violet-900 hover:bg-amber-500 shadow-none'
           onClick={onContinuar}
         >
           <Play className='size-4' />
