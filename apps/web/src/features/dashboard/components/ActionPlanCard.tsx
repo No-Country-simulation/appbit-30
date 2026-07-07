@@ -31,57 +31,59 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
   };
 
   return (
-    <AppCard className='flex flex-col'>
-      <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
+    <AppCard className='flex min-w-0 flex-col'>
+      <h3 className='break-words font-heading text-base font-bold text-[var(--color-text)]'>
         {t('actionPlanTitle')}
       </h3>
 
       {isLoading ? (
-        <div className='mt-4 flex flex-col gap-4'>
+        <div className='mt-4 flex flex-col'>
           {[1, 2, 3].map((item) => (
             <div
               key={item}
-              className='flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-4 last:border-b-0'
+              className='grid grid-cols-1 gap-3 border-b border-[var(--color-border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center'
             >
-              <div className='flex flex-1 flex-col gap-2'>
-                <div className='h-4 w-32 animate-pulse rounded bg-[var(--color-border)]' />
-                <div className='h-3 w-20 animate-pulse rounded bg-[var(--color-border)]' />
+              <div className='flex min-w-0 flex-col gap-2'>
+                <div className='h-4 w-40 max-w-full animate-pulse rounded bg-[var(--color-border)]' />
+                <div className='h-3 w-24 max-w-full animate-pulse rounded bg-[var(--color-border)]' />
               </div>
 
-              <div className='h-8 w-28 animate-pulse rounded-[var(--radius-md)] bg-[var(--color-border)]' />
+              <div className='h-9 w-full animate-pulse rounded-[var(--radius-md)] bg-[var(--color-border)]' />
             </div>
           ))}
         </div>
       ) : items.length === 0 ? (
-        <p className='mt-4 font-body text-sm leading-6 text-[var(--color-text-muted)]'>
+        <p className='mt-4 break-words font-body text-sm leading-6 text-[var(--color-text-muted)]'>
           {t('actionPlanEmpty')}
         </p>
       ) : (
-        <ul className='mt-4 flex flex-col'>
+        <ul className='mt-4 flex min-w-0 flex-col'>
           {items.map((item, index) => {
             const style = priorityStyles[item.priority];
 
             return (
               <li
                 key={`${item.title}-${index}`}
-                className={`flex items-center justify-between gap-4 py-4 ${
+                className={`grid min-w-0 grid-cols-1 gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
                   index < items.length - 1
                     ? 'border-b border-[var(--color-border)]'
                     : ''
                 }`}
               >
-                <div className='flex flex-col gap-1'>
-                  <div className='flex items-center gap-2'>
-                    <p className='text-sm font-bold text-[var(--color-text)]'>
+                <div className='min-w-0'>
+                  <div className='flex min-w-0 items-start gap-2'>
+                    <p className='min-w-0 break-words text-sm font-bold leading-snug text-[var(--color-text)]'>
                       {item.title}
                     </p>
 
                     {item.completed && (
-                      <CheckCircleIcon className='size-4 text-[var(--color-success)]' />
+                      <CheckCircleIcon className='mt-0.5 size-4 shrink-0 text-[var(--color-success)]' />
                     )}
                   </div>
 
-                  <span className={`text-xs font-medium ${style.color}`}>
+                  <span
+                    className={`mt-1 block text-xs font-medium ${style.color}`}
+                  >
                     {style.label}
                   </span>
                 </div>
@@ -89,7 +91,7 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
                 {!item.completed && (
                   <AppButton
                     variant={item.actionIcon === 'play' ? 'primary' : 'outline'}
-                    className='shrink-0 !inline-flex !min-w-[130px] !items-center !justify-center !gap-1.5 !px-3 !py-1.5 text-xs'
+                    className='w-full min-w-0 !justify-center !gap-1.5 !px-3 !py-2 text-xs sm:w-auto sm:max-w-[240px]'
                   >
                     {item.actionIcon === 'play' ? (
                       <PlayIcon className='size-3.5 shrink-0' />
@@ -97,7 +99,9 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
                       <BookOpenIcon className='size-3.5 shrink-0' />
                     )}
 
-                    {item.actionLabel}
+                    <span className='min-w-0 break-words leading-snug'>
+                      {item.actionLabel}
+                    </span>
                   </AppButton>
                 )}
               </li>

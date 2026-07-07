@@ -131,3 +131,94 @@
     @apply font-sans;
   }
 }
+
+/* Layout safety */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 320px;
+}
+
+/* Evita el zoom automático en mobile cuando se enfoca un input/select */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Evita desbordes por textos largos en cards/botones */
+button,
+a,
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: anywhere;
+}
+
+.onboarding-form,
+.onboarding-form * {
+  min-width: 0;
+}
+
+.onboarding-form input,
+.onboarding-form select,
+.onboarding-form button,
+.onboarding-form [data-slot='select-trigger'] {
+  max-width: 100%;
+}
+
+.onboarding-form [data-slot='select-value'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onboarding-form p,
+.onboarding-form span,
+.onboarding-form label,
+.onboarding-form button {
+  overflow-wrap: anywhere;
+}
+
+.safe-modal-content,
+.safe-modal-content * {
+  min-width: 0;
+}
+
+.safe-modal-content input,
+.safe-modal-content textarea,
+.safe-modal-content select,
+.safe-modal-content button,
+.safe-modal-content [data-slot='select-trigger'] {
+  max-width: 100%;
+}
+
+.safe-modal-content p,
+.safe-modal-content span,
+.safe-modal-content label,
+.safe-modal-content h1,
+.safe-modal-content h2,
+.safe-modal-content h3,
+.safe-modal-content h4,
+.safe-modal-content button {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .safe-modal-content input,
+  .safe-modal-content textarea,
+  .safe-modal-content select {
+    font-size: 16px !important;
+  }
+}
