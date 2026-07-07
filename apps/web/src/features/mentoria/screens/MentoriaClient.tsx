@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { MentorCard } from '../components/MentorCard';
 import { BeMentorCard } from '../components/BeMentorCard';
+import { BeMentorModal } from '../components/BeMentorModal';
 import { MentorFilters } from '../components/MentorFilters';
 import { MentorListItem } from '../components/MentorListItem';
 import { SessionHistoryItem } from '../components/SessionHistoryItem';
@@ -12,33 +13,33 @@ import { SessionHistoryItem } from '../components/SessionHistoryItem';
 const mockMentors = [
   {
     id: '1',
+    foto: 'https://i.pravatar.cc/400?img=11',
     nombre: 'Martín Silva',
     rol: 'Lead Data Analyst',
     empresa: 'PedidosYa',
     skills: ['Data Analysis', 'SQL'],
-    esRemoto: true,
     rating: 4.9,
     totalResenas: 15,
     esTopMentor: true,
   },
   {
     id: '2',
+    foto: 'https://i.pravatar.cc/400?img=5',
     nombre: 'Laura Gómez',
     rol: 'Frontend Developer Sr.',
     empresa: 'Mercado Libre',
     skills: ['React', 'TypeScript', 'UX'],
-    esRemoto: true,
     rating: 4.8,
     totalResenas: 23,
     esTopMentor: false,
   },
   {
     id: '3',
+    foto: 'https://i.pravatar.cc/400?img=12',
     nombre: 'Carlos Ruiz',
     rol: 'UX Designer Lead',
     empresa: 'Globant',
     skills: ['UX Research', 'Figma'],
-    esRemoto: false,
     rating: 4.7,
     totalResenas: 10,
     esTopMentor: false,
@@ -71,6 +72,7 @@ type Tab = 'explorar' | 'historial';
 export default function MentoriaClient() {
   const t = useTranslations('Mentoria');
   const [tab, setTab] = useState<Tab>('explorar');
+  const [beMentorModalOpen, setBeMentorModalOpen] = useState(false);
 
   return (
     <AppShell>
@@ -106,9 +108,20 @@ export default function MentoriaClient() {
               <h2 className='mb-4 text-lg font-bold text-[var(--color-text)]'>{t('title')}</h2>
               <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
                 {mockMentors.map((mentor) => (
-                  <MentorCard key={mentor.id} {...mentor} onAgendar={() => {}} />
+                  <MentorCard
+                    key={mentor.id}
+                    foto={mentor.foto}
+                    nombre={mentor.nombre}
+                    rol={mentor.rol}
+                    empresa={mentor.empresa}
+                    skills={mentor.skills}
+                    rating={mentor.rating}
+                    totalResenas={mentor.totalResenas}
+                    esTopMentor={mentor.esTopMentor}
+                    onAgendar={() => {}}
+                  />
                 ))}
-                <BeMentorCard />
+                <BeMentorCard onClick={() => setBeMentorModalOpen(true)} />
               </div>
             </section>
 
@@ -146,6 +159,15 @@ export default function MentoriaClient() {
           </section>
         )}
       </div>
+
+      <BeMentorModal
+        open={beMentorModalOpen}
+        onOpenChange={setBeMentorModalOpen}
+        onSubmit={(data) => {
+          console.log('Solicitud de mentor:', data);
+          setBeMentorModalOpen(false);
+        }}
+      />
     </AppShell>
   );
 }

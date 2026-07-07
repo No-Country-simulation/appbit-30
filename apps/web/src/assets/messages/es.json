@@ -521,6 +521,11 @@
     "idealTrayecto": "Ideal por tu trayecto",
     "revisionCV": "Revisión de CV y Portafolio",
     "orientacionCarrera": "Orientación en carrera Tech",
-    "preparacionEntrevistas": "Preparación de entrevistas técnicas"
+    "preparacionEntrevistas": "Preparación de entrevistas técnicas",
+    "tusSkills": "Tus habilidades",
+    "experiencia": "Experiencia",
+    "experienciaPlaceholder": "Contanos sobre tu experiencia profesional y de mentoría...",
+    "disponibilidad": "Disponibilidad horaria",
+    "enviarSolicitud": "Enviar solicitud"
   }
 }
