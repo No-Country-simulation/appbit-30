@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
@@ -33,10 +33,32 @@ export function AppShell({
   const t = useTranslations('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSidebarOpen]);
+
   return (
-    <div className='min-h-screen bg-[var(--color-body)]'>
-      <div className='flex min-h-screen'>
-        <div className='hidden lg:block'>
+    <div className='min-h-screen overflow-x-hidden bg-[var(--color-body)]'>
+      <div className='flex min-h-screen min-w-0'>
+        <div className='hidden shrink-0 lg:block'>
           <AppSidebar userName={userName} avatarUrl={avatarUrl} />
         </div>
 
@@ -49,13 +71,18 @@ export function AppShell({
               onClick={() => setIsSidebarOpen(false)}
             />
 
-            <div className='relative h-full w-[var(--sidebar-width)] max-w-[85vw]'>
-              <AppSidebar userName={userName} avatarUrl={avatarUrl} />
+            <div className='absolute inset-y-0 left-0 z-10 w-[min(var(--sidebar-width),85vw)] max-w-[85vw]'>
+              <AppSidebar
+                userName={userName}
+                avatarUrl={avatarUrl}
+                className='w-full shadow-2xl'
+                onNavigate={() => setIsSidebarOpen(false)}
+              />
             </div>
           </div>
         )}
 
-        <div className='flex min-w-0 flex-1 flex-col'>
+        <div className='flex min-w-0 flex-1 flex-col overflow-x-hidden'>
           <AppHeader
             onMenuClick={() => setIsSidebarOpen(true)}
             onCheckinClick={onCheckinClick}
@@ -63,7 +90,9 @@ export function AppShell({
             perfilBreakdown={perfilBreakdown}
           />
 
-          <main className='flex-1 px-4 py-6 sm:px-6 lg:px-8'>{children}</main>
+          <main className='min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-8'>
+            <div className='mx-auto w-full max-w-[1440px]'>{children}</div>
+          </main>
         </div>
       </div>
     </div>

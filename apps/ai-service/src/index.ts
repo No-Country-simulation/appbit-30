@@ -384,10 +384,15 @@ Instrucciones:
 2. Si el nivel inicial declarado es "sin_conocimiento", asumí que el usuario necesita empezar desde fundamentos.
 3. Calculá una trayectoria profesional realista de 1 a 3 títulos de puesto.
 4. Generá un plan de acción con 3 a 5 items priorizados.
-5. Cada título del plan debe tener máximo 90 caracteres.
-6. Cada accion_label debe tener máximo 35 caracteres.
+5. El titulo de cada item debe tener máximo 5 palabras.
+6. El accion_label debe ser texto de botón, máximo 4 palabras.
 7. Cada curso_sugerido debe coincidir exactamente con el título de algún curso disponible. Si no hay curso aplicable, usá null.
-8. Respondé en ${idiomaRespuesta}.
+8. No mezcles idiomas. Todos los textos visibles deben estar en ${idiomaRespuesta}.
+
+REGLA ANTI-ALUCINACIÓN:
+curso_sugerido debe ser exactamente uno de los títulos listados en CURSOS DISPONIBLES.
+Si ningún curso aplica, usar null.
+No inventes cursos, certificaciones, bootcamps ni plataformas.
 
 Respuesta JSON estricta, sin markdown:
 {

@@ -12,7 +12,6 @@ import {
 } from '@/src/components/ui/dialog';
 import { StepIndicator } from '@/src/components/app/StepIndicator';
 import { AppButton } from '@/src/components/app/AppButton';
-import { AppInput } from '@/src/components/app/AppInput';
 import { CheckIcon, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -171,13 +170,14 @@ export function CheckinModal({
           emoji: selectedMood,
           motivos: selectedMotivos,
           contexto: contexto.trim() || undefined,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message ?? 'No pudimos guardar el check-in.');
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message ?? 'No pudimos guardar el check-in.');
       }
 
       onComplete?.({
@@ -203,149 +203,181 @@ export function CheckinModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle>{t('checkinTitle')}</DialogTitle>
-          <DialogDescription>{t('checkinDesc')}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className='safe-modal-content flex max-h-[90dvh] w-[min(calc(100vw-1rem),34rem)] max-w-none flex-col overflow-hidden p-0'>
+        <div className='shrink-0 border-b border-[var(--color-border)] px-4 py-4 sm:px-6'>
+          <DialogHeader className='text-left'>
+            <DialogTitle className='break-words leading-tight'>
+              {t('checkinTitle')}
+            </DialogTitle>
 
-        <div className='flex flex-col gap-6 py-4'>
-          <StepIndicator
-            currentStep={step}
-            totalSteps={3}
-            labels={stepLabels}
-          />
-
-          {submitError && (
-            <div className='rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger-text)]'>
-              {submitError}
-            </div>
-          )}
-
-          {step === 1 && (
-            <div className='flex justify-between px-2'>
-              {moods.map((mood) => (
-                <button
-                  key={mood.id}
-                  type='button'
-                  onClick={() => handleMoodSelect(mood.id)}
-                  disabled={isSubmitting}
-                  className={cn(
-                    'flex flex-col items-center gap-1 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
-                    selectedMood === mood.id
-                      ? 'scale-110 bg-[var(--color-primary-pale)]'
-                      : 'hover:bg-[var(--color-body)]',
-                  )}
-                >
-                  <span className='text-2xl'>{mood.emoji}</span>
-                  <span
-                    className={cn(
-                      'text-[10px] font-medium',
-                      selectedMood === mood.id
-                        ? 'text-[var(--color-primary)]'
-                        : 'text-[var(--color-text-muted)]',
-                    )}
-                  >
-                    {t(mood.key)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className='space-y-3'>
-              {currentMotivos.map((motivo) => (
-                <button
-                  key={motivo.id}
-                  type='button'
-                  disabled={isSubmitting}
-                  onClick={() => toggleMotivo(motivo.id)}
-                  className={cn(
-                    'flex w-full cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-                    selectedMotivos.includes(motivo.id)
-                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-pale)]'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40',
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
-                      selectedMotivos.includes(motivo.id)
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]'
-                        : 'border-[var(--color-border)]',
-                    )}
-                  >
-                    {selectedMotivos.includes(motivo.id) && (
-                      <CheckIcon className='size-3 text-white' />
-                    )}
-                  </div>
-                  <span className='text-lg'>{motivo.emoji}</span>
-                  <span className='text-sm font-medium text-[var(--color-text)]'>
-                    {t(motivo.key)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className='space-y-6'>
-              <div className='flex items-center gap-2'>
-                <label className='text-sm font-medium text-[var(--color-text)]'>
-                  {t('contextoLabel')}
-                </label>
-                <div className='group relative'>
-                  <InfoIcon className='size-4 cursor-help text-[var(--color-text-muted)]' />
-                  <div className='absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded-[var(--radius-md)] bg-[var(--color-text)] px-3 py-2 text-xs text-[var(--color-card)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100'>
-                    {t('contextoTooltip')}
-                  </div>
-                </div>
-              </div>
-
-              <AppInput
-                placeholder={t('contextoPlaceholder')}
-                value={contexto}
-                disabled={isSubmitting}
-                onChange={(e) => {
-                  setSubmitError(null);
-                  setContexto(e.target.value);
-                }}
-              />
-            </div>
-          )}
+            <DialogDescription className='break-words leading-relaxed'>
+              {t('checkinDesc')}
+            </DialogDescription>
+          </DialogHeader>
         </div>
 
-        <DialogFooter>
-          {step > 1 && (
-            <AppButton
-              variant='outline'
-              onClick={handleBack}
-              disabled={isSubmitting}
-            >
-              {t('atras')}
-            </AppButton>
-          )}
+        <div className='min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6'>
+          <div className='flex min-w-0 flex-col gap-5'>
+            <div className='min-w-0 overflow-hidden'>
+              <StepIndicator
+                currentStep={step}
+                totalSteps={3}
+                labels={stepLabels}
+              />
+            </div>
 
-          {step < 3 ? (
-            <AppButton
-              variant='primary'
-              className='w-full'
-              disabled={isSubmitting || (step === 1 && !selectedMood)}
-              onClick={handleNext}
-            >
-              {t('siguiente')}
-            </AppButton>
-          ) : (
-            <AppButton
-              variant='primary'
-              className='w-full'
-              disabled={isSubmitting || !selectedMood}
-              onClick={handleGuardar}
-            >
-              {isSubmitting ? 'Guardando...' : t('guardar')}
-            </AppButton>
-          )}
+            {submitError && (
+              <div className='min-w-0 break-words rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm leading-relaxed text-[var(--color-danger-text)]'>
+                {submitError}
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className='grid min-w-0 grid-cols-5 gap-1 sm:gap-2'>
+                {moods.map((mood) => {
+                  const isSelected = selectedMood === mood.id;
+
+                  return (
+                    <button
+                      key={mood.id}
+                      type='button'
+                      onClick={() => handleMoodSelect(mood.id)}
+                      disabled={isSubmitting}
+                      className={cn(
+                        'flex min-w-0 flex-col items-center gap-1 rounded-[var(--radius-md)] px-1 py-2 text-center transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60',
+                        isSelected
+                          ? 'bg-[var(--color-primary-pale)] ring-2 ring-[var(--color-primary)]'
+                          : 'hover:bg-[var(--color-body)]',
+                      )}
+                    >
+                      <span className='text-2xl'>{mood.emoji}</span>
+
+                      <span
+                        className={cn(
+                          'max-w-full truncate text-[10px] font-medium sm:text-xs',
+                          isSelected
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-[var(--color-text-muted)]',
+                        )}
+                      >
+                        {t(mood.key)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className='min-w-0 space-y-3'>
+                {currentMotivos.map((motivo) => {
+                  const isSelected = selectedMotivos.includes(motivo.id);
+
+                  return (
+                    <button
+                      key={motivo.id}
+                      type='button'
+                      disabled={isSubmitting}
+                      onClick={() => toggleMotivo(motivo.id)}
+                      className={cn(
+                        'flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:px-4',
+                        isSelected
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary-pale)]'
+                          : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40',
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
+                          isSelected
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]'
+                            : 'border-[var(--color-border)]',
+                        )}
+                      >
+                        {isSelected && (
+                          <CheckIcon className='size-3 text-white' />
+                        )}
+                      </div>
+
+                      <span className='shrink-0 text-lg leading-none'>
+                        {motivo.emoji}
+                      </span>
+
+                      <span className='min-w-0 break-words text-sm font-medium leading-snug text-[var(--color-text)]'>
+                        {t(motivo.key)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className='min-w-0 space-y-4'>
+                <div className='min-w-0'>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    <label className='min-w-0 break-words text-sm font-medium text-[var(--color-text)]'>
+                      {t('contextoLabel')}
+                    </label>
+
+                    <InfoIcon className='size-4 shrink-0 text-[var(--color-text-muted)]' />
+                  </div>
+
+                  <p className='mt-1 break-words text-xs leading-relaxed text-[var(--color-text-muted)]'>
+                    {t('contextoTooltip')}
+                  </p>
+                </div>
+
+                <textarea
+                  placeholder={t('contextoPlaceholder')}
+                  value={contexto}
+                  disabled={isSubmitting}
+                  maxLength={500}
+                  onChange={(event) => {
+                    setSubmitError(null);
+                    setContexto(event.target.value);
+                  }}
+                  className='block min-h-28 w-full min-w-0 max-w-full resize-none rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] px-3 py-2 font-body text-base leading-relaxed text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm'
+                />
+
+                <p className='text-right text-xs text-[var(--color-text-muted)]'>
+                  {contexto.length}/500
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className='relative shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
+          <div className='flex w-full min-w-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end'>
+            {step > 1 && (
+              <AppButton
+                variant='outline'
+                onClick={handleBack}
+                disabled={isSubmitting}
+              >
+                {t('atras')}
+              </AppButton>
+            )}
+
+            {step < 3 ? (
+              <AppButton
+                variant='primary'
+                disabled={isSubmitting || (step === 1 && !selectedMood)}
+                onClick={handleNext}
+              >
+                {t('siguiente')}
+              </AppButton>
+            ) : (
+              <AppButton
+                variant='primary'
+                disabled={isSubmitting || !selectedMood}
+                onClick={handleGuardar}
+              >
+                {isSubmitting ? 'Guardando...' : t('guardar')}
+              </AppButton>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

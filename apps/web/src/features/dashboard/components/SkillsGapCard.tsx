@@ -17,7 +17,7 @@ function CircularProgress({ value }: { value: number }) {
   const offset = circumference - (value / 100) * circumference;
 
   return (
-    <div className='relative inline-flex items-center justify-center'>
+    <div className='relative inline-flex shrink-0 items-center justify-center'>
       <svg width='104' height='104' className='-rotate-90'>
         <circle
           cx='52'
@@ -61,21 +61,21 @@ export function SkillsGapCard({
   const resolvedPuesto = puesto ?? t('skillsGapFallbackPuesto');
 
   return (
-    <AppCard className='flex flex-col items-center gap-4 text-center'>
-      <h3 className='font-heading text-base font-bold text-[var(--color-text)]'>
+    <AppCard className='flex min-w-0 flex-col items-center gap-4 text-center'>
+      <h3 className='break-words font-heading text-base font-bold text-[var(--color-text)]'>
         {t('skillsGapTitle')}
       </h3>
 
       {isLoading ? (
         <>
           <div className='size-[104px] animate-pulse rounded-full bg-[var(--color-border)]' />
-          <div className='h-4 w-48 animate-pulse rounded bg-[var(--color-border)]' />
+          <div className='h-4 w-48 max-w-full animate-pulse rounded bg-[var(--color-border)]' />
         </>
       ) : hasGap ? (
         <>
           <CircularProgress value={porcentaje} />
 
-          <p className='text-sm text-[var(--color-text-muted)]'>
+          <p className='max-w-full break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
             {t('skillsGapDesc', {
               porcentaje,
               puesto: resolvedPuesto,
@@ -92,7 +92,7 @@ export function SkillsGapCard({
         </>
       ) : (
         <>
-          <p className='text-sm leading-6 text-[var(--color-text-muted)]'>
+          <p className='max-w-full break-words text-sm leading-6 text-[var(--color-text-muted)]'>
             {t('skillsGapEmptyDesc')}
           </p>
 

@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
@@ -13,7 +14,7 @@ import {
   User,
   Shapes,
 } from 'lucide-react';
-import { Link } from '@/src/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/src/i18n/navigation';
 import { cn } from '@/lib/utils';
 
 const navGroups = [
@@ -29,6 +30,8 @@ const navGroups = [
 interface Props {
   userName?: string;
   avatarUrl?: string | null;
+  className?: string;
+  onNavigate?: () => void;
 }
 
 function getInitials(name: string) {
@@ -44,21 +47,62 @@ function getInitials(name: string) {
   return initials || 'U';
 }
 
-export function AppSidebar({ userName, avatarUrl }: Props) {
+export function AppSidebar({
+  userName,
+  avatarUrl,
+  className,
+  onNavigate,
+}: Props) {
   const t = useTranslations('Dashboard');
   const tCommon = useTranslations('Common');
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const resolvedUserName = userName || t('profileFallbackName');
 
+  async function handleLogout() {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('onboarding_form_data');
+        localStorage.removeItem('onboarding_step');
+      }
+
+      onNavigate?.();
+
+      router.replace('/auth');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  }
+
   return (
-    <aside className='flex min-h-screen w-[var(--sidebar-width)] flex-col border-r border-[var(--color-border)] bg-[var(--color-card)]'>
-      <div className='flex items-center gap-2 border-b border-[var(--color-border)] px-6 py-5'>
+    <aside
+      className={cn(
+        'flex h-dvh w-[var(--sidebar-width)] shrink-0 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-card)]',
+        className,
+      )}
+    >
+      <div className='flex h-[72px] shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-6'>
         <span className='font-heading text-lg font-black text-[var(--color-text)]'>
           {tCommon('brand')}
         </span>
       </div>
 
-      <nav className='flex-1 px-4 py-3'>
+      <nav className='min-h-0 flex-1 overflow-y-auto px-4 py-3'>
         {navGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             {groupIndex > 0 && (
@@ -67,24 +111,37 @@ export function AppSidebar({ userName, avatarUrl }: Props) {
 
             <ul className='space-y-1.5'>
               {group.map((item) => {
+                const isActive =
+                  item.href !== '#' &&
+                  (pathname === item.href || pathname.startsWith(item.href));
+
                 const classes = cn(
-                  'flex items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium transition-all duration-200',
-                  item.href === '/dashboard'
+                  'flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium transition-colors duration-200',
+                  isActive
                     ? 'bg-[var(--color-primary)] text-white'
-                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:pl-5 hover:text-[var(--color-primary)]',
+                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]',
+                );
+
+                const content = (
+                  <>
+                    <item.icon className='size-5 shrink-0' />
+                    <span className='truncate'>{t(item.labelKey)}</span>
+                  </>
                 );
 
                 return (
                   <li key={item.labelKey}>
                     {item.href === '#' ? (
                       <a href={item.href} className={classes}>
-                        <item.icon className='size-5 shrink-0' />
-                        {t(item.labelKey)}
+                        {content}
                       </a>
                     ) : (
-                      <Link href={item.href} className={classes}>
-                        <item.icon className='size-5 shrink-0' />
-                        {t(item.labelKey)}
+                      <Link
+                        href={item.href}
+                        className={classes}
+                        onClick={onNavigate}
+                      >
+                        {content}
                       </Link>
                     )}
                   </li>
@@ -95,37 +152,42 @@ export function AppSidebar({ userName, avatarUrl }: Props) {
         ))}
       </nav>
 
-      <div className='border-t border-[var(--color-border)] px-4 py-3'>
+      <div className='shrink-0 border-t border-[var(--color-border)] px-4 py-3'>
         <a
           href='#'
-          className='flex items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-all duration-200 hover:bg-[var(--color-primary-pale)] hover:pl-5 hover:text-[var(--color-primary)]'
+          className='flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-200 hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
         >
           <User className='size-5 shrink-0' />
-          {t('miPerfil')}
+          <span className='truncate'>{t('miPerfil')}</span>
         </a>
       </div>
 
-      <div className='flex items-center gap-3 border-t border-[var(--color-border)] px-6 py-4'>
+      <div className='flex shrink-0 items-center gap-3 border-t border-[var(--color-border)] px-6 py-4'>
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={t('profileAvatarAlt', { nombre: resolvedUserName })}
-            className='size-10 rounded-full object-cover'
+            className='size-10 shrink-0 rounded-full object-cover'
           />
         ) : (
-          <div className='flex size-10 items-center justify-center rounded-full bg-[var(--color-primary-pale)] text-sm font-bold text-[var(--color-primary)]'>
+          <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-pale)] text-sm font-bold text-[var(--color-primary)]'>
             {getInitials(resolvedUserName)}
           </div>
         )}
 
-        <div className='flex min-w-0 flex-col'>
+        <div className='flex min-w-0 flex-1 flex-col'>
           <span className='truncate text-sm font-medium text-[var(--color-text)]'>
             {resolvedUserName}
           </span>
 
-          <span className='text-xs text-[var(--color-text-muted)]'>
-            {t('verPerfil')}
-          </span>
+          <button
+            type='button'
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className='w-fit max-w-full truncate text-left text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)] hover:underline disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            {isLoggingOut ? t('cerrandoSesion') : t('cerrarSesion')}
+          </button>
         </div>
       </div>
     </aside>
