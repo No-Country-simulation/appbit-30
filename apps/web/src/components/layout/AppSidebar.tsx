@@ -11,14 +11,19 @@ import {
   Users,
   Heart,
   User,
+  Shapes,
 } from 'lucide-react';
 import { Link } from '@/src/i18n/navigation';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS = [
-  { href: '/dashboard', labelKey: 'dashboard', icon: Home },
-  { href: '/empleabilidad', labelKey: 'empleabilidad', icon: Briefcase },
-  { href: '/playground', labelKey: 'playground', icon: Shapes },
+const navGroups = [
+  [
+    { href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
+    { href: '/empleabilidad', labelKey: 'empleabilidad', icon: Briefcase },
+  ],
+  [
+    { href: '/playground', labelKey: 'playground', icon: Shapes },
+  ],
 ] as const;
 
 interface Props {
