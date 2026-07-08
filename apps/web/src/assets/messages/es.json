@@ -505,21 +505,25 @@
   "Bienestar": {
     "title": "Tu Bienestar",
     "robotMensaje": "Estoy aquí para escucharte, sin juzgar.",
+    "subtituloSugerencias": "Es completamente normal sentirse abrumada hoy. Toma un respiro, aquí tienes algunas sugerencias suaves para el viaje:",
     "sugerencias": "Sugerencias para vos",
-    "sugerenciaPodcast": "Escuchar podcast relajante",
-    "sugerenciaContacto": "Contactar a un amigo",
-    "sugerenciaLectura": "Leer un artículo",
-    "trafficAlertTitle": "Alerta de CDRView",
-    "trafficAlertDesc": "Hay una manifestación en tu ruta habitual al trabajo. Podrías demorar hasta 40 minutos extra.",
+    "sugerenciaPodcast": "Podcast: Entiende tu Mente",
+    "sugerenciaPodcastDesc": "Episodio sobre el agobio",
+    "sugerenciaContacto": "Contacto natural",
+    "sugerenciaContactoDesc": "Caminar descalza 10 min",
+    "sugerenciaLectura": "Lectura",
+    "sugerenciaLecturaDesc": "El sutil arte...",
+    "trafficAlertTitle": "Alerta de Tráfico (CDRView)",
+    "trafficAlertDesc": "Detectamos alto congestionamiento en tu ruta habitual. El embotellamiento impacta directamente en el estrés. Aprovechá este tiempo muerto para vos.",
     "promedioSemanal": "Promedio semanal",
-    "promedioBajo": "Tu promedio de esta semana está bajo. Te recomendamos realizar actividades de autocuidado.",
+    "promedioBajo": "Tu promedio está un poco bajo esta semana. Recuerda priorizar tu descanso.",
     "desgloseMes": "Desglose del mes",
     "positivas": "Positivas",
     "neutras": "Neutras",
     "negativas": "Negativas",
     "ayudaUrgente": "¿Necesitas hablar con alguien urgente?",
-    "ayudaUrgenteDesc": "La línea de apoyo gratuita está disponible las 24 horas para escucharte y orientarte.",
+    "ayudaUrgenteDesc": "Si sientes que la situación te sobrepasa, no estás sola. Profesionales están listos para escucharte 24/7 de forma anónima y gratuita.",
     "lineaApoyo": "Línea de apoyo gratuita",
-    "llamar": "Llamar ahora"
+    "llamar": "Llamar a línea de apoyo"
   }
 }
