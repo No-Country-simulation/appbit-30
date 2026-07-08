@@ -12,9 +12,11 @@ import {
 import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
 
+export type SkillStatus = 'acquired' | 'in_progress' | 'missing';
+
 export interface SkillRow {
   habilidad: string;
-  estado: 'Adquirida' | 'En progreso' | 'Faltante';
+  estado: SkillStatus;
 }
 
 interface Props {
@@ -26,10 +28,16 @@ interface Props {
   isLoading?: boolean;
 }
 
-const badgeVariant = {
-  Adquirida: 'success' as const,
-  'En progreso': 'warning' as const,
-  Faltante: 'danger' as const,
+const badgeVariant: Record<SkillStatus, 'success' | 'warning' | 'danger'> = {
+  acquired: 'success',
+  in_progress: 'warning',
+  missing: 'danger',
+};
+
+const skillStatusLabelKey: Record<SkillStatus, string> = {
+  acquired: 'skillStatusAcquired',
+  in_progress: 'skillStatusInProgress',
+  missing: 'skillStatusMissing',
 };
 
 function CircularProgress({ value }: { value: number }) {
@@ -135,7 +143,7 @@ export function SkillsGapModal({
                       </p>
 
                       <AppBadge variant={badgeVariant[skill.estado]}>
-                        {skill.estado}
+                        {t(skillStatusLabelKey[skill.estado] as never)}
                       </AppBadge>
                     </div>
                   </div>
@@ -147,11 +155,11 @@ export function SkillsGapModal({
                   <table className='w-full table-fixed text-sm'>
                     <thead className='sticky top-0 z-10'>
                       <tr className='bg-[var(--color-body)] text-left text-xs font-semibold text-[var(--color-text-muted)]'>
-                        <th className='w-[70%] px-4 py-3'>
+                        <th className='w-[62%] px-4 py-3'>
                           {t('habilidadRequerida')}
                         </th>
 
-                        <th className='w-[30%] px-4 py-3'>{t('estado')}</th>
+                        <th className='w-[38%] px-4 py-3'>{t('estado')}</th>
                       </tr>
                     </thead>
 
@@ -164,7 +172,7 @@ export function SkillsGapModal({
 
                           <td className='px-4 py-3'>
                             <AppBadge variant={badgeVariant[skill.estado]}>
-                              {skill.estado}
+                              {t(skillStatusLabelKey[skill.estado] as never)}
                             </AppBadge>
                           </td>
                         </tr>
