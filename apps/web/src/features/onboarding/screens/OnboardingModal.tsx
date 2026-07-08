@@ -39,6 +39,9 @@ import {
 
 const SELECT_TRIGGER_CLASSES =
   'h-11 w-full min-w-0 max-w-full justify-between rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] px-3 py-2 font-body text-base leading-tight text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] sm:text-sm data-[size=default]:!h-11';
+const SIN_CONOCIMIENTO = 'Sin_conocimiento';
+const CON_CONOCIMIENTOS = 'Con_conocimientos';
+
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
 const NUMBERS_ONLY_REGEX = /^\d*$/;
 

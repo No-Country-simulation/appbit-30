@@ -125,6 +125,13 @@
     "ubicacionTrabajoOption3": "100% Remoto",
     "step3Greeting": "Seus objetivos e contexto 🚀",
     "step3Subtitle": "Passo 3 de 3 · Último passo!",
+    "nivelExperienciaTecnologiaLabel": "Nível de experiência em tecnologia",
+    "nivelExperienciaTecnologiaOption1": "Sem conhecimento",
+    "nivelExperienciaTecnologiaOption2": "Com conhecimentos",
+    "habilidadesTecnicasLabel": "Habilidades técnicas",
+    "habilidadesTecnicasHint": "(Escolha as que você tem)",
+    "habilidadesBlandasLabel": "Habilidades comportamentais",
+    "habilidadesBlandasHint": "(Escolha as que você tem)",
     "objetivosLabel": "Meus objetivos",
     "objetivosHint": "(Pode escolher todos que se aplicam)",
     "objetivosOption1": "Conseguir meu primeiro emprego em TI",
@@ -405,6 +412,9 @@
     "termsSentence": "Ao continuar, você aceita nossos Termos e Política de Privacidade."
   },
   "Dashboard": {
+    "dashboard": "Dashboard",
+    "empleabilidad": "Empregos",
+    "playground": "Playground",
     "heroBannerTitle": "Olá, {nombre}! 👋",
     "heroBannerDesc": "Você está a {cursos} cursos de desbloquear {vacantes} vagas compatíveis na sua zona.",
     "verVacantes": "Ver vagas",
