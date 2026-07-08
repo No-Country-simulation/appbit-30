@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { handle } from 'hono/vercel';
 import { cors } from 'hono/cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -135,6 +135,224 @@ function buildFallbackPlanItems(params: {
   ];
 }
 
+type LogLevel = 'info' | 'warn' | 'error';
+
+interface LogStructuredParams {
+  level: LogLevel;
+  route: string;
+  requestId: string;
+  message: string;
+  error?: unknown;
+  context?: Record<string, unknown>;
+}
+
+interface GeminiResponse {
+  gap_porcentual: number;
+  gap_items: {
+    habilidad: string;
+    nivel_requerido: string;
+    nivel_actual: string;
+  }[];
+  trayectoria_sugerida: string[];
+  plan_accion: {
+    titulo: string;
+    prioridad: string;
+    curso_sugerido: string | null;
+    accion_label: string;
+  }[];
+}
+
+function getRequestId(c: Context) {
+  return c.req.header('x-request-id') || crypto.randomUUID();
+}
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    const errorWithExtra = error as Error & {
+      code?: unknown;
+      status?: unknown;
+      statusCode?: unknown;
+      response?: unknown;
+      cause?: unknown;
+    };
+
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: errorWithExtra.code,
+      status: errorWithExtra.status,
+      statusCode: errorWithExtra.statusCode,
+      response: errorWithExtra.response,
+      cause:
+        errorWithExtra.cause instanceof Error
+          ? {
+              name: errorWithExtra.cause.name,
+              message: errorWithExtra.cause.message,
+              stack: errorWithExtra.cause.stack,
+            }
+          : errorWithExtra.cause,
+    };
+  }
+
+  return { message: String(error) };
+}
+
+function logStructured({
+  level,
+  route,
+  requestId,
+  message,
+  error,
+  context,
+}: LogStructuredParams) {
+  const payload = {
+    level,
+    route,
+    requestId,
+    timestamp: new Date().toISOString(),
+    message,
+    ...(error ? { error: serializeError(error) } : {}),
+    ...(context ? { context } : {}),
+  };
+
+  const line = JSON.stringify(payload);
+
+  if (level === 'error') {
+    console.error(line);
+    return;
+  }
+
+  if (level === 'warn') {
+    console.warn(line);
+    return;
+  }
+
+  console.info(line);
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function classifyGeminiError(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase();
+
+  const extra = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    code?: unknown;
+  };
+
+  const rawStatus = Number(extra.status ?? extra.statusCode ?? extra.code);
+
+  if (
+    rawStatus === 429 ||
+    message.includes('429') ||
+    message.includes('too many requests') ||
+    message.includes('rate limit') ||
+    message.includes('quota') ||
+    message.includes('resource exhausted')
+  ) {
+    return {
+      code: 'AI_PROVIDER_RATE_LIMIT',
+      status: 429,
+    };
+  }
+
+  if (
+    message.includes('timeout') ||
+    message.includes('aborted') ||
+    message.includes('abort')
+  ) {
+    return {
+      code: 'AI_PROVIDER_TIMEOUT',
+      status: 503,
+    };
+  }
+
+  return {
+    code: 'AI_PROVIDER_ERROR',
+    status: 502,
+  };
+}
+
+function toFiniteNumber(value: unknown) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return null;
+  }
+
+  return numberValue;
+}
+
+function areaLabel(area: string, locale?: string) {
+  const labels: Record<string, { es: string; pt: string }> = {
+    Data_Analytics: {
+      es: 'Data & Analytics',
+      pt: 'Data & Analytics',
+    },
+    Desarrollo_Web: {
+      es: 'Desarrollo Web',
+      pt: 'Desenvolvimento Web',
+    },
+    UX_UI_Design: {
+      es: 'UX / UI Design',
+      pt: 'UX / UI Design',
+    },
+    Ciberseguridad: {
+      es: 'Ciberseguridad',
+      pt: 'Cibersegurança',
+    },
+    Cloud_DevOps: {
+      es: 'Cloud & DevOps',
+      pt: 'Cloud & DevOps',
+    },
+    Inteligencia_Artificial: {
+      es: 'Inteligencia Artificial',
+      pt: 'Inteligência Artificial',
+    },
+    Marketing_Digital: {
+      es: 'Marketing Digital',
+      pt: 'Marketing Digital',
+    },
+    Product_Management: {
+      es: 'Product Management',
+      pt: 'Product Management',
+    },
+  };
+
+  const selectedLocale = locale === 'pt' ? 'pt' : 'es';
+
+  return labels[area]?.[selectedLocale] ?? area.replaceAll('_', ' ');
+}
+
+function buildFallbackTrayectoria(areasInteres: string[], locale?: string) {
+  if (areasInteres.length === 0) {
+    return [
+      locale === 'pt'
+        ? 'Perfil tecnológico inicial'
+        : 'Perfil tecnológico inicial',
+    ];
+  }
+
+  const labels = areasInteres
+    .slice(0, 2)
+    .map((area) => areaLabel(area, locale));
+  const suffix = areasInteres.length > 2 ? ` +${areasInteres.length - 2}` : '';
+
+  return [
+    locale === 'pt'
+      ? `Rota inicial em ${labels.join(' + ')}${suffix}`
+      : `Ruta inicial en ${labels.join(' + ')}${suffix}`,
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // POST /wellbeing/analyze
 // ---------------------------------------------------------------------------
@@ -241,19 +459,40 @@ Respuesta JSON estricta:
 // POST /api/onboarding
 // ---------------------------------------------------------------------------
 app.post('/api/onboarding', async (c) => {
+  const requestId = getRequestId(c);
+  const startedAt = Date.now();
+  let debugUserId = '';
+
   try {
     const body = await c.req.json();
 
     const validation = onboardingAIRequestSchema.safeParse(body);
     if (!validation.success) {
+      logStructured({
+        level: 'warn',
+        route: 'POST /api/onboarding',
+        requestId,
+        message: 'Invalid onboarding AI payload',
+        context: {
+          details: validation.error.format(),
+        },
+      });
+
       return c.json(
-        { error: 'Datos inválidos', details: validation.error.format() },
+        {
+          success: false,
+          requestId,
+          code: 'VALIDATION_ERROR',
+          error: 'Datos inválidos',
+          details: validation.error.format(),
+        },
         400,
       );
     }
 
     const data = validation.data;
     const userId = data.usuarioId;
+    debugUserId = userId;
 
     const usuario = await dbClient.usuarios.findUnique({
       where: { usuario_id: userId },
@@ -261,7 +500,25 @@ app.post('/api/onboarding', async (c) => {
     });
 
     if (!usuario) {
-      return c.json({ error: 'Usuario no encontrado' }, 404);
+      logStructured({
+        level: 'warn',
+        route: 'POST /api/onboarding',
+        requestId,
+        message: 'Usuario not found',
+        context: {
+          usuarioId: userId,
+        },
+      });
+
+      return c.json(
+        {
+          success: false,
+          requestId,
+          code: 'USER_NOT_FOUND',
+          error: 'Usuario no encontrado',
+        },
+        404,
+      );
     }
 
     const [habilidadesMercado, cursosDisponibles, existingUserSkills] =
@@ -331,6 +588,17 @@ app.post('/api/onboarding', async (c) => {
         nivel_requerido: 'Mercado',
         nivel_actual: 'Pendiente',
       }));
+
+    const fallbackPlanAccion = buildFallbackPlanItems({
+      fallbackGapItems,
+      cursosDisponibles,
+      locale: data.locale,
+    });
+
+    const fallbackTrayectoria = buildFallbackTrayectoria(
+      data.areasInteres,
+      data.locale,
+    );
 
     const prompt = `Actuá como asesor profesional de la App BiT para Latinoamérica.
 Generá el gemelo digital de este usuario basándote en su perfil y el mercado laboral disponible.
@@ -409,62 +677,72 @@ Respuesta JSON estricta, sin markdown:
   ]
 }`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(prompt);
+    let aiResponse: GeminiResponse | null = null;
+    let aiProviderStatus: 'ok' | 'fallback' = 'ok';
+    let fallbackReason: string | null = null;
 
-    interface GeminiResponse {
-      gap_porcentual: number;
-      gap_items: {
-        habilidad: string;
-        nivel_requerido: string;
-        nivel_actual: string;
-      }[];
-      trayectoria_sugerida: string[];
-      plan_accion: {
-        titulo: string;
-        prioridad: string;
-        curso_sugerido: string | null;
-        accion_label: string;
-      }[];
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is missing');
+      }
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContent(prompt);
+
+      aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
+    } catch (error) {
+      const classified = classifyGeminiError(error);
+
+      aiProviderStatus = 'fallback';
+      fallbackReason = classified.code;
+
+      logStructured({
+        level: 'error',
+        route: 'POST /api/onboarding',
+        requestId,
+        message:
+          'Gemini onboarding generation failed; using fallback recommendations',
+        error,
+        context: {
+          usuarioId: userId,
+          providerStatus: classified.status,
+          providerCode: classified.code,
+          locale: data.locale,
+          areasInteres: data.areasInteres,
+          durationMs: Date.now() - startedAt,
+        },
+      });
     }
 
-    const aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
-
-    const aiGapItems = Array.isArray(aiResponse.gap_items)
-      ? aiResponse.gap_items
-      : [];
+    const aiGapItems =
+      aiResponse && Array.isArray(aiResponse.gap_items)
+        ? aiResponse.gap_items
+        : [];
 
     const safeGapItems = aiGapItems.length > 0 ? aiGapItems : fallbackGapItems;
 
     const safeTrayectoriaSugerida =
+      aiResponse &&
       Array.isArray(aiResponse.trayectoria_sugerida) &&
       aiResponse.trayectoria_sugerida.length > 0
         ? aiResponse.trayectoria_sugerida.slice(0, 3)
-        : [
-            data.areasInteres[0]
-              ? `${data.areasInteres[0]} Jr`
-              : data.locale === 'pt'
-                ? 'Perfil tecnológico inicial'
-                : 'Perfil tecnológico inicial',
-          ];
+        : fallbackTrayectoria;
 
-    const aiPlanAccion = normalizePlanItems(
-      aiResponse.plan_accion,
-      data.locale,
-    );
-
-    const fallbackPlanAccion = buildFallbackPlanItems({
-      fallbackGapItems,
-      cursosDisponibles,
-      locale: data.locale,
-    });
+    const aiPlanAccion = aiResponse
+      ? normalizePlanItems(aiResponse.plan_accion, data.locale)
+      : [];
 
     const safePlanAccion =
       aiPlanAccion.length > 0 ? aiPlanAccion : fallbackPlanAccion;
 
+    const aiGapPercent = toFiniteNumber(aiResponse?.gap_porcentual);
+
+    const fallbackGapPercent =
+      data.nivel_inicial === 'sin_conocimiento' ? 100 : 50;
+
     const safeGapPorcentual = clampPercent(
-      data.gap_inicial ?? dbGapPorcentual ?? Number(aiResponse.gap_porcentual),
+      data.gap_inicial ?? dbGapPorcentual ?? aiGapPercent ?? fallbackGapPercent,
     );
 
     const cursoIdByExactTitle = new Map(
@@ -511,7 +789,7 @@ Respuesta JSON estricta, sin markdown:
             gap_items: safeGapItems as any,
             trayectoria_sugerida: safeTrayectoriaSugerida as any,
             vacantes_compatibles: [],
-            confianza: 0.85,
+            confianza: aiProviderStatus === 'ok' ? 0.85 : 0.55,
             idioma_respuesta:
               data.locale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es,
           },
@@ -534,20 +812,54 @@ Respuesta JSON estricta, sin markdown:
       },
     );
 
+    logStructured({
+      level: aiProviderStatus === 'ok' ? 'info' : 'warn',
+      route: 'POST /api/onboarding',
+      requestId,
+      message:
+        aiProviderStatus === 'ok'
+          ? 'AI onboarding recommendations generated'
+          : 'Fallback onboarding recommendations generated',
+      context: {
+        usuarioId: userId,
+        orientacionId: orientacion.orient.orientacion_id,
+        planAccionCount: orientacion.planCreados,
+        habilidadesCount: existingUserSkills.length,
+        aiProviderStatus,
+        fallbackReason,
+        durationMs: Date.now() - startedAt,
+      },
+    });
+
     return c.json({
       success: true,
+      requestId,
       usuarioId: userId,
       orientacionId: orientacion.orient.orientacion_id,
       planAccionCount: orientacion.planCreados,
       habilidadesCount: existingUserSkills.length,
+      aiProviderStatus,
+      fallbackReason,
     });
   } catch (error) {
-    console.error('Error en onboarding AI:', error);
+    logStructured({
+      level: 'error',
+      route: 'POST /api/onboarding',
+      requestId,
+      message: 'AI onboarding route failed',
+      error,
+      context: {
+        usuarioId: debugUserId,
+        durationMs: Date.now() - startedAt,
+      },
+    });
 
     return c.json(
       {
         success: false,
-        usuarioId: '',
+        requestId,
+        usuarioId: debugUserId,
+        code: 'AI_ONBOARDING_FAILED',
         error: 'Error al procesar onboarding',
       },
       500,

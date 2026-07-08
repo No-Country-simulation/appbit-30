@@ -1,6 +1,7 @@
-import { cn } from '@/lib/utils';
+'use client';
+
 import { CheckIcon } from 'lucide-react';
-import { Fragment } from 'react';
+import { cn } from '@/lib/utils';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -9,11 +10,18 @@ interface StepIndicatorProps {
   className?: string;
 }
 
-export function StepIndicator({ currentStep, totalSteps, labels, className }: StepIndicatorProps) {
-  const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
+export function StepIndicator({
+  currentStep,
+  totalSteps,
+  labels,
+  className,
+}: StepIndicatorProps) {
+  const steps = Array.from({ length: totalSteps }, (_, index) => index + 1);
 
   return (
-    <div className={cn('w-full min-w-0 overflow-hidden px-1 sm:px-3', className)}>
+    <div
+      className={cn('w-full min-w-0 overflow-hidden px-1 sm:px-3', className)}
+    >
       <div
         className='grid w-full min-w-0'
         style={{
@@ -23,16 +31,21 @@ export function StepIndicator({ currentStep, totalSteps, labels, className }: St
         {steps.map((stepNumber, index) => {
           const isCompleted = stepNumber < currentStep;
           const isCurrent = stepNumber === currentStep;
+          const isConnectorCompleted = stepNumber < currentStep;
+          const label = labels?.[index];
 
           return (
-            <Fragment key={stepNumber}>
-              {index > 0 && (
+            <div
+              key={stepNumber}
+              className='relative flex min-w-0 flex-col items-center text-center'
+            >
+              {index < totalSteps - 1 && (
                 <div
                   className={cn(
-                    'h-0.5 flex-1',
-                    stepNumber <= currentStep
+                    'absolute left-1/2 top-[18px] z-0 h-0.5 w-full',
+                    isConnectorCompleted
                       ? 'bg-[var(--color-primary)]'
-                      : 'bg-[var(--color-text-muted)]/30',
+                      : 'bg-[var(--color-border)]',
                   )}
                 />
               )}
@@ -49,20 +62,10 @@ export function StepIndicator({ currentStep, totalSteps, labels, className }: St
                     'border-[var(--color-border)] text-[var(--color-text-muted)]',
                 )}
               >
-                {isCompleted ? <CheckIcon className='size-5' /> : stepNumber}
+                {isCompleted ? <CheckIcon className='size-4' /> : stepNumber}
               </div>
-            </Fragment>
-          );
-        })}
-      </div>
 
-      <div className='flex w-full'>
-        {steps.map((stepNumber, index) => {
-          const isCurrent = stepNumber === currentStep;
-
-          return (
-            <div key={stepNumber} className='flex flex-1 justify-center'>
-              {labels?.[index] && (
+              {label && (
                 <span
                   className={cn(
                     'mt-2 block max-w-[80px] truncate text-center font-body text-[10px] font-semibold leading-tight sm:max-w-[120px] sm:text-xs',
@@ -70,9 +73,9 @@ export function StepIndicator({ currentStep, totalSteps, labels, className }: St
                       ? 'text-[var(--color-primary)]'
                       : 'text-[var(--color-text-muted)]',
                   )}
-                  title={labels[index]}
+                  title={label}
                 >
-                  {labels[index]}
+                  {label}
                 </span>
               )}
             </div>
