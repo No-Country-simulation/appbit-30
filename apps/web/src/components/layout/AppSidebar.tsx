@@ -63,8 +63,6 @@ export function AppSidebar({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
 
-  console.log('avatarUrl', avatarUrl);
-
   const resolvedUserName = userName || t('profileFallbackName');
 
   async function handleLogout() {
