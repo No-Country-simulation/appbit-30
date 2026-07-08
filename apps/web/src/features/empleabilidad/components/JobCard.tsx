@@ -93,7 +93,7 @@ export function JobCard({
       )}
 
       <AppButton
-        variant='primary'
+        variant='outline'
         className='w-full'
         onClick={(e) => {
           e.stopPropagation();

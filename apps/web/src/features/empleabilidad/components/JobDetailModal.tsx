@@ -42,7 +42,7 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[90vh] overflow-x-hidden overflow-y-auto sm:max-w-2xl'>
         {/* Header */}
-        <div className='rounded-t-xl bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] p-6 text-white -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 sm:px-8 sm:pt-8'>
+        <div className='rounded-t-xl bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] p-6 pb-8 text-white -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 sm:px-8 sm:pt-8 sm:pb-10'>
           <div className='flex items-start justify-between'>
             <div className='flex items-start gap-4'>
               <div className='flex size-16 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold backdrop-blur-sm sm:size-20 sm:text-3xl'>
@@ -75,11 +75,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
           </div>
         </div>
 
-        <div className='space-y-6 px-2'>
+        <div className='space-y-8 px-4 pt-6 pb-8 sm:px-6'>
           {/* Título + tags */}
           <div>
             <h3 className='text-2xl font-bold text-[var(--color-text)]'>{vacante.titulo}</h3>
-            <div className='mt-3 flex flex-wrap gap-2'>
+            <div className='mt-4 flex flex-wrap gap-2'>
               <span className='inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700'>
                 📊 {vacante.area}
               </span>
@@ -92,9 +92,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
             </div>
           </div>
 
+          <hr className='border-[var(--color-border)] opacity-50' />
+
           {/* Descripción */}
           <div>
-            <h4 className='mb-2 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
+            <h4 className='mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
               {t('descripcionBusqueda')}
             </h4>
             <p className='text-sm leading-relaxed text-[var(--color-text-muted)]'>
@@ -102,13 +104,15 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
             </p>
           </div>
 
+          <hr className='border-[var(--color-border)] opacity-50' />
+
           {/* Grid 2x2 */}
-          <div className='grid grid-cols-2 gap-4'>
-            <div className='rounded-xl border border-[var(--color-border)] p-4'>
-              <p className='mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+          <div className='grid grid-cols-2 gap-5'>
+            <div className='rounded-xl border border-[var(--color-border)] p-5'>
+              <p className='mb-3 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
                 🎓 {t('educacionRequerida')}
               </p>
-              <div className='flex flex-wrap gap-1.5'>
+              <div className='flex flex-wrap gap-2'>
                 {vacante.educacionRequerida.map((item) => (
                   <span
                     key={item}
@@ -119,11 +123,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
                 ))}
               </div>
             </div>
-            <div className='rounded-xl border border-[var(--color-border)] p-4'>
-              <p className='mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+            <div className='rounded-xl border border-[var(--color-border)] p-5'>
+              <p className='mb-3 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
                 💼 {t('experienciaSolicitada')}
               </p>
-              <div className='flex flex-wrap gap-1.5'>
+              <div className='flex flex-wrap gap-2'>
                 {vacante.experienciaSolicitada.map((item) => (
                   <span
                     key={item}
@@ -134,11 +138,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
                 ))}
               </div>
             </div>
-            <div className='rounded-xl border border-[var(--color-border)] p-4'>
-              <p className='mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+            <div className='rounded-xl border border-[var(--color-border)] p-5'>
+              <p className='mb-3 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
                 🌐 {t('idioma')}
               </p>
-              <div className='flex flex-wrap gap-1.5'>
+              <div className='flex flex-wrap gap-2'>
                 {vacante.idioma.map((item) => (
                   <span
                     key={item}
@@ -149,11 +153,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
                 ))}
               </div>
             </div>
-            <div className='rounded-xl border border-[var(--color-border)] p-4'>
-              <p className='mb-2 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+            <div className='rounded-xl border border-[var(--color-border)] p-5'>
+              <p className='mb-3 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
                 🕐 {t('jornada')}
               </p>
-              <div className='flex flex-wrap gap-1.5'>
+              <div className='flex flex-wrap gap-2'>
                 {vacante.jornada.map((item) => (
                   <span
                     key={item}
@@ -166,9 +170,11 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
             </div>
           </div>
 
+          <hr className='border-[var(--color-border)] opacity-50' />
+
           {/* Ubicación / Modalidad */}
-          <div className='rounded-xl border border-[var(--color-border)] p-4'>
-            <p className='mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
+          <div className='rounded-xl border border-[var(--color-border)] p-5'>
+            <p className='mb-4 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
               📍 {t('ubicacionModalidad')}
             </p>
             <div className='flex flex-wrap items-center gap-4 text-sm text-[var(--color-text-muted)]'>
@@ -191,17 +197,21 @@ export function JobDetailModal({ open, onOpenChange, vacante, onPostular }: Prop
             </div>
           </div>
 
+          <hr className='border-[var(--color-border)] opacity-50' />
+
           {/* Análisis de compatibilidad */}
           <div>
-            <h4 className='mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
+            <h4 className='mb-4 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
               {t('analisisCompatibilidad')}
             </h4>
             <SkillCompatibilityList skills={vacante.skills} />
           </div>
 
+          <hr className='border-[var(--color-border)] opacity-50' />
+
           {/* Postúlate ahora */}
           <div>
-            <h4 className='mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
+            <h4 className='mb-4 text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
               {t('postulateAhora')}
             </h4>
             <PostulationForm onSubmit={onPostular} />

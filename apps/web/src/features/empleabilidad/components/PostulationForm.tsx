@@ -20,7 +20,7 @@ export function PostulationForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-4'>
+    <form onSubmit={handleSubmit} className='space-y-5'>
       <div>
         <label className='mb-2 block text-sm font-semibold text-[var(--color-text)]'>
           {t('porQueInteresa')}

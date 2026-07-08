@@ -11,7 +11,7 @@ export function SkillCompatibilityList({ skills }: Props) {
   const t = useTranslations('Empleabilidad');
 
   return (
-    <div className='space-y-3'>
+    <div className='space-y-4'>
       {skills.map((skill) => (
         <div
           key={skill.nombre}

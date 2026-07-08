@@ -27,8 +27,8 @@ export function TabBar({ tabs, activeTab, onTabChange }: Props) {
         >
           {tab.label}
           {tab.count != null && (
-            <span className='ml-1.5 rounded-full bg-[var(--color-primary-pale)] px-2 py-0.5 text-xs'>
-              {tab.count}
+            <span className='ml-0.5'>
+              ({tab.count})
             </span>
           )}
         </button>

@@ -57,6 +57,9 @@ interface FormData {
   areasInteres: string[];
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
+  nivelExperienciaTecnologia: string;
+  habilidadesTecnicas: string[];
+  habilidadesBlandas: string[];
   ubicacionTrabajo: string;
   objetivos: string[];
   dispositivos: string[];
@@ -77,6 +80,9 @@ const INITIAL_FORM_DATA: FormData = {
   areasInteres: [],
   idiomas: [],
   disponibilidad: [],
+  nivelExperienciaTecnologia: '',
+  habilidadesTecnicas: [],
+  habilidadesBlandas: [],
   ubicacionTrabajo: '',
   objetivos: [],
   dispositivos: [],
@@ -466,17 +472,15 @@ export function OnboardingModal({
   ];
 
   const currentGreeting =
-    step === 1
-      ? t('step1Greeting')
-      : step === 2
-        ? t('step2Greeting')
-        : t('step3Greeting');
+    step === 1 ? t('step1Greeting')
+    : step === 2 ? t('step2Greeting')
+    : step === 3 ? t('step3Greeting')
+    : t('step4Greeting');
   const currentSubtitle =
-    step === 1
-      ? t('step1Subtitle')
-      : step === 2
-        ? t('step2Subtitle')
-        : t('step3Subtitle');
+    step === 1 ? t('step1Subtitle')
+    : step === 2 ? t('step2Subtitle')
+    : step === 3 ? t('step3Subtitle')
+    : t('step4Subtitle');
 
   const selectedMarketAreas = formData.areasInteres.filter(isAreaInteresValue);
 
