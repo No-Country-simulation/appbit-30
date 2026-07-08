@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 import { AppCard } from '@/src/components/app/AppCard';
-import { ProgressBar } from '@/src/components/app/ProgressBar';
 
 export function PromedioSemanal() {
   const t = useTranslations('Bienestar');
@@ -16,7 +15,9 @@ export function PromedioSemanal() {
         <span className='mb-1 text-sm text-[var(--color-text-muted)]'>/ 10</span>
       </div>
 
-      <ProgressBar value={31} className='bg-gray-200' barClassName='bg-violet-500' />
+      <div className='h-2 w-full rounded-full bg-gray-200'>
+        <div className='h-full w-[31%] rounded-full bg-violet-500' />
+      </div>
 
       <p className='text-sm leading-relaxed text-[var(--color-text-muted)]'>
         {t('promedioBajo')}
