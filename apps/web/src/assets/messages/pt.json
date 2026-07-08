@@ -494,7 +494,10 @@
     "cerrarSesion": "Sair",
     "cerrandoSesion": "Saindo...",
     "checkinAlreadyDoneToday": "Você já registrou seu check-in de bem-estar hoje. Volte amanhã para registrar outro.",
-    "todayCheckinRegistered": "Registro de hoje: {mood}"
+    "todayCheckinRegistered": "Registro de hoje: {mood}",
+    "skillStatusAcquired": "Adquirida",
+    "skillStatusInProgress": "Em progresso",
+    "skillStatusMissing": "Faltante"
   },
   "Error": {
     "title": "Serviço temporariamente indisponível",

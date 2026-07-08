@@ -385,6 +385,14 @@ export async function GET(request: Request) {
     const userSkills =
       userSkillsResult.status === 'fulfilled' ? userSkillsResult.value : [];
 
+    const areasInteres = Array.from(
+      new Set(
+        userSkills
+          .map((skill) => skill.habilidad.area_principal)
+          .filter((area): area is NonNullable<typeof area> => Boolean(area)),
+      ),
+    );
+
     const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
 
     const ubicacionCompleted = Boolean(
@@ -452,6 +460,7 @@ export async function GET(request: Request) {
         confianza: usuario.confianza != null ? Number(usuario.confianza) : null,
         home_cluster: usuario.home_cluster,
       },
+      areasInteres,
       orientacion:
         gapPorcentual != null
           ? {

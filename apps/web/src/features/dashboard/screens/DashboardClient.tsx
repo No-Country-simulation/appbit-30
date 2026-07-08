@@ -63,6 +63,32 @@ function compactAreaList(labels: string[]) {
   return `${labels.slice(0, 2).join(' + ')} +${labels.length - 2}`;
 }
 
+function normalizeSkillStatus(status: string): SkillRow['estado'] {
+  if (status === 'Adquirida' || status === 'acquired') {
+    return 'acquired';
+  }
+
+  if (
+    status === 'En progreso' ||
+    status === 'En_progreso' ||
+    status === 'in_progress'
+  ) {
+    return 'in_progress';
+  }
+
+  if (status === 'Faltante' || status === 'missing') {
+    return 'missing';
+  }
+
+  return 'missing';
+}
+
+const SKILL_STATUS_ORDER: Record<SkillRow['estado'], number> = {
+  missing: 0,
+  in_progress: 1,
+  acquired: 2,
+};
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
@@ -249,38 +275,58 @@ export default function DashboardClient({
       ? clampPercent(100 - Number(orientacionGapPorcentual))
       : skillsMatchFromUserSkills;
 
+  const areaValuesFromDashboard = data?.areasInteres ?? [];
+
+  const areaValuesFromSkills = Array.from(
+    new Set(
+      (skillsData?.habilidades ?? [])
+        .map((skill) => skill.area_principal)
+        .filter((area): area is string => Boolean(area)),
+    ),
+  );
+
+  const selectedAreaValues =
+    areaValuesFromDashboard.length > 0
+      ? areaValuesFromDashboard
+      : areaValuesFromSkills;
+
+  const selectedAreaLabels = selectedAreaValues.map((area) => {
+    const labelKey = AREA_LABEL_KEYS[area as keyof typeof AREA_LABEL_KEYS];
+
+    return labelKey ? tOnboarding(labelKey as never) : formatAreaValue(area);
+  });
+
   const aiSuggestedRole = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
     : Array.isArray(skillsData?.orientacion?.trayectoria_sugerida)
       ? (skillsData.orientacion.trayectoria_sugerida[0] as string | undefined)
       : undefined;
 
-  const selectedAreaLabels = Array.from(
-    new Set(
-      (skillsData?.habilidades ?? [])
-        .map((skill) => skill.area_principal)
-        .filter((area): area is string => Boolean(area))
-        .map((area) => {
-          const labelKey =
-            AREA_LABEL_KEYS[area as keyof typeof AREA_LABEL_KEYS];
-
-          return labelKey
-            ? tOnboarding(labelKey as never)
-            : formatAreaValue(area);
-        }),
-    ),
-  );
-
   const skillsPuesto =
     selectedAreaLabels.length > 1
       ? compactAreaList(selectedAreaLabels)
-      : (aiSuggestedRole ?? selectedAreaLabels[0]);
+      : (selectedAreaLabels[0] ??
+        aiSuggestedRole ??
+        t('skillsGapFallbackPuesto'));
 
   const skillsRows: SkillRow[] =
-    skillsData?.habilidades?.map((h) => ({
-      habilidad: h.nombre,
-      estado: h.estado as SkillRow['estado'],
-    })) ?? [];
+    skillsData?.habilidades
+      ?.map((h) => ({
+        habilidad: h.nombre,
+        estado: normalizeSkillStatus(h.estado),
+      }))
+      .sort((a, b) => {
+        const statusDiff =
+          SKILL_STATUS_ORDER[a.estado] - SKILL_STATUS_ORDER[b.estado];
+
+        if (statusDiff !== 0) {
+          return statusDiff;
+        }
+
+        return a.habilidad.localeCompare(b.habilidad, undefined, {
+          sensitivity: 'base',
+        });
+      }) ?? [];
 
   const perfilCompletado = isLoadingDashboard
     ? undefined
