@@ -26,7 +26,7 @@ const navGroups = [
     { labelKey: 'navExperiencias', icon: Star, href: '#' },
     { labelKey: 'navMentorias', icon: Users, href: '#' },
   ],
-  [{ labelKey: 'navBienestar', icon: Heart, href: '#' }],
+  [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
 
 interface Props {
