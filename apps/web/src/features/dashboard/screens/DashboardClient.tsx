@@ -40,14 +40,65 @@ function hasGeneratedRecommendations(dashboard: DashboardResponse) {
   return dashboard.planAccion.length > 0;
 }
 
+const AREA_LABEL_KEYS = {
+  Data_Analytics: 'areasInteresOption1',
+  Desarrollo_Web: 'areasInteresOption2',
+  UX_UI_Design: 'areasInteresOption3',
+  Ciberseguridad: 'areasInteresOption4',
+  Cloud_DevOps: 'areasInteresOption5',
+  Inteligencia_Artificial: 'areasInteresOption6',
+  Marketing_Digital: 'areasInteresOption7',
+  Product_Management: 'areasInteresOption8',
+} as const;
+
+function formatAreaValue(area: string) {
+  return area.replaceAll('_', ' ');
+}
+
+function compactAreaList(labels: string[]) {
+  if (labels.length <= 2) {
+    return labels.join(' + ');
+  }
+
+  return `${labels.slice(0, 2).join(' + ')} +${labels.length - 2}`;
+}
+
+function normalizeSkillStatus(status: string): SkillRow['estado'] {
+  if (status === 'Adquirida' || status === 'acquired') {
+    return 'acquired';
+  }
+
+  if (
+    status === 'En progreso' ||
+    status === 'En_progreso' ||
+    status === 'in_progress'
+  ) {
+    return 'in_progress';
+  }
+
+  if (status === 'Faltante' || status === 'missing') {
+    return 'missing';
+  }
+
+  return 'missing';
+}
+
+const SKILL_STATUS_ORDER: Record<SkillRow['estado'], number> = {
+  missing: 0,
+  in_progress: 1,
+  acquired: 2,
+};
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
 }: Props) {
   const t = useTranslations('Dashboard');
+  const tOnboarding = useTranslations('Onboarding');
 
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
 
   const [onboardingCompletedClient, setOnboardingCompletedClient] =
     useState(false);
@@ -67,6 +118,23 @@ export default function DashboardClient({
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
   const [checkinModalKey, setCheckinModalKey] = useState(0);
 
+  const loadSkills = useCallback(async () => {
+    if (skillsData || isLoadingSkills) {
+      return;
+    }
+
+    setIsLoadingSkills(true);
+
+    try {
+      const skills = await fetchJson<SkillsResponse>('/api/skills');
+      setSkillsData(skills);
+    } catch (error) {
+      console.error('Error fetching skills data:', error);
+    } finally {
+      setIsLoadingSkills(false);
+    }
+  }, [skillsData, isLoadingSkills]);
+
   const loadDashboard = useCallback(
     async (
       options: {
@@ -83,17 +151,13 @@ export default function DashboardClient({
 
       try {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          const [dash, skills] = await Promise.all([
-            fetchJson<DashboardResponse>(
-              `/api/dashboard?timezone=${encodeURIComponent(
-                Intl.DateTimeFormat().resolvedOptions().timeZone,
-              )}`,
-            ),
-            fetchJson<SkillsResponse>('/api/skills'),
-          ]);
+          const dash = await fetchJson<DashboardResponse>(
+            `/api/dashboard?timezone=${encodeURIComponent(
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
+            )}`,
+          );
 
           setData(dash);
-          setSkillsData(skills);
           setDashboardError(false);
 
           if (
@@ -211,17 +275,58 @@ export default function DashboardClient({
       ? clampPercent(100 - Number(orientacionGapPorcentual))
       : skillsMatchFromUserSkills;
 
-  const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
+  const areaValuesFromDashboard = data?.areasInteres ?? [];
+
+  const areaValuesFromSkills = Array.from(
+    new Set(
+      (skillsData?.habilidades ?? [])
+        .map((skill) => skill.area_principal)
+        .filter((area): area is string => Boolean(area)),
+    ),
+  );
+
+  const selectedAreaValues =
+    areaValuesFromDashboard.length > 0
+      ? areaValuesFromDashboard
+      : areaValuesFromSkills;
+
+  const selectedAreaLabels = selectedAreaValues.map((area) => {
+    const labelKey = AREA_LABEL_KEYS[area as keyof typeof AREA_LABEL_KEYS];
+
+    return labelKey ? tOnboarding(labelKey as never) : formatAreaValue(area);
+  });
+
+  const aiSuggestedRole = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
     : Array.isArray(skillsData?.orientacion?.trayectoria_sugerida)
       ? (skillsData.orientacion.trayectoria_sugerida[0] as string | undefined)
       : undefined;
 
+  const skillsPuesto =
+    selectedAreaLabels.length > 1
+      ? compactAreaList(selectedAreaLabels)
+      : (selectedAreaLabels[0] ??
+        aiSuggestedRole ??
+        t('skillsGapFallbackPuesto'));
+
   const skillsRows: SkillRow[] =
-    skillsData?.habilidades?.map((h) => ({
-      habilidad: h.nombre,
-      estado: h.estado as SkillRow['estado'],
-    })) ?? [];
+    skillsData?.habilidades
+      ?.map((h) => ({
+        habilidad: h.nombre,
+        estado: normalizeSkillStatus(h.estado),
+      }))
+      .sort((a, b) => {
+        const statusDiff =
+          SKILL_STATUS_ORDER[a.estado] - SKILL_STATUS_ORDER[b.estado];
+
+        if (statusDiff !== 0) {
+          return statusDiff;
+        }
+
+        return a.habilidad.localeCompare(b.habilidad, undefined, {
+          sensitivity: 'base',
+        });
+      }) ?? [];
 
   const perfilCompletado = isLoadingDashboard
     ? undefined
@@ -272,7 +377,10 @@ export default function DashboardClient({
               porcentaje={skillsMatchPorcentaje}
               puesto={skillsPuesto}
               isLoading={isLoadingDashboard}
-              onVerDetalles={() => setSkillsModalOpen(true)}
+              onVerDetalles={() => {
+                setSkillsModalOpen(true);
+                void loadSkills();
+              }}
             />
           </div>
 
@@ -314,11 +422,17 @@ export default function DashboardClient({
 
       <SkillsGapModal
         open={skillsModalOpen}
-        onOpenChange={setSkillsModalOpen}
+        onOpenChange={(nextOpen) => {
+          setSkillsModalOpen(nextOpen);
+
+          if (nextOpen) {
+            void loadSkills();
+          }
+        }}
         puesto={skillsPuesto}
         porcentaje={skillsMatchPorcentaje}
         skills={skillsRows}
-        isLoading={isLoadingDashboard}
+        isLoading={isLoadingDashboard || isLoadingSkills}
       />
 
       <CheckinModal

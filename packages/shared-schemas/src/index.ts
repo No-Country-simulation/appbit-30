@@ -258,6 +258,7 @@ export const dashboardResponseSchema = z.object({
     confianza: z.number().nullable(),
     home_cluster: z.string().nullable(),
   }),
+  areasInteres: z.array(z.string()).optional(),
   orientacion: z
     .object({
       gap_porcentual: z.number(),
