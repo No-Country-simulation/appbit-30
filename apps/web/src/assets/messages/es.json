@@ -501,5 +501,25 @@
     "description": "No pudimos verificar tu sesión en este momento. Puede ser un problema temporal de conexión o del servicio.",
     "retry": "Intentar de nuevo",
     "goToLogin": "Ir a iniciar sesión"
+  },
+  "Bienestar": {
+    "title": "Tu Bienestar",
+    "robotMensaje": "Estoy aquí para escucharte, sin juzgar.",
+    "sugerencias": "Sugerencias para vos",
+    "sugerenciaPodcast": "Escuchar podcast relajante",
+    "sugerenciaContacto": "Contactar a un amigo",
+    "sugerenciaLectura": "Leer un artículo",
+    "trafficAlertTitle": "Alerta de CDRView",
+    "trafficAlertDesc": "Hay una manifestación en tu ruta habitual al trabajo. Podrías demorar hasta 40 minutos extra.",
+    "promedioSemanal": "Promedio semanal",
+    "promedioBajo": "Tu promedio de esta semana está bajo. Te recomendamos realizar actividades de autocuidado.",
+    "desgloseMes": "Desglose del mes",
+    "positivas": "Positivas",
+    "neutras": "Neutras",
+    "negativas": "Negativas",
+    "ayudaUrgente": "¿Necesitas hablar con alguien urgente?",
+    "ayudaUrgenteDesc": "La línea de apoyo gratuita está disponible las 24 horas para escucharte y orientarte.",
+    "lineaApoyo": "Línea de apoyo gratuita",
+    "llamar": "Llamar ahora"
   }
 }

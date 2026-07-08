@@ -501,5 +501,25 @@
     "description": "Não conseguimos verificar sua sessão neste momento. Pode ser um problema temporário de conexão ou do serviço.",
     "retry": "Tentar novamente",
     "goToLogin": "Ir para o login"
+  },
+  "Bienestar": {
+    "title": "Seu Bem-estar",
+    "robotMensaje": "Estou aqui para ouvir você, sem julgamentos.",
+    "sugerencias": "Sugestões para você",
+    "sugerenciaPodcast": "Ouvir podcast relaxante",
+    "sugerenciaContacto": "Contatar um amigo",
+    "sugerenciaLectura": "Ler um artigo",
+    "trafficAlertTitle": "Alerta de CDRView",
+    "trafficAlertDesc": "Há uma manifestação em sua rota habitual para o trabalho. Você pode demorar até 40 minutos extras.",
+    "promedioSemanal": "Média semanal",
+    "promedioBajo": "Sua média desta semana está baixa. Recomendamos atividades de autocuidado.",
+    "desgloseMes": "Detalhamento do mês",
+    "positivas": "Positivas",
+    "neutras": "Neutras",
+    "negativas": "Negativas",
+    "ayudaUrgente": "Precisa falar com alguém urgente?",
+    "ayudaUrgenteDesc": "A linha de apoio gratuita está disponível 24 horas para ouvir e orientar você.",
+    "lineaApoyo": "Linha de apoio gratuita",
+    "llamar": "Ligar agora"
   }
 }
