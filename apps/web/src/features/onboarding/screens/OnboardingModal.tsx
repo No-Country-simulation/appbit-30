@@ -24,6 +24,9 @@ import {
   ChoiceChip,
   CountryCodeSelect,
   StepIndicator,
+  AppDateInput,
+  getLocalTodayIso,
+  isValidIsoDate,
 } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
 import { FieldError } from '@/src/features/onboarding/components';
@@ -262,7 +265,14 @@ export function OnboardingModal({
   function isStepValid(): boolean {
     const d = formData;
     if (step === 1) {
-      return !!d.fechaNacimiento && !!d.genero && !!d.pais && !!d.ciudad;
+      return (
+        isValidIsoDate(d.fechaNacimiento, {
+          maxDate: getLocalTodayIso(),
+        }) &&
+        !!d.genero &&
+        !!d.pais &&
+        !!d.ciudad
+      );
     }
     if (step === 2) {
       return (
@@ -477,6 +487,12 @@ export function OnboardingModal({
 
   const selectedMarketAreas = formData.areasInteres.filter(isAreaInteresValue);
 
+  const todayIso = getLocalTodayIso();
+
+  const isFechaNacimientoValid = isValidIsoDate(formData.fechaNacimiento, {
+    maxDate: todayIso,
+  });
+
   return (
     <>
       {children && (
@@ -541,20 +557,21 @@ export function OnboardingModal({
                     <div className='space-y-4'>
                       <div>
                         <Body>{t('fechaNacimientoLabel')}</Body>
-                        <AppInput
-                          type='date'
+
+                        <AppDateInput
                           value={formData.fechaNacimiento}
-                          onChange={(e) => {
+                          maxDate={todayIso}
+                          onChange={(value) => {
                             setFormData((prev) => ({
                               ...prev,
-                              fechaNacimiento: e.target.value,
+                              fechaNacimiento: value,
                             }));
                             setShowErrors(false);
                           }}
-                          max={new Date().toISOString().split('T')[0]}
                         />
+
                         <FieldError
-                          show={showErrors && !formData.fechaNacimiento}
+                          show={showErrors && !isFechaNacimientoValid}
                         />
                       </div>
 

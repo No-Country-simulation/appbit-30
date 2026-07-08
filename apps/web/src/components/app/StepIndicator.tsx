@@ -1,66 +1,81 @@
-import { cn } from '@/lib/utils';
+'use client';
+
 import { CheckIcon } from 'lucide-react';
-import { Fragment } from 'react';
+import { cn } from '@/lib/utils';
 
 interface StepIndicatorProps {
   currentStep: number;
   totalSteps: number;
   labels?: string[];
+  className?: string;
 }
 
-export function StepIndicator({ currentStep, totalSteps, labels }: StepIndicatorProps) {
+export function StepIndicator({
+  currentStep,
+  totalSteps,
+  labels,
+  className,
+}: StepIndicatorProps) {
+  const steps = Array.from({ length: totalSteps }, (_, index) => index + 1);
+
   return (
-    <div className='flex w-full flex-col'>
-      <div className='flex w-full items-center'>
-        {Array.from({ length: totalSteps }, (_, i) => {
-          const step = i + 1;
-          const isCompleted = step < currentStep;
-          const isActive = step === currentStep;
+    <div
+      className={cn('w-full min-w-0 overflow-hidden px-1 sm:px-3', className)}
+    >
+      <div
+        className='grid w-full min-w-0'
+        style={{
+          gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))`,
+        }}
+      >
+        {steps.map((stepNumber, index) => {
+          const isCompleted = stepNumber < currentStep;
+          const isCurrent = stepNumber === currentStep;
+          const isConnectorCompleted = stepNumber < currentStep;
+          const label = labels?.[index];
 
           return (
-            <Fragment key={step}>
-              {i > 0 && (
+            <div
+              key={stepNumber}
+              className='relative flex min-w-0 flex-col items-center text-center'
+            >
+              {index < totalSteps - 1 && (
                 <div
                   className={cn(
-                    'h-0.5 flex-1',
-                    step <= currentStep
+                    'absolute left-1/2 top-[18px] z-0 h-0.5 w-full',
+                    isConnectorCompleted
                       ? 'bg-[var(--color-primary)]'
-                      : 'bg-[var(--color-text-muted)]/30',
+                      : 'bg-[var(--color-border)]',
                   )}
                 />
               )}
 
               <div
                 className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-sm font-semibold transition-all duration-300',
-                  isCompleted && 'bg-[var(--color-success)] text-white',
-                  isActive && 'bg-[var(--color-primary)] text-white',
-                  !isCompleted && !isActive &&
-                    'border-2 border-[var(--color-text-muted)]/30 bg-transparent text-[var(--color-text-muted)]',
+                  'relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-[var(--color-card)] font-body text-sm font-bold transition-colors duration-200',
+                  isCompleted &&
+                    'border-[var(--color-success)] bg-[var(--color-success)] text-white',
+                  isCurrent &&
+                    'border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[0_4px_14px_rgba(124,58,237,.25)]',
+                  !isCompleted &&
+                    !isCurrent &&
+                    'border-[var(--color-border)] text-[var(--color-text-muted)]',
                 )}
               >
-                {isCompleted ? <CheckIcon className='size-5' /> : step}
+                {isCompleted ? <CheckIcon className='size-4' /> : stepNumber}
               </div>
-            </Fragment>
-          );
-        })}
-      </div>
 
-      <div className='flex w-full'>
-        {Array.from({ length: totalSteps }, (_, i) => {
-          const step = i + 1;
-          const isActive = step === currentStep;
-
-          return (
-            <div key={step} className='flex flex-1 justify-center'>
-              {labels?.[i] && (
+              {label && (
                 <span
                   className={cn(
-                    'mt-2 text-xs font-medium transition-colors',
-                    isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]',
+                    'mt-2 block max-w-[80px] truncate text-center font-body text-[10px] font-semibold leading-tight sm:max-w-[120px] sm:text-xs',
+                    isCurrent
+                      ? 'text-[var(--color-primary)]'
+                      : 'text-[var(--color-text-muted)]',
                   )}
+                  title={label}
                 >
-                  {labels[i]}
+                  {label}
                 </span>
               )}
             </div>

@@ -8,3 +8,4 @@ export * from './ChoiceChip';
 export * from './StepIndicator';
 export * from './CountryCodeSelect';
 export * from './TabBar';
+export * from './AppDateInput';
