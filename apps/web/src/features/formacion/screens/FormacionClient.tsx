@@ -10,79 +10,143 @@ import { ModulesGrid } from '../components/ModulesGrid';
 import { ModuleCardItem } from '../components/ModuleCardItem';
 import { PaidCoursesSection } from '../components/PaidCoursesSection';
 import { PaidCourseCard } from '../components/PaidCourseCard';
-import { ExternalCourseValidation } from '../components/ExternalCourseValidation';
 import { CertificadoExternoModal } from '../components/CertificadoExternoModal';
 import { OfflineDownloadModal } from '../components/OfflineDownloadModal';
+import type { FormacionData, FormacionCourseCard } from '../types';
 
-export default function FormacionClient() {
+interface Props {
+  data: FormacionData;
+}
+
+export default function FormacionClient({ data }: Props) {
   const t = useTranslations('Formacion');
   const router = useRouter();
   const [certModalOpen, setCertModalOpen] = useState(false);
   const [offlineModalOpen, setOfflineModalOpen] = useState(false);
 
+  function openCourse(course: FormacionCourseCard) {
+    if (course.hasInternalContent) {
+      router.push(`/formacion/${course.id}`);
+      return;
+    }
+
+    if (course.externalUrl) {
+      window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    router.push(`/formacion/${course.id}`);
+  }
+
+  function getPrimaryActionLabel(course: FormacionCourseCard) {
+    if (course.hasInternalContent) {
+      return t('continuar');
+    }
+
+    if (course.externalUrl) {
+      return t('abrirCurso');
+    }
+
+    return t('verDetalles');
+  }
+
+  function openExternalCourse(course: FormacionCourseCard) {
+    if (!course.externalUrl) {
+      openCourse(course);
+      return;
+    }
+
+    window.open(course.externalUrl, '_blank', 'noopener,noreferrer');
+  }
+
   return (
-    <AppShell>
-      <div className='space-y-6'>
-        <h1 className='text-2xl font-bold text-[var(--color-text)]'>
-          {t('title')}
-        </h1>
+    <AppShell
+      userName={data.user.name}
+      avatarUrl={data.user.avatarUrl}
+      profilePercent={data.user.profilePercent}
+      perfilBreakdown={data.user.perfilBreakdown}
+    >
+      <div className='min-w-0 space-y-6'>
+        <div className='min-w-0'>
+          <h1 className='break-words text-2xl font-bold leading-tight text-[var(--color-text)] sm:text-3xl'>
+            {t('title')}
+          </h1>
+        </div>
 
-        <InclusionDigitalBanner />
+        {data.showInclusionBanner && <InclusionDigitalBanner />}
 
-        <CurrentModuleCard
-          titulo='SQL para Análisis de Datos'
-          progreso={25}
-          racha={7}
-          onContinuar={() => router.push('/formacion/modulo-1')}
-          onGuardarOffline={() => setOfflineModalOpen(true)}
-        />
+        {data.currentCourse ? (
+          <CurrentModuleCard
+            titulo={data.currentCourse.planTitle ?? data.currentCourse.title}
+            progreso={data.currentCourse.progress}
+            racha={data.streakDays}
+            canSaveOffline={data.offlineItems.length > 0}
+            onContinuar={() => openCourse(data.currentCourse!)}
+            onGuardarOffline={() => setOfflineModalOpen(true)}
+            primaryLabel={getPrimaryActionLabel(data.currentCourse)}
+            primaryIcon={
+              data.currentCourse.hasInternalContent ? 'play' : 'external'
+            }
+            showProgress={data.currentCourse.hasInternalContent}
+          />
+        ) : (
+          <section className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5'>
+            <h2 className='text-base font-bold text-[var(--color-text)]'>
+              {t('sinCursosTitulo')}
+            </h2>
+            <p className='mt-1 text-sm text-[var(--color-text-muted)]'>
+              {t('sinCursosDesc')}
+            </p>
+          </section>
+        )}
 
-        <ModulesGrid ruta='Data Analyst Jr.'>
-          <ModuleCardItem
-            titulo='Visualización con PowerBI'
-            descripcion='Curso desbloqueado intermedio'
-            nivel='Intermedio'
-            desbloqueado
-            onValidarExterno={() => setCertModalOpen(true)}
-          />
-          <ModuleCardItem
-            titulo='Python Fundamentals'
-            descripcion='Base de programación'
-            nivel='Intermedio'
-            desbloqueado={false}
-            onValidarExterno={() => {}}
-          />
-          <ModuleCardItem
-            titulo='Estadística Aplicada'
-            descripcion='Fundamentos para ciencia de datos'
-            nivel='Avanzado'
-            desbloqueado={false}
-            onValidarExterno={() => {}}
-          />
-        </ModulesGrid>
+        {data.recommendedCourses.length > 0 && (
+          <ModulesGrid ruta={data.rutaLabel}>
+            {data.recommendedCourses.map((course) => (
+              <ModuleCardItem
+                key={course.id}
+                titulo={course.planTitle ?? course.title}
+                descripcion={
+                  course.planTitle
+                    ? `${course.title}${course.platform ? ` · ${course.platform}` : ''}`
+                    : (course.subtitle ??
+                      course.description ??
+                      `${course.platform ?? ''} · ${course.areaLabel}`)
+                }
+                nivel={course.areaLabel}
+                plataforma={course.platform}
+                duracionDias={course.durationDays}
+                desbloqueado
+                primaryLabel={getPrimaryActionLabel(course)}
+                onOpen={() => openCourse(course)}
+                onValidarExterno={() => setCertModalOpen(true)}
+              />
+            ))}
+          </ModulesGrid>
+        )}
 
-        <PaidCoursesSection>
-          <PaidCourseCard
-            titulo='Bootcamp Data Science'
-            plataforma='Coderhouse'
-            descripcion='Formación intensiva en ciencia de datos con proyectos reales.'
-            onVerDetalles={() => {}}
-          />
-          <PaidCourseCard
-            titulo='Especialización SQL Avanzado'
-            plataforma='Coursera'
-            descripcion='Optimización de queries y administración de bases de datos.'
-            onVerDetalles={() => {}}
-          />
-        </PaidCoursesSection>
-
-        <ExternalCourseValidation onValidar={(url) => alert(`Validando: ${url}`)} />
+        {data.paidCourses.length > 0 && (
+          <PaidCoursesSection>
+            {data.paidCourses.map((course) => (
+              <PaidCourseCard
+                key={course.id}
+                titulo={course.title}
+                plataforma={course.platform ?? course.type}
+                descripcion={
+                  course.description ??
+                  course.subtitle ??
+                  `${course.areaLabel}${course.durationDays ? ` · ${course.durationDays} días` : ''}`
+                }
+                onVerDetalles={() => openExternalCourse(course)}
+              />
+            ))}
+          </PaidCoursesSection>
+        )}
 
         <CertificadoExternoModal
           open={certModalOpen}
           onOpenChange={setCertModalOpen}
-          onSubmit={(data) => {
-            alert(`Certificado enviado: ${data.enlace}`);
+          onSubmit={() => {
             setCertModalOpen(false);
           }}
         />
@@ -90,12 +154,12 @@ export default function FormacionClient() {
         <OfflineDownloadModal
           open={offlineModalOpen}
           onOpenChange={setOfflineModalOpen}
-          items={[
-            { titulo: 'Módulo 2: Selects Básicos', tamanioMb: 45, tipo: 'video' },
-            { titulo: 'Videos (Calidad Data-Saver)', tamanioMb: 120, tipo: 'video' },
-          ]}
+          items={data.offlineItems.map((item) => ({
+            titulo: item.titulo,
+            tamanioMb: item.tamanioMb,
+            tipo: item.tipo === 'PDF' ? 'pdf' : 'video',
+          }))}
           onDownload={() => {
-            alert('Descargando módulo...');
             setOfflineModalOpen(false);
           }}
         />

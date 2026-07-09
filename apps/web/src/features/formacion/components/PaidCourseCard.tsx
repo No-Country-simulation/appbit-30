@@ -20,18 +20,28 @@ export function PaidCourseCard({
   const t = useTranslations('Formacion');
 
   return (
-    <AppCard className='flex flex-col gap-3'>
-      <div>
-        <div className='flex items-center justify-between'>
-          <h4 className='font-semibold text-[var(--color-text)]'>{titulo}</h4>
-          <span className='rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700'>
+    <AppCard className='flex min-w-0 flex-col gap-4'>
+      <div className='min-w-0'>
+        <div className='flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
+          <h4 className='min-w-0 break-words font-semibold leading-tight text-[var(--color-text)]'>
+            {titulo}
+          </h4>
+
+          <span className='w-fit shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700'>
             {plataforma}
           </span>
         </div>
-        <p className='mt-1 text-sm text-[var(--color-text-muted)]'>{descripcion}</p>
+
+        <p className='mt-2 min-w-0 break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
+          {descripcion}
+        </p>
       </div>
 
-      <AppButton variant='outline' onClick={onVerDetalles}>
+      <AppButton
+        variant='outline'
+        className='w-full sm:w-auto'
+        onClick={onVerDetalles}
+      >
         {t('verDetalles')}
       </AppButton>
     </AppCard>

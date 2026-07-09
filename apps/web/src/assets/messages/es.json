@@ -556,6 +556,10 @@
     "certificado": "Certificado",
     "verificadoPorBit": "Verificado por BiT",
     "puntosHabilidad": "puntos de habilidad",
-    "desbloqueaModulo": "Desbloquea módulo siguiente"
+    "desbloqueaModulo": "Desbloquea módulo siguiente",
+    "sinCursosTitulo": "Todavía no encontramos cursos para tu ruta",
+    "sinCursosDesc": "Completá el onboarding o volvé a intentar cuando se generen tus recomendaciones.",
+    "abrirCurso": "Abrir curso",
+    "verFormacion": "Ver formación"
   }
 }

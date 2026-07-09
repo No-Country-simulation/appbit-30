@@ -1,5 +1,16 @@
 import FormacionClient from './FormacionClient';
+import { getFormacionData } from '../server/get-formacion-data';
 
-export default async function FormacionScreen() {
-  return <FormacionClient />;
+interface Props {
+  usuarioId: string;
+  locale: string;
+}
+
+export default async function FormacionScreen({ usuarioId, locale }: Props) {
+  const data = await getFormacionData({
+    usuarioId,
+    locale,
+  });
+
+  return <FormacionClient data={data} />;
 }

@@ -1,145 +1,100 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ArrowLeft } from 'lucide-react';
+import { useRouter } from '@/src/i18n/navigation';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { AppShell } from '@/src/components/layout/AppShell';
+import { AppButton } from '@/src/components/app/AppButton';
 import { VideoPlayer } from './VideoPlayer';
 import { LessonList } from './LessonList';
 import { ModuleSidebar } from './ModuleSidebar';
 import { CompletionReward } from './CompletionReward';
-
-interface Lesson {
-  numero: number;
-  titulo: string;
-  duracion: string;
-  estado: 'completada' | 'en_progreso' | 'proxima' | 'bloqueada';
-}
-
-interface ModuloInfo {
-  titulo: string;
-  completado: boolean;
-  leccionesCompletadas: number;
-  totalLecciones: number;
-}
+import type { ModulePlayerData } from '../types';
 
 interface Props {
-  moduleTitulo: string;
-  cursoTitulo: string;
-  ruta: string;
-  progreso: number;
-  leccionActual: string;
-  duracionActual: string;
-  duracionTotal: string;
-  progresoLeccion: number;
-  lecciones: Lesson[];
-  modulos: ModuloInfo[];
-  racha: number;
-  certificado: string;
-  puntos: number;
-  desbloquea: string;
-  onVolver: () => void;
+  data: ModulePlayerData;
 }
 
-export function ModulePlayerPage({
-  moduleTitulo,
-  cursoTitulo,
-  ruta,
-  progreso,
-  leccionActual,
-  duracionActual,
-  duracionTotal,
-  progresoLeccion,
-  lecciones,
-  modulos,
-  racha,
-  certificado,
-  puntos,
-  desbloquea,
-  onVolver,
-}: Props) {
+export function ModulePlayerPage({ data }: Props) {
   const t = useTranslations('Formacion');
+  const router = useRouter();
+
+  const externalUrl = data.externalUrl ?? undefined;
 
   return (
-    <AppShell>
-      <div className='space-y-6'>
-        <div className='flex items-center gap-3'>
-          <button
-            onClick={onVolver}
-            className='inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
-          >
-            <ArrowLeft className='size-4' />
-            {t('title')}
-          </button>
-          <span className='rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700'>
-            {t('moduloEnCurso')}
-          </span>
-        </div>
+    <AppShell userName={data.user.name} avatarUrl={data.user.avatarUrl}>
+      <div className='min-w-0 space-y-6'>
+        <div className='flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='flex min-w-0 flex-wrap items-center gap-3'>
+            <button
+              type='button'
+              onClick={() => router.push('/formacion')}
+              className='inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+            >
+              <ArrowLeft className='size-4 shrink-0' />
+              {t('title')}
+            </button>
 
-        <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-          <div className='space-y-6 lg:col-span-2'>
-            <VideoPlayer
-              titulo={leccionActual}
-              leccionNumero={lecciones.find((l) => l.estado === 'en_progreso')?.numero}
-              totalLecciones={lecciones.length}
-              duracionActual={duracionActual}
-              duracionTotal={duracionTotal}
-              progreso={progresoLeccion}
-            />
-
-            <LessonList lecciones={lecciones} />
+            <span className='w-fit rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700'>
+              {t('moduloEnCurso')}
+            </span>
           </div>
 
-          <div className='space-y-5 lg:col-span-1'>
+          {externalUrl && (
+            <AppButton
+              variant='outline'
+              className='w-full sm:w-auto'
+              onClick={() => {
+                window.open(externalUrl, '_blank', 'noopener,noreferrer');
+              }}
+            >
+              <ExternalLink className='size-4 shrink-0' />
+              {t('abrirCurso')}
+            </AppButton>
+          )}
+        </div>
+
+        <div className='grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]'>
+          <div className='min-w-0 space-y-6'>
+            <VideoPlayer
+              titulo={data.leccionActual}
+              leccionNumero={
+                data.lecciones.find((lesson) => lesson.estado === 'en_progreso')
+                  ?.numero
+              }
+              totalLecciones={data.lecciones.length}
+              duracionActual={data.duracionActual}
+              duracionTotal={data.duracionTotal}
+              progreso={data.progresoLeccion}
+              videoUrl={data.videoUrl ?? undefined}
+            />
+
+            <LessonList lecciones={data.lecciones} />
+          </div>
+
+          <div className='min-w-0 space-y-5'>
             <ModuleSidebar
-              cursoTitulo={cursoTitulo}
-              ruta={ruta}
-              progreso={progreso}
-              leccionesCompletadas={lecciones.filter((l) => l.estado === 'completada').length}
-              totalLecciones={lecciones.length}
-              racha={racha}
-              modulos={modulos}
+              cursoTitulo={data.cursoTitulo}
+              ruta={data.ruta}
+              progreso={data.progreso}
+              leccionesCompletadas={
+                data.lecciones.filter(
+                  (lesson) => lesson.estado === 'completada',
+                ).length
+              }
+              totalLecciones={data.lecciones.length}
+              racha={data.racha}
+              modulos={data.modulos}
             />
 
             <CompletionReward
-              certificado={certificado}
-              puntos={puntos}
-              desbloquea={desbloquea}
+              certificado={data.certificado}
+              puntos={data.puntos}
+              desbloquea={data.desbloquea}
             />
           </div>
         </div>
       </div>
     </AppShell>
-  );
-}
-
-export default function ModulePlayerScreen() {
-  return (
-    <ModulePlayerPage
-      moduleTitulo='SQL para Análisis de Datos'
-      cursoTitulo='SQL para Análisis de Datos'
-      ruta='Data Analyst Jr.'
-      progreso={25}
-      leccionActual='JOINs y subconsultas en SQL'
-      duracionActual='7:12'
-      duracionTotal='20:30'
-      progresoLeccion={35}
-      lecciones={[
-        { numero: 1, titulo: '¿Qué es SQL? Introducción', duracion: '12:00', estado: 'completada' },
-        { numero: 2, titulo: 'JOINs y subconsultas en SQL', duracion: '20:30', estado: 'en_progreso' },
-        { numero: 3, titulo: 'GROUP BY y funciones de agregación', duracion: '18:45', estado: 'proxima' },
-        { numero: 4, titulo: 'Índices y optimización de queries', duracion: '22:10', estado: 'proxima' },
-        { numero: 5, titulo: 'Proyecto final: Análisis de ventas', duracion: '35:00', estado: 'bloqueada' },
-      ]}
-      modulos={[
-        { titulo: 'Fundamentos SQL', completado: true, enProgreso: false, leccionesCompletadas: 2, totalLecciones: 8 },
-        { titulo: 'SQL Avanzado', completado: false, enProgreso: true, leccionesCompletadas: 2, totalLecciones: 6 },
-        { titulo: 'Proyecto final', completado: false, enProgreso: false, leccionesCompletadas: 0, totalLecciones: 4 },
-      ]}
-      racha={7}
-      certificado='SQL Básico'
-      puntos={15}
-      desbloquea='SQL Avanzado'
-      onVolver={() => window.history.back()}
-    />
   );
 }

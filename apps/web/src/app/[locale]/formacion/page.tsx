@@ -28,5 +28,11 @@ export default async function FormacionPage({ params }: Props) {
     redirect(`/${locale}/auth`);
   }
 
-  return <FormacionScreen />;
+  if (!state.usuario || state.needsOnboarding) {
+    redirect(`/${locale}/dashboard`);
+  }
+
+  return (
+    <FormacionScreen usuarioId={state.usuario.usuario_id} locale={locale} />
+  );
 }

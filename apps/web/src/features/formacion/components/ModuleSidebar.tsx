@@ -36,7 +36,9 @@ export function ModuleSidebar({
     <aside className='space-y-5'>
       <div className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 space-y-4'>
         <div>
-          <h3 className='text-base font-bold text-[var(--color-text)]'>{cursoTitulo}</h3>
+          <h3 className='text-base font-bold text-[var(--color-text)]'>
+            {cursoTitulo}
+          </h3>
           <p className='mt-0.5 text-sm text-[var(--color-text-muted)]'>
             {t('ruta')}: {ruta}
           </p>
@@ -44,15 +46,27 @@ export function ModuleSidebar({
 
         <div className='space-y-2'>
           <div className='flex items-center justify-between'>
-            <span className='text-sm font-medium text-[var(--color-text)]'>{t('progresoModulo')}</span>
-            <span className='text-sm font-bold text-violet-600'>{progreso}%</span>
+            <span className='text-sm font-medium text-[var(--color-text)]'>
+              {t('progresoModulo')}
+            </span>
+            <span className='text-sm font-bold text-violet-600'>
+              {progreso}%
+            </span>
           </div>
-          <ProgressBar value={progreso} className='bg-gray-200' barClassName='bg-emerald-500' />
+          <ProgressBar
+            value={progreso}
+            className='bg-gray-200'
+            barClassName='bg-emerald-500'
+          />
         </div>
 
         <div className='flex items-center justify-between text-sm text-[var(--color-text-muted)]'>
-          <span>{leccionesCompletadas} {t('de')} {totalLecciones} {t('lecciones')}</span>
-          <span>🔥 {racha} {t('diasDeRacha')}</span>
+          <span>
+            {leccionesCompletadas} {t('de')} {totalLecciones} {t('lecciones')}
+          </span>
+          <span>
+            🔥 {racha} {t('diasDeRacha')}
+          </span>
         </div>
       </div>
 
@@ -88,13 +102,17 @@ export function ModuleSidebar({
             ) : modulo.enProgreso ? (
               <div className='mt-2'>
                 <ProgressBar
-                  value={(modulo.leccionesCompletadas / modulo.totalLecciones) * 100}
+                  value={
+                    (modulo.leccionesCompletadas / modulo.totalLecciones) * 100
+                  }
                   className='bg-gray-200'
                   barClassName='bg-violet-500'
                 />
               </div>
             ) : (
-              <p className='mt-1 text-xs text-[var(--color-text-muted)]'>{t('bloqueado')}</p>
+              <p className='mt-1 text-xs text-[var(--color-text-muted)]'>
+                {t('bloqueada')}
+              </p>
             )}
           </div>
         ))}

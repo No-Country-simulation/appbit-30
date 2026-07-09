@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUserState } from '@/src/server/auth/get-current-user-state';
 import AuthStateUnavailable from '@/src/features/auth/components/AuthStateUnavailable';
-import ModulePlayerScreen from '@/src/features/formacion/components/ModulePlayerPage';
+import ModulePlayerScreen from '@/src/features/formacion/screens/ModulePlayerScreen';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +22,27 @@ export default async function ModulePage({ params }: Props) {
   } catch (error) {
     console.error('Error resolving auth state for module:', error);
 
-    return <AuthStateUnavailable locale={locale} retryPath={`/formacion/${moduleId}`} />;
+    return (
+      <AuthStateUnavailable
+        locale={locale}
+        retryPath={`/formacion/${moduleId}`}
+      />
+    );
   }
 
   if (!state.isAuthenticated) {
     redirect(`/${locale}/auth`);
   }
 
-  return <ModulePlayerScreen />;
+  if (!state.usuario || state.needsOnboarding) {
+    redirect(`/${locale}/dashboard`);
+  }
+
+  return (
+    <ModulePlayerScreen
+      usuarioId={state.usuario.usuario_id}
+      locale={locale}
+      moduleId={moduleId}
+    />
+  );
 }

@@ -379,9 +379,15 @@ export const dashboardResponseSchema = z.object({
       accion_label: z.string().nullable(),
       curso: z
         .object({
-          titulo: z.string(),
+          curso_id: z.string().nullable().optional(),
+          titulo: z.string().nullable().optional(),
+          url_externa: z.string().nullable().optional(),
+          plataforma: z.string().nullable().optional(),
+          tipo: z.string().nullable().optional(),
+          hasInternalContent: z.boolean().nullable().optional(),
         })
-        .nullable(),
+        .nullable()
+        .optional(),
     }),
   ),
   bienestar: z.object({

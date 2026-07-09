@@ -189,7 +189,28 @@ export async function GET(request: Request) {
         accion_label: true,
         curso: {
           select: {
+            curso_id: true,
             titulo: true,
+            url_externa: true,
+            plataforma: true,
+            tipo: true,
+            modulos: {
+              select: {
+                modulo_id: true,
+                lecciones: {
+                  where: {
+                    video_url: {
+                      not: null,
+                    },
+                  },
+                  take: 1,
+                  select: {
+                    leccion_id: true,
+                    video_url: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -483,7 +504,18 @@ export async function GET(request: Request) {
         completado: item.completado,
         orden: item.orden,
         accion_label: item.accion_label,
-        curso: item.curso,
+        curso: item.curso
+          ? {
+              curso_id: item.curso.curso_id,
+              titulo: item.curso.titulo,
+              url_externa: item.curso.url_externa,
+              plataforma: item.curso.plataforma,
+              tipo: item.curso.tipo,
+              hasInternalContent: item.curso.modulos.some((modulo) =>
+                modulo.lecciones.some((leccion) => Boolean(leccion.video_url)),
+              ),
+            }
+          : null,
       })),
       bienestar: {
         notaPromedio:
