@@ -20,13 +20,13 @@ const navGroups = [
   [
     { labelKey: 'navInicio', icon: LayoutDashboard, href: '/dashboard' },
     { labelKey: 'navEmpleos', icon: Briefcase, href: '#' },
-    { labelKey: 'navFormacion', icon: GraduationCap, href: '#' },
+    { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
-    { labelKey: 'navExperiencias', icon: Star, href: '#' },
+    { labelKey: 'navExperiencias', icon: Star, href: '/experiencias' },
     { labelKey: 'navMentorias', icon: Users, href: '/mentoria' },
   ],
-  [{ labelKey: 'navBienestar', icon: Heart, href: '#' }],
+  [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
 
 interface Props {
@@ -62,8 +62,6 @@ export function AppSidebar({
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
-
-  console.log('avatarUrl', avatarUrl);
 
   const resolvedUserName = userName || t('profileFallbackName');
 

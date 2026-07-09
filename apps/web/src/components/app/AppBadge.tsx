@@ -12,7 +12,10 @@ export function AppBadge({ children, variant = 'primary', className }: Props) {
   return (
     <span
       className={cn(
-        'inline-flex max-w-full items-center justify-center rounded-[var(--radius-pill)] px-3 py-1 text-center text-xs font-semibold leading-none whitespace-nowrap',
+        'inline-flex w-fit max-w-full shrink-0 items-center justify-center',
+        'rounded-[var(--radius-pill)] px-2.5 py-1 sm:px-3',
+        'text-center text-xs font-semibold leading-tight',
+        'whitespace-nowrap',
         variant === 'primary' &&
           'bg-[var(--color-primary-pale)] text-[var(--color-primary)]',
         variant === 'success' &&
@@ -24,7 +27,7 @@ export function AppBadge({ children, variant = 'primary', className }: Props) {
         className,
       )}
     >
-      <span className='min-w-0 truncate'>{children}</span>
+      {children}
     </span>
   );
 }

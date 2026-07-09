@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
@@ -40,11 +41,62 @@ function hasGeneratedRecommendations(dashboard: DashboardResponse) {
   return dashboard.planAccion.length > 0;
 }
 
+const AREA_LABEL_KEYS = {
+  Data_Analytics: 'areasInteresOption1',
+  Desarrollo_Web: 'areasInteresOption2',
+  UX_UI_Design: 'areasInteresOption3',
+  Ciberseguridad: 'areasInteresOption4',
+  Cloud_DevOps: 'areasInteresOption5',
+  Inteligencia_Artificial: 'areasInteresOption6',
+  Marketing_Digital: 'areasInteresOption7',
+  Product_Management: 'areasInteresOption8',
+} as const;
+
+function formatAreaValue(area: string) {
+  return area.replaceAll('_', ' ');
+}
+
+function compactAreaList(labels: string[]) {
+  if (labels.length <= 2) {
+    return labels.join(' + ');
+  }
+
+  return `${labels.slice(0, 2).join(' + ')} +${labels.length - 2}`;
+}
+
+function normalizeSkillStatus(status: string): SkillRow['estado'] {
+  if (status === 'Adquirida' || status === 'acquired') {
+    return 'acquired';
+  }
+
+  if (
+    status === 'En progreso' ||
+    status === 'En_progreso' ||
+    status === 'in_progress'
+  ) {
+    return 'in_progress';
+  }
+
+  if (status === 'Faltante' || status === 'missing') {
+    return 'missing';
+  }
+
+  return 'missing';
+}
+
+const SKILL_STATUS_ORDER: Record<SkillRow['estado'], number> = {
+  missing: 0,
+  in_progress: 1,
+  acquired: 2,
+};
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
 }: Props) {
+  const router = useRouter();
   const t = useTranslations('Dashboard');
+  const tOnboarding = useTranslations('Onboarding');
 
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
@@ -176,19 +228,33 @@ export default function DashboardClient({
       : 0;
 
   const actionItems: ActionItem[] =
-    data?.planAccion?.map((item) => ({
-      title: item.titulo,
-      priority: item.completado
-        ? ('completado' as const)
-        : item.prioridad === 'Alta_prioridad'
-          ? ('alta' as const)
-          : ('media' as const),
-      actionLabel:
-        item.accion_label ??
-        (item.curso ? t('actionLabelIniciar') : t('actionLabelVerTemario')),
-      actionIcon: item.curso ? ('play' as const) : ('book' as const),
-      completed: item.completado,
-    })) ?? [];
+    data?.planAccion?.map((item) => {
+      const completed = Boolean(item.completado);
+
+      return {
+        id: item.plan_item_id,
+        title: item.titulo,
+        priority: completed
+          ? ('completado' as const)
+          : item.prioridad === 'Alta_prioridad'
+            ? ('alta' as const)
+            : ('media' as const),
+        actionLabel:
+          item.accion_label ??
+          (item.curso?.hasInternalContent
+            ? t('continuar')
+            : item.curso?.url_externa
+              ? t('abrirCurso')
+              : t('verFormacion')),
+        actionIcon: item.curso?.hasInternalContent
+          ? ('play' as const)
+          : item.curso?.url_externa
+            ? ('external' as const)
+            : ('book' as const),
+        completed,
+        curso: item.curso ?? null,
+      };
+    }) ?? [];
 
   const promedioSemanal = isLoadingDashboard
     ? undefined
@@ -225,17 +291,58 @@ export default function DashboardClient({
       ? clampPercent(100 - Number(orientacionGapPorcentual))
       : skillsMatchFromUserSkills;
 
-  const skillsPuesto = Array.isArray(data?.orientacion?.trayectoria_sugerida)
+  const areaValuesFromDashboard = data?.areasInteres ?? [];
+
+  const areaValuesFromSkills = Array.from(
+    new Set(
+      (skillsData?.habilidades ?? [])
+        .map((skill) => skill.area_principal)
+        .filter((area): area is string => Boolean(area)),
+    ),
+  );
+
+  const selectedAreaValues =
+    areaValuesFromDashboard.length > 0
+      ? areaValuesFromDashboard
+      : areaValuesFromSkills;
+
+  const selectedAreaLabels = selectedAreaValues.map((area) => {
+    const labelKey = AREA_LABEL_KEYS[area as keyof typeof AREA_LABEL_KEYS];
+
+    return labelKey ? tOnboarding(labelKey as never) : formatAreaValue(area);
+  });
+
+  const aiSuggestedRole = Array.isArray(data?.orientacion?.trayectoria_sugerida)
     ? (data.orientacion.trayectoria_sugerida[0] as string | undefined)
     : Array.isArray(skillsData?.orientacion?.trayectoria_sugerida)
       ? (skillsData.orientacion.trayectoria_sugerida[0] as string | undefined)
       : undefined;
 
+  const skillsPuesto =
+    selectedAreaLabels.length > 1
+      ? compactAreaList(selectedAreaLabels)
+      : (selectedAreaLabels[0] ??
+        aiSuggestedRole ??
+        t('skillsGapFallbackPuesto'));
+
   const skillsRows: SkillRow[] =
-    skillsData?.habilidades?.map((h) => ({
-      habilidad: h.nombre,
-      estado: h.estado as SkillRow['estado'],
-    })) ?? [];
+    skillsData?.habilidades
+      ?.map((h) => ({
+        habilidad: h.nombre,
+        estado: normalizeSkillStatus(h.estado),
+      }))
+      .sort((a, b) => {
+        const statusDiff =
+          SKILL_STATUS_ORDER[a.estado] - SKILL_STATUS_ORDER[b.estado];
+
+        if (statusDiff !== 0) {
+          return statusDiff;
+        }
+
+        return a.habilidad.localeCompare(b.habilidad, undefined, {
+          sensitivity: 'base',
+        });
+      }) ?? [];
 
   const perfilCompletado = isLoadingDashboard
     ? undefined
@@ -247,6 +354,33 @@ export default function DashboardClient({
 
   const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
   const todayCheckin = data?.bienestar?.todayCheckin ?? null;
+
+  function handleActionPlanItemClick(item: {
+    curso?: {
+      curso_id?: string | null;
+      url_externa?: string | null;
+      hasInternalContent?: boolean | null;
+    } | null;
+  }) {
+    const curso = item.curso;
+
+    if (!curso) {
+      router.push('/formacion');
+      return;
+    }
+
+    if (curso.hasInternalContent && curso.curso_id) {
+      router.push(`/formacion/${curso.curso_id}`);
+      return;
+    }
+
+    if (curso.url_externa) {
+      window.open(curso.url_externa, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    router.push('/formacion');
+  }
 
   return (
     <AppShell
@@ -297,6 +431,7 @@ export default function DashboardClient({
             <ActionPlanCard
               items={actionItems}
               isLoading={isLoadingDashboard}
+              onItemClick={handleActionPlanItemClick}
             />
           </div>
 
