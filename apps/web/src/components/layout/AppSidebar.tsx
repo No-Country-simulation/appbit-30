@@ -20,13 +20,13 @@ const navGroups = [
   [
     { labelKey: 'navInicio', icon: LayoutDashboard, href: '/dashboard' },
     { labelKey: 'navEmpleos', icon: Briefcase, href: '#' },
-    { labelKey: 'navFormacion', icon: GraduationCap, href: '#' },
+    { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
     { labelKey: 'navExperiencias', icon: Star, href: '#' },
     { labelKey: 'navMentorias', icon: Users, href: '#' },
   ],
-  [{ labelKey: 'navBienestar', icon: Heart, href: '#' }],
+  [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
 
 interface Props {
