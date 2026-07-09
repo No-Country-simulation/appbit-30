@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
@@ -93,6 +94,7 @@ export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
 }: Props) {
+  const router = useRouter();
   const t = useTranslations('Dashboard');
   const tOnboarding = useTranslations('Onboarding');
 
@@ -226,19 +228,33 @@ export default function DashboardClient({
       : 0;
 
   const actionItems: ActionItem[] =
-    data?.planAccion?.map((item) => ({
-      title: item.titulo,
-      priority: item.completado
-        ? ('completado' as const)
-        : item.prioridad === 'Alta_prioridad'
-          ? ('alta' as const)
-          : ('media' as const),
-      actionLabel:
-        item.accion_label ??
-        (item.curso ? t('actionLabelIniciar') : t('actionLabelVerTemario')),
-      actionIcon: item.curso ? ('play' as const) : ('book' as const),
-      completed: item.completado,
-    })) ?? [];
+    data?.planAccion?.map((item) => {
+      const completed = Boolean(item.completado);
+
+      return {
+        id: item.plan_item_id,
+        title: item.titulo,
+        priority: completed
+          ? ('completado' as const)
+          : item.prioridad === 'Alta_prioridad'
+            ? ('alta' as const)
+            : ('media' as const),
+        actionLabel:
+          item.accion_label ??
+          (item.curso?.hasInternalContent
+            ? t('continuar')
+            : item.curso?.url_externa
+              ? t('abrirCurso')
+              : t('verFormacion')),
+        actionIcon: item.curso?.hasInternalContent
+          ? ('play' as const)
+          : item.curso?.url_externa
+            ? ('external' as const)
+            : ('book' as const),
+        completed,
+        curso: item.curso ?? null,
+      };
+    }) ?? [];
 
   const promedioSemanal = isLoadingDashboard
     ? undefined
@@ -339,6 +355,33 @@ export default function DashboardClient({
   const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
   const todayCheckin = data?.bienestar?.todayCheckin ?? null;
 
+  function handleActionPlanItemClick(item: {
+    curso?: {
+      curso_id?: string | null;
+      url_externa?: string | null;
+      hasInternalContent?: boolean | null;
+    } | null;
+  }) {
+    const curso = item.curso;
+
+    if (!curso) {
+      router.push('/formacion');
+      return;
+    }
+
+    if (curso.hasInternalContent && curso.curso_id) {
+      router.push(`/formacion/${curso.curso_id}`);
+      return;
+    }
+
+    if (curso.url_externa) {
+      window.open(curso.url_externa, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    router.push('/formacion');
+  }
+
   return (
     <AppShell
       onCheckinClick={() => {
@@ -388,6 +431,7 @@ export default function DashboardClient({
             <ActionPlanCard
               items={actionItems}
               isLoading={isLoadingDashboard}
+              onItemClick={handleActionPlanItemClick}
             />
           </div>
 

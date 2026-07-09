@@ -1,24 +1,43 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { CheckCircleIcon, PlayIcon, BookOpenIcon } from 'lucide-react';
+import {
+  CheckCircleIcon,
+  PlayIcon,
+  BookOpenIcon,
+  ExternalLinkIcon,
+} from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppButton } from '@/src/components/app/AppButton';
 
 export interface ActionItem {
+  id?: string;
   title: string;
   priority: 'alta' | 'media' | 'completado';
   actionLabel: string;
-  actionIcon: 'play' | 'book';
+  actionIcon: 'play' | 'book' | 'external';
   completed?: boolean;
+  curso?: {
+    curso_id?: string | null;
+    titulo?: string | null;
+    url_externa?: string | null;
+    plataforma?: string | null;
+    tipo?: string | null;
+    hasInternalContent?: boolean | null;
+  } | null;
 }
 
 interface Props {
   items?: ActionItem[];
   isLoading?: boolean;
+  onItemClick?: (item: ActionItem) => void;
 }
 
-export function ActionPlanCard({ items = [], isLoading = false }: Props) {
+export function ActionPlanCard({
+  items = [],
+  isLoading = false,
+  onItemClick,
+}: Props) {
   const t = useTranslations('Dashboard');
 
   const priorityStyles = {
@@ -29,6 +48,26 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
       label: t('completado'),
     },
   };
+
+  function getButtonVariant(item: ActionItem) {
+    if (item.actionIcon === 'book') {
+      return 'outline';
+    }
+
+    return 'primary';
+  }
+
+  function getActionIcon(item: ActionItem) {
+    if (item.actionIcon === 'play') {
+      return <PlayIcon className='size-3.5 shrink-0' />;
+    }
+
+    if (item.actionIcon === 'external') {
+      return <ExternalLinkIcon className='size-3.5 shrink-0' />;
+    }
+
+    return <BookOpenIcon className='size-3.5 shrink-0' />;
+  }
 
   return (
     <AppCard className='flex min-w-0 flex-col'>
@@ -63,7 +102,7 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
 
             return (
               <li
-                key={`${item.title}-${index}`}
+                key={`${item.id ?? item.title}-${index}`}
                 className={`grid min-w-0 grid-cols-1 gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
                   index < items.length - 1
                     ? 'border-b border-[var(--color-border)]'
@@ -90,14 +129,11 @@ export function ActionPlanCard({ items = [], isLoading = false }: Props) {
 
                 {!item.completed && (
                   <AppButton
-                    variant={item.actionIcon === 'play' ? 'primary' : 'outline'}
+                    variant={getButtonVariant(item)}
                     className='w-full min-w-0 !justify-center !gap-1.5 !px-3 !py-2 text-xs sm:w-auto sm:max-w-[240px]'
+                    onClick={() => onItemClick?.(item)}
                   >
-                    {item.actionIcon === 'play' ? (
-                      <PlayIcon className='size-3.5 shrink-0' />
-                    ) : (
-                      <BookOpenIcon className='size-3.5 shrink-0' />
-                    )}
+                    {getActionIcon(item)}
 
                     <span className='min-w-0 break-words leading-snug'>
                       {item.actionLabel}
