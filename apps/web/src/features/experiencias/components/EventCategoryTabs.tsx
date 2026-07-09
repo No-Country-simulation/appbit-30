@@ -13,19 +13,20 @@ export function EventCategoryTabs({ categories, active, onChange }: Props) {
   const t = useTranslations('Experiencias');
 
   return (
-    <div className='flex flex-wrap gap-2'>
+    <div className='flex min-w-0 flex-wrap gap-2'>
       {categories.map((cat) => (
         <button
           key={cat.id}
+          type='button'
           onClick={() => onChange(cat.id)}
           className={cn(
-            'rounded-[var(--radius-pill)] px-4 py-2 text-sm font-semibold transition-colors',
+            'min-w-0 rounded-[var(--radius-pill)] px-4 py-2 text-sm font-semibold leading-snug transition-colors',
             active === cat.id
               ? 'bg-[var(--color-primary)] text-white'
               : 'bg-[var(--color-primary-pale)] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20',
           )}
         >
-          {t(cat.labelKey)}
+          <span className='break-words'>{t(cat.labelKey)}</span>
         </button>
       ))}
     </div>

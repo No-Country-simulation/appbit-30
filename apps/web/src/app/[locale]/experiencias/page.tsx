@@ -17,7 +17,8 @@ export default async function ExperienciasPage({ params }: Props) {
   try {
     state = await getCurrentUserState();
   } catch (error) {
-    console.error('Error resolving auth state:', error);
+    console.error('Error resolving auth state for experiencias:', error);
+
     return <AuthStateUnavailable locale={locale} retryPath='/experiencias' />;
   }
 
@@ -25,5 +26,11 @@ export default async function ExperienciasPage({ params }: Props) {
     redirect(`/${locale}/auth`);
   }
 
-  return <ExperienciasScreen />;
+  if (!state.usuario || state.needsOnboarding) {
+    redirect(`/${locale}/dashboard`);
+  }
+
+  return (
+    <ExperienciasScreen usuarioId={state.usuario.usuario_id} locale={locale} />
+  );
 }

@@ -12,11 +12,12 @@ export function UpcomingEventsList({ events }: Props) {
   const t = useTranslations('Experiencias');
 
   return (
-    <section>
-      <h3 className='mb-4 text-lg font-bold text-[var(--color-text)]'>
+    <section className='min-w-0'>
+      <h3 className='mb-4 break-words text-lg font-bold text-[var(--color-text)]'>
         {t('upcomingTalks')}
       </h3>
-      <div className='space-y-3'>
+
+      <div className='min-w-0 space-y-3'>
         {events.map((event) => (
           <EventListItem key={event.id} event={event} />
         ))}

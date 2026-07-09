@@ -9,7 +9,7 @@ export function LiveEventHero() {
   const t = useTranslations('Experiencias');
 
   return (
-    <div className='relative overflow-hidden rounded-[var(--radius-md)] bg-gradient-to-br from-gray-900 to-gray-800 p-6 text-white'>
+    <section className='relative min-w-0 overflow-hidden rounded-[var(--radius-md)] bg-gradient-to-br from-gray-900 to-gray-800 p-4 text-white sm:p-6'>
       <div
         className='absolute inset-0 opacity-20'
         style={{
@@ -19,20 +19,28 @@ export function LiveEventHero() {
           backgroundPosition: 'center',
         }}
       />
-      <div className='relative'>
+
+      <div className='relative min-w-0'>
         <AppBadge className='mb-3 bg-red-500/20 text-red-300'>
           {t('liveBadge')}
         </AppBadge>
-        <h2 className='text-xl font-bold leading-tight'>{t('heroTitle')}</h2>
-        <p className='mt-2 text-sm text-gray-300'>{t('heroSpeaker')}</p>
+
+        <h2 className='max-w-2xl break-words text-xl font-bold leading-tight sm:text-2xl'>
+          {t('heroTitle')}
+        </h2>
+
+        <p className='mt-2 max-w-2xl break-words text-sm leading-relaxed text-gray-300'>
+          {t('heroSpeaker')}
+        </p>
+
         <AppButton
           variant='primary'
-          className='mt-4 bg-white text-gray-900 hover:bg-gray-100 shadow-none'
+          className='mt-4 w-full bg-white text-gray-900 shadow-none hover:bg-gray-100 sm:w-auto'
         >
-          <Video className='mr-2 size-4' />
+          <Video className='size-4 shrink-0' />
           {t('joinNow')}
         </AppButton>
       </div>
-    </div>
+    </section>
   );
 }
