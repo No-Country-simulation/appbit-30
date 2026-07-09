@@ -497,7 +497,18 @@
     "todayCheckinRegistered": "Registro de hoje: {mood}",
     "skillStatusAcquired": "Adquirida",
     "skillStatusInProgress": "Em progresso",
-    "skillStatusMissing": "Faltante"
+    "skillStatusMissing": "Faltante",
+    "checkinResultTitle": "Obrigado por compartilhar como você se sente",
+    "checkinSuggestedAction": "Ação sugerida",
+    "checkinUrgentHelpHint": "Se você sentir que a situação está passando do limite, procure apoio imediato ou fale com alguém de confiança.",
+    "verBienestar": "Ver bem-estar",
+    "cerrar": "Fechar",
+    "guardando": "Salvando...",
+    "checkinFallbackMessage": "Obrigado por compartilhar como você se sente hoje.",
+    "checkinFallbackAction": "Faça uma pausa breve, respire fundo e escolha uma próxima ação pequena.",
+    "checkinSavedTitle": "Check-in salvo",
+    "checkinAiResultTitle": "Análise personalizada pronta",
+    "checkinFallbackResultTitle": "Obrigado por registrar como você se sente"
   },
   "Error": {
     "title": "Serviço temporariamente indisponível",
@@ -508,7 +519,7 @@
   "Bienestar": {
     "title": "Seu Bem-estar",
     "robotMensaje": "Estou aqui para ouvir você, sem julgamentos.",
-    "subtituloSugerencias": "É completamente normal se sentir sobrecarregado hoje. Respire, aqui estão algumas sugestões suaves para a viagem:",
+    "subtituloSugerencias": "É completamente normal se sentir sobrecarregado hoje. Respire, aqui estão algumas sugestões",
     "sugerencias": "Sugestões para você",
     "sugerenciaPodcast": "Podcast: Entenda sua Mente",
     "sugerenciaPodcastDesc": "Episódio sobre o esgotamento",
@@ -527,7 +538,12 @@
     "ayudaUrgente": "Precisa falar com alguém urgente?",
     "ayudaUrgenteDesc": "A linha de apoio gratuita está disponível 24 horas para ouvir e orientar você.",
     "lineaApoyo": "Linha de apoio gratuita",
-    "llamar": "Ligar agora"
+    "llamar": "Ligar agora",
+    "promedioEstable": "Sua média semanal está estável. Continue registrando como você se sente para acompanhar tendências.",
+    "sugerenciaIA": "Sugestão personalizada",
+    "sinCheckinsTitulo": "Ainda não há registros este mês",
+    "sinCheckinsDesc": "Quando você fizer seu check-in diário, seu estado de humor aparecerá neste calendário.",
+    "accionSugeridaTitle": "Ação sugerida"
   },
   "Formacion": {
     "title": "Sua Rota de Aprendizagem",

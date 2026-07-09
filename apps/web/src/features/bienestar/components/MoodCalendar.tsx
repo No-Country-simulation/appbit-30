@@ -1,62 +1,89 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { BienestarData, MoodTone } from '../types';
+import { useTranslations } from 'next-intl';
 
-const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+interface Props {
+  calendar: BienestarData['calendar'];
+  hasCheckins?: boolean;
+}
 
-const monthData = [
-  { day: 18, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 19, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 20, emoji: '🙂', bg: 'bg-blue-100' },
-  { day: 21, emoji: '😐', bg: 'bg-amber-50' },
-  { day: 22, emoji: '😢', bg: 'bg-red-100' },
-  { day: 23, emoji: '😩', bg: 'bg-red-200' },
-  { day: 24, emoji: '😐', bg: 'bg-amber-50' },
-  { day: 25, emoji: '🙂', bg: 'bg-blue-100' },
-  { day: 26, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 27, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 28, emoji: '🙂', bg: 'bg-blue-100' },
-  { day: 29, emoji: '😐', bg: 'bg-amber-50' },
-  { day: 30, emoji: '😢', bg: 'bg-red-100' },
-  { day: 31, emoji: '😩', bg: 'bg-red-200' },
-  { day: 1, emoji: '😐', bg: 'bg-amber-50' },
-  { day: 2, emoji: '🙂', bg: 'bg-blue-100' },
-  { day: 3, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 4, emoji: '😄', bg: 'bg-emerald-100' },
-  { day: 5, emoji: '😐', bg: 'bg-amber-50' },
-  { day: 6, emoji: '😢', bg: 'bg-red-100' },
-  { day: 7, emoji: '😢', bg: 'bg-red-100' },
-];
+function getToneClass(tone: MoodTone) {
+  if (tone === 'positive') return 'bg-emerald-100';
+  if (tone === 'neutral') return 'bg-amber-50';
+  if (tone === 'negative') return 'bg-red-100';
+  return 'bg-transparent';
+}
 
-export function MoodCalendar() {
+export function MoodCalendar({ calendar, hasCheckins = true }: Props) {
   const t = useTranslations('Bienestar');
 
   return (
-    <section className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5'>
-      <div className='flex items-center justify-between'>
-        <button className='text-[var(--color-text-muted)] hover:text-[var(--color-text)]'>
+    <section className='min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 sm:p-5'>
+      <div className='flex items-center justify-between gap-3'>
+        <button
+          type='button'
+          className='text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+          aria-label='Anterior'
+        >
           <ChevronLeft className='size-5' />
         </button>
-        <h3 className='text-sm font-bold text-[var(--color-text)]'>Octubre</h3>
-        <button className='text-[var(--color-text-muted)] hover:text-[var(--color-text)]'>
+
+        <h3 className='break-words text-sm font-bold text-[var(--color-text)]'>
+          {calendar.monthLabel}
+        </h3>
+
+        <button
+          type='button'
+          className='text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+          aria-label='Siguiente'
+        >
           <ChevronRight className='size-5' />
         </button>
       </div>
 
-      <div className='mt-4 grid grid-cols-7 gap-1'>
-        {weekDays.map((day) => (
-          <div key={day} className='text-center text-xs font-medium text-[var(--color-text-muted)]'>
+      {!hasCheckins && (
+        <div className='mt-4 rounded-[var(--radius-md)] bg-[var(--color-body)] px-4 py-3 text-center'>
+          <p className='text-sm font-semibold text-[var(--color-text)]'>
+            {t('sinCheckinsTitulo')}
+          </p>
+          <p className='mt-1 text-xs leading-relaxed text-[var(--color-text-muted)]'>
+            {t('sinCheckinsDesc')}
+          </p>
+        </div>
+      )}
+
+      <div className='mt-4 grid grid-cols-7 gap-1 sm:gap-2'>
+        {calendar.weekDays.map((day) => (
+          <div
+            key={day}
+            className='text-center text-[10px] font-medium text-[var(--color-text-muted)] sm:text-xs'
+          >
             {day}
           </div>
         ))}
-        {monthData.map(({ day, emoji, bg }) => (
+
+        {calendar.days.map((item) => (
           <div
-            key={day}
-            className={`flex flex-col items-center rounded-lg p-2 ${bg}`}
+            key={item.key}
+            className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg p-1 sm:min-h-14 ${getToneClass(
+              item.tone,
+            )}`}
           >
-            <span className='text-xs font-medium text-[var(--color-text)]'>{day}</span>
-            <span className='text-lg'>{emoji}</span>
+            {item.day != null && (
+              <>
+                <span className='text-[10px] font-medium leading-none text-[var(--color-text)] sm:text-xs'>
+                  {item.day}
+                </span>
+
+                {item.emoji && (
+                  <span className='text-base leading-none sm:text-lg'>
+                    {item.emoji}
+                  </span>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>

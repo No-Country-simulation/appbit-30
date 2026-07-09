@@ -497,7 +497,18 @@
     "todayCheckinRegistered": "Registro de hoy: {mood}",
     "skillStatusAcquired": "Adquirida",
     "skillStatusInProgress": "En progreso",
-    "skillStatusMissing": "Faltante"
+    "skillStatusMissing": "Faltante",
+    "checkinResultTitle": "Gracias por compartir cómo te sentís",
+    "checkinSuggestedAction": "Acción sugerida",
+    "checkinUrgentHelpHint": "Si sentís que la situación te sobrepasa, buscá apoyo inmediato o hablá con alguien de confianza.",
+    "verBienestar": "Ver bienestar",
+    "cerrar": "Cerrar",
+    "guardando": "Guardando...",
+    "checkinFallbackMessage": "Gracias por compartir cómo te sentís hoy.",
+    "checkinFallbackAction": "Hacé una pausa breve, respirá profundo y elegí una próxima acción pequeña.",
+    "checkinSavedTitle": "Check-in guardado",
+    "checkinAiResultTitle": "Análisis personalizado listo",
+    "checkinFallbackResultTitle": "Gracias por registrar cómo te sentís"
   },
   "Error": {
     "title": "Servicio temporalmente no disponible",
@@ -508,7 +519,7 @@
   "Bienestar": {
     "title": "Tu Bienestar",
     "robotMensaje": "Estoy aquí para escucharte, sin juzgar.",
-    "subtituloSugerencias": "Es completamente normal sentirse abrumada hoy. Toma un respiro, aquí tienes algunas sugerencias suaves para el viaje:",
+    "subtituloSugerencias": "Es completamente normal sentirse abrumada hoy. Toma un respiro, aquí tienes algunas sugerencias",
     "sugerencias": "Sugerencias para vos",
     "sugerenciaPodcast": "Podcast: Entiende tu Mente",
     "sugerenciaPodcastDesc": "Episodio sobre el agobio",
@@ -527,7 +538,12 @@
     "ayudaUrgente": "¿Necesitas hablar con alguien urgente?",
     "ayudaUrgenteDesc": "Si sientes que la situación te sobrepasa, no estás sola. Profesionales están listos para escucharte 24/7 de forma anónima y gratuita.",
     "lineaApoyo": "Línea de apoyo gratuita",
-    "llamar": "Llamar a línea de apoyo"
+    "llamar": "Llamar a línea de apoyo",
+    "promedioEstable": "Tu promedio semanal se mantiene estable. Seguí registrando cómo te sentís para ver tendencias.",
+    "sugerenciaIA": "Sugerencia personalizada",
+    "sinCheckinsTitulo": "Todavía no hay registros este mes",
+    "sinCheckinsDesc": "Cuando hagas tu check-in diario, vas a ver tu estado de ánimo reflejado en este calendario.",
+    "accionSugeridaTitle": "Acción sugerida"
   },
   "Formacion": {
     "title": "Tu Ruta de Aprendizaje",

@@ -8,8 +8,11 @@ import { EstadoCheckinEmojiEnum, Prisma } from '@/src/server/generated/prisma';
 
 export const dynamic = 'force-dynamic';
 
+type AppLocale = 'es' | 'pt';
+
 const checkinUsuarioSelect = {
   usuario_id: true,
+  idioma_app: true,
 } as const;
 
 const EMOJI_ENUM_BY_REQUEST = {
@@ -116,6 +119,190 @@ function alreadyExistsTodayResponse() {
   );
 }
 
+type WellbeingAnalysis = {
+  nota_actual: number;
+  nota_semanal: number;
+  mensaje: string;
+  accion_sugerida: string;
+  derivar_cvv: boolean;
+  alerta: boolean;
+};
+
+function getRequestLocale(request: Request): AppLocale | null {
+  const rawLocale = request.headers.get('x-locale');
+
+  if (rawLocale === 'pt') return 'pt';
+  if (rawLocale === 'es') return 'es';
+
+  return null;
+}
+
+function toFiniteNumber(value: unknown, fallback: number) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
+function getNotaDiaria(emoji: keyof typeof EMOJI_ENUM_BY_REQUEST) {
+  const emojiEnum = EMOJI_ENUM_BY_REQUEST[emoji];
+  const values = EMOJI_VALUES as Record<string, number>;
+
+  return values[emoji] ?? values[emojiEnum] ?? 5;
+}
+
+function getFallbackWellbeingAnalysis(params: {
+  locale: AppLocale;
+  notaActual: number;
+  historialSemanal: number[];
+}): WellbeingAnalysis {
+  const { locale, notaActual, historialSemanal } = params;
+
+  const notas = [...historialSemanal, notaActual];
+  const notaSemanal =
+    notas.length > 0
+      ? Number(
+          (notas.reduce((sum, value) => sum + value, 0) / notas.length).toFixed(
+            2,
+          ),
+        )
+      : notaActual;
+
+  const alerta = notaSemanal < 5.5;
+  const derivarCvv = notaSemanal < 4;
+
+  return {
+    nota_actual: notaActual,
+    nota_semanal: notaSemanal,
+    mensaje:
+      locale === 'pt'
+        ? 'Obrigado por compartilhar como você se sente hoje.'
+        : 'Gracias por compartir cómo te sentís hoy.',
+    accion_sugerida:
+      locale === 'pt'
+        ? 'Faça uma pausa breve, respire fundo e escolha uma próxima ação pequena.'
+        : 'Hacé una pausa breve, respirá profundo y elegí una próxima acción pequeña.',
+    derivar_cvv: derivarCvv,
+    alerta,
+  };
+}
+
+async function analyzeWellbeing(params: {
+  locale: AppLocale;
+  emoji: string;
+  notaActual: number;
+  motivos: string[];
+  contexto?: string;
+  historialSemanal: number[];
+}): Promise<{
+  analysis: WellbeingAnalysis;
+  source: 'ai' | 'fallback';
+}> {
+  const aiServiceUrl = process.env.AI_SERVICE_URL;
+
+  if (!aiServiceUrl) {
+    return {
+      analysis: getFallbackWellbeingAnalysis({
+        locale: params.locale,
+        notaActual: params.notaActual,
+        historialSemanal: params.historialSemanal,
+      }),
+      source: 'fallback',
+    };
+  }
+
+  try {
+    const response = await fetch(`${aiServiceUrl}/wellbeing/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-locale': params.locale,
+      },
+      body: JSON.stringify({
+        emoji: params.emoji,
+        nota_diaria: params.notaActual,
+        motivo:
+          params.motivos.length > 0 ? params.motivos.join(', ') : undefined,
+        contexto: params.contexto,
+        historial_semanal: params.historialSemanal,
+        idioma: params.locale,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    const rawText = await response.text().catch(() => '');
+
+    if (!response.ok) {
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          route: 'POST /api/checkins',
+          message: 'AI wellbeing service returned non-OK response',
+          context: {
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: rawText.slice(0, 2000),
+          },
+        }),
+      );
+
+      return {
+        analysis: getFallbackWellbeingAnalysis({
+          locale: params.locale,
+          notaActual: params.notaActual,
+          historialSemanal: params.historialSemanal,
+        }),
+        source: 'fallback',
+      };
+    }
+
+    const parsed = JSON.parse(rawText) as Partial<WellbeingAnalysis>;
+
+    if (
+      typeof parsed.mensaje !== 'string' ||
+      typeof parsed.accion_sugerida !== 'string'
+    ) {
+      throw new Error('Invalid AI wellbeing response shape');
+    }
+
+    return {
+      analysis: {
+        nota_actual: toFiniteNumber(parsed.nota_actual, params.notaActual),
+        nota_semanal: toFiniteNumber(parsed.nota_semanal, params.notaActual),
+        mensaje: parsed.mensaje,
+        accion_sugerida: parsed.accion_sugerida,
+        derivar_cvv: Boolean(parsed.derivar_cvv),
+        alerta: Boolean(parsed.alerta),
+      },
+      source: 'ai',
+    };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        route: 'POST /api/checkins',
+        message: 'AI wellbeing service failed; using fallback',
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : String(error),
+      }),
+    );
+
+    return {
+      analysis: getFallbackWellbeingAnalysis({
+        locale: params.locale,
+        notaActual: params.notaActual,
+        historialSemanal: params.historialSemanal,
+      }),
+      source: 'fallback',
+    };
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const authUser = await getCurrentAuthUser();
@@ -159,8 +346,35 @@ export async function POST(request: Request) {
     const { emoji, motivos, contexto, timezone } = parsed.data;
     const { start, end } = getUserDayRange(timezone);
 
+    const requestLocale = getRequestLocale(request);
+    const responseLocale: AppLocale =
+      requestLocale ?? (usuario.idioma_app === 'pt' ? 'pt' : 'es');
+
+    const sevenDaysAgo = new Date(start);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
+
+    const historialSemanal = await dbClient.checkIns.findMany({
+      where: {
+        usuario_id: usuario.usuario_id,
+        creado_en: {
+          gte: sevenDaysAgo,
+          lt: start,
+        },
+      },
+      orderBy: {
+        creado_en: 'asc',
+      },
+      select: {
+        nota_diaria: true,
+      },
+    });
+
+    const historialNotas = historialSemanal.map((item) =>
+      Number(item.nota_diaria),
+    );
+
     const emojiEnum = EMOJI_ENUM_BY_REQUEST[emoji];
-    const notaDiaria = EMOJI_VALUES[emojiEnum];
+    const notaDiaria = getNotaDiaria(emoji);
 
     const result = await dbClient.$transaction(
       async (tx) => {
@@ -221,9 +435,57 @@ export async function POST(request: Request) {
       },
     );
 
+    const { analysis, source } = await analyzeWellbeing({
+      locale: responseLocale,
+      emoji,
+      notaActual: Number(notaDiaria),
+      motivos,
+      contexto: contexto?.trim(),
+      historialSemanal: historialNotas,
+    });
+
+    try {
+      await dbClient.respuestasSalud.create({
+        data: {
+          usuario_id: usuario.usuario_id,
+          checkin_id: result.checkin_id,
+          nota_actual: analysis.nota_actual,
+          nota_semanal: analysis.nota_semanal,
+          mensaje: analysis.mensaje,
+          accion_sugerida: analysis.accion_sugerida,
+          derivar_cvv: analysis.derivar_cvv,
+          alerta: analysis.alerta,
+        },
+      });
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          route: 'POST /api/checkins',
+          message: 'Failed to persist wellbeing AI response',
+          error:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : String(error),
+          context: {
+            usuarioId: usuario.usuario_id,
+            checkinId: result.checkin_id,
+          },
+        }),
+      );
+    }
+
     return NextResponse.json({
       success: true,
       checkinId: result.checkin_id,
+      wellbeing: {
+        ...analysis,
+        source,
+      },
     });
   } catch (error) {
     if (error instanceof CheckinAlreadyExistsTodayError) {
