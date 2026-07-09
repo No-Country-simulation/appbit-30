@@ -34,6 +34,42 @@ const emojiKeys = Object.keys(EMOJI_VALUES) as [
 
 export const wellbeingEmojiSchema = z.enum(emojiKeys);
 
+function isValidBirthDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (!match) return false;
+
+  const [, yearRaw, monthRaw, dayRaw] = match;
+
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+
+  if (year < 1900) return false;
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  const isRealDate =
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+
+  if (!isRealDate) return false;
+
+  const today = new Date();
+  const todayUtc = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate(),
+  );
+
+  const dateUtc = Date.UTC(year, month - 1, day);
+
+  return dateUtc <= todayUtc;
+}
+
 // --- SCHEMAS PARA BIENESTAR (HU 9.3) ---
 
 export const wellbeingRequestSchema = z.object({
@@ -84,14 +120,9 @@ export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
 // --- SCHEMAS PARA ONBOARDING (FE-002) ---
 export const onboardingStep1Schema = z
   .object({
-    fechaNacimiento: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), {
-        message: 'Fecha inválida (ISO 8601)',
-      })
-      .refine((val) => new Date(val) < new Date(), {
-        message: 'La fecha debe ser pasada',
-      }),
+    fechaNacimiento: z.string().refine(isValidBirthDate, {
+      message: 'Fecha de nacimiento inválida',
+    }),
     genero: z.enum([
       'Masculino',
       'Femenino',
@@ -348,9 +379,15 @@ export const dashboardResponseSchema = z.object({
       accion_label: z.string().nullable(),
       curso: z
         .object({
-          titulo: z.string(),
+          curso_id: z.string().nullable().optional(),
+          titulo: z.string().nullable().optional(),
+          url_externa: z.string().nullable().optional(),
+          plataforma: z.string().nullable().optional(),
+          tipo: z.string().nullable().optional(),
+          hasInternalContent: z.boolean().nullable().optional(),
         })
-        .nullable(),
+        .nullable()
+        .optional(),
     }),
   ),
   bienestar: z.object({
@@ -420,7 +457,9 @@ export type SkillsResponse = z.infer<typeof skillsResponseSchema>;
 // --- SCHEMAS PARA ONBOARDING AI (FE-002 / FE-003) ---
 export const onboardingAIRequestSchema = z.object({
   usuarioId: z.string(),
-  fechaNacimiento: z.string(),
+  fechaNacimiento: z.string().refine(isValidBirthDate, {
+    message: 'Fecha de nacimiento inválida',
+  }),
   genero: z.string(),
   pais: z.string(),
   provinciaEstado: z.string().optional(),
