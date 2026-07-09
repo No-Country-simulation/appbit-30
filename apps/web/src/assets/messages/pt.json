@@ -406,7 +406,7 @@
     "radarDesc": "Há {cantidad} vagas híbridas a menos de 30 min da sua zona. Aproveite a proximidade!",
     "radarButton": "Ver vagas recomendadas",
     "skillsGapTitle": "Seu Match de Skills",
-    "skillsGapDesc": "Você cumpre {porcentaje}% das habilidades técnicas solicitadas pelo mercado para {puesto}.",
+    "skillsGapDesc": "Você cumpre {porcentaje}% das habilidades técnicas solicitadas pelo mercado para sua rota: {puesto}.",
     "skillsGapButton": "Ver Análise Detalhada",
     "actionPlanTitle": "Plano de Ação Sugerido",
     "altaPrioridad": "Alta prioridade",
@@ -494,7 +494,10 @@
     "cerrarSesion": "Sair",
     "cerrandoSesion": "Saindo...",
     "checkinAlreadyDoneToday": "Você já registrou seu check-in de bem-estar hoje. Volte amanhã para registrar outro.",
-    "todayCheckinRegistered": "Registro de hoje: {mood}"
+    "todayCheckinRegistered": "Registro de hoje: {mood}",
+    "skillStatusAcquired": "Adquirida",
+    "skillStatusInProgress": "Em progresso",
+    "skillStatusMissing": "Faltante"
   },
   "Error": {
     "title": "Serviço temporariamente indisponível",

@@ -203,7 +203,7 @@ export function CheckinModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='safe-modal-content flex max-h-[90dvh] w-[min(calc(100vw-1rem),34rem)] max-w-none flex-col overflow-hidden p-0'>
+      <DialogContent className='safe-modal-content w-[min(calc(100vw-1rem),34rem)] p-0'>
         <div className='shrink-0 border-b border-[var(--color-border)] px-4 py-4 sm:px-6'>
           <DialogHeader className='text-left'>
             <DialogTitle className='break-words leading-tight'>
@@ -348,11 +348,12 @@ export function CheckinModal({
           </div>
         </div>
 
-        <DialogFooter className='relative shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
+        <DialogFooter className='border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
           <div className='flex w-full min-w-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end'>
             {step > 1 && (
               <AppButton
                 variant='outline'
+                className='w-full sm:w-auto'
                 onClick={handleBack}
                 disabled={isSubmitting}
               >
@@ -363,6 +364,7 @@ export function CheckinModal({
             {step < 3 ? (
               <AppButton
                 variant='primary'
+                className='w-full sm:w-auto'
                 disabled={isSubmitting || (step === 1 && !selectedMood)}
                 onClick={handleNext}
               >
@@ -371,6 +373,7 @@ export function CheckinModal({
             ) : (
               <AppButton
                 variant='primary'
+                className='w-full sm:w-auto'
                 disabled={isSubmitting || !selectedMood}
                 onClick={handleGuardar}
               >

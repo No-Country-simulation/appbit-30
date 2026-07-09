@@ -61,6 +61,7 @@ export function AppSidebar({
   const pathname = usePathname();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
 
   const resolvedUserName = userName || t('profileFallbackName');
 
@@ -91,70 +92,74 @@ export function AppSidebar({
     }
   }
 
+  const shouldShowAvatar = Boolean(avatarUrl && failedAvatarUrl !== avatarUrl);
+
   return (
     <aside
       className={cn(
-        'flex h-dvh w-[var(--sidebar-width)] shrink-0 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-card)]',
+        'flex h-dvh w-full shrink-0 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-card)]',
         className,
       )}
     >
       <div className='flex h-[72px] shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-6'>
-        <span className='font-heading text-lg font-black text-[var(--color-text)]'>
+        <span className='truncate font-heading text-lg font-black text-[var(--color-text)]'>
           {tCommon('brand')}
         </span>
       </div>
 
-      <nav className='min-h-0 flex-1 overflow-y-auto px-4 py-3'>
-        {navGroups.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            {groupIndex > 0 && (
-              <div className='my-3 border-t border-[var(--color-border)]' />
-            )}
+      <div className='min-h-0 flex-1 overflow-y-auto px-4 py-3'>
+        <nav className='min-w-0'>
+          {navGroups.map((group, groupIndex) => (
+            <div key={groupIndex}>
+              {groupIndex > 0 && (
+                <div className='my-3 border-t border-[var(--color-border)]' />
+              )}
 
-            <ul className='space-y-1.5'>
-              {group.map((item) => {
-                const isActive =
-                  item.href !== '#' &&
-                  (pathname === item.href || pathname.startsWith(item.href));
+              <ul className='space-y-1.5'>
+                {group.map((item) => {
+                  const isActive =
+                    item.href !== '#' &&
+                    (pathname === item.href || pathname.startsWith(item.href));
 
-                const classes = cn(
-                  'flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium transition-colors duration-200',
-                  isActive
-                    ? 'bg-[var(--color-primary)] text-white'
-                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]',
-                );
+                  const classes = cn(
+                    'flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium transition-colors duration-200',
+                    isActive
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]',
+                  );
 
-                const content = (
-                  <>
-                    <item.icon className='size-5 shrink-0' />
-                    <span className='truncate'>{t(item.labelKey)}</span>
-                  </>
-                );
+                  const content = (
+                    <>
+                      <item.icon className='size-5 shrink-0' />
+                      <span className='truncate'>{t(item.labelKey)}</span>
+                    </>
+                  );
 
-                return (
-                  <li key={item.labelKey}>
-                    {item.href === '#' ? (
-                      <a href={item.href} className={classes}>
-                        {content}
-                      </a>
-                    ) : (
-                      <Link
-                        href={item.href}
-                        className={classes}
-                        onClick={onNavigate}
-                      >
-                        {content}
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+                  return (
+                    <li key={item.labelKey}>
+                      {item.href === '#' ? (
+                        <a href={item.href} className={classes}>
+                          {content}
+                        </a>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          className={classes}
+                          onClick={onNavigate}
+                        >
+                          {content}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
 
-      <div className='shrink-0 border-t border-[var(--color-border)] px-4 py-3'>
+        <div className='my-3 border-t border-[var(--color-border)]' />
+
         <a
           href='#'
           className='flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-200 hover:bg-[var(--color-primary-pale)] hover:text-[var(--color-primary)]'
@@ -165,11 +170,14 @@ export function AppSidebar({
       </div>
 
       <div className='flex shrink-0 items-center gap-3 border-t border-[var(--color-border)] px-6 py-4'>
-        {avatarUrl ? (
+        {shouldShowAvatar ? (
           <img
-            src={avatarUrl}
+            key={avatarUrl}
+            src={avatarUrl!}
             alt={t('profileAvatarAlt', { nombre: resolvedUserName })}
             className='size-10 shrink-0 rounded-full object-cover'
+            referrerPolicy='no-referrer'
+            onError={() => setFailedAvatarUrl(avatarUrl ?? null)}
           />
         ) : (
           <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-pale)] text-sm font-bold text-[var(--color-primary)]'>

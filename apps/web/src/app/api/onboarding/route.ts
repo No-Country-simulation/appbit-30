@@ -427,10 +427,15 @@ export async function POST(request: Request) {
     const aiServiceUrl = process.env.AI_SERVICE_URL;
 
     if (aiServiceUrl) {
+      const aiStartedAt = Date.now();
+
       try {
-        await fetch(`${aiServiceUrl}/api/onboarding`, {
+        const aiResponse = await fetch(`${aiServiceUrl}/api/onboarding`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-request-id': requestId,
+          },
           body: JSON.stringify({
             usuarioId: result.usuarioId,
             ...data,
@@ -444,7 +449,61 @@ export async function POST(request: Request) {
           }),
           signal: AbortSignal.timeout(20000),
         });
-      } catch {
+
+        const aiDurationMs = Date.now() - aiStartedAt;
+        const aiResponseText = await aiResponse.text().catch(() => '');
+
+        if (!aiResponse.ok) {
+          logApiError({
+            route: 'POST /api/onboarding',
+            requestId,
+            error: new Error('AI service returned non-OK response'),
+            context: {
+              code: 'AI_SERVICE_NON_OK',
+              aiServiceUrl,
+              usuarioId: result.usuarioId,
+              status: aiResponse.status,
+              statusText: aiResponse.statusText,
+              durationMs: aiDurationMs,
+              responseBody: aiResponseText.slice(0, 3000),
+            },
+          });
+
+          console.warn(
+            'ai-service respondió con error, onboarding completado sin recomendaciones',
+          );
+        } else {
+          console.info(
+            JSON.stringify({
+              level: 'info',
+              route: 'POST /api/onboarding',
+              requestId,
+              timestamp: new Date().toISOString(),
+              message: 'AI service onboarding completed',
+              context: {
+                usuarioId: result.usuarioId,
+                status: aiResponse.status,
+                durationMs: aiDurationMs,
+                responseBody: aiResponseText.slice(0, 1000),
+              },
+            }),
+          );
+        }
+      } catch (error: unknown) {
+        const aiDurationMs = Date.now() - aiStartedAt;
+
+        logApiError({
+          route: 'POST /api/onboarding',
+          requestId,
+          error,
+          context: {
+            code: 'AI_SERVICE_UNAVAILABLE',
+            aiServiceUrl,
+            usuarioId: result.usuarioId,
+            durationMs: aiDurationMs,
+          },
+        });
+
         console.warn(
           'ai-service no disponible, onboarding completado sin recomendaciones',
         );
