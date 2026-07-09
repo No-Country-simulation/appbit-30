@@ -118,6 +118,7 @@ export default function FormacionClient({ data }: Props) {
                 duracionDias={course.durationDays}
                 desbloqueado
                 primaryLabel={getPrimaryActionLabel(course)}
+                primaryIcon={course.hasInternalContent ? 'play' : 'external'}
                 onOpen={() => openCourse(course)}
                 onValidarExterno={() => setCertModalOpen(true)}
               />
