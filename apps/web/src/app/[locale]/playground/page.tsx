@@ -28,9 +28,9 @@ export default async function PlaygroundPage({ params }: Props) {
     redirect(`/${locale}/auth`);
   }
 
-  // if (state.needsOnboarding) {
-  //   redirect(`/${locale}/dashboard?onboarding=1`);
-  // }
+  if (state.needsOnboarding) {
+    redirect(`/${locale}/dashboard?onboarding=1`);
+  }
 
   return <PlaygroundScreen />;
 }

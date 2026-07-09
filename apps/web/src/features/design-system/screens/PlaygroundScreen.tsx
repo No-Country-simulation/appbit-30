@@ -45,17 +45,17 @@ export default function PlaygroundScreen() {
     id: string;
     titulo: string;
     empresa: string;
-    empresaDescripcion?: string;
-    logoUrl?: string;
+    empresaDescripcion: string | null;
+    logoUrl: string | null;
     area: string;
     nivel: string;
     modalidad: string;
-    modalidadDetallada?: string;
+    modalidadDetallada: string | null;
     ubicacion: string;
-    distancia?: string;
+    distancia: string | null;
     matchPorcentaje: number;
     descripcion: string;
-    fechaPublicacion?: string;
+    fechaPublicacion: string | null;
     educacionRequerida: string[];
     experienciaSolicitada: string[];
     idioma: string[];
@@ -63,12 +63,32 @@ export default function PlaygroundScreen() {
     skills: { nombre: string; laTienes: boolean }[];
   } | null>(null);
 
-  const demoVacante = {
+  const demoVacante: {
+    id: string;
+    titulo: string;
+    empresa: string;
+    empresaDescripcion: string | null;
+    logoUrl: string | null;
+    area: string;
+    nivel: string;
+    modalidad: string;
+    modalidadDetallada: string | null;
+    ubicacion: string;
+    distancia: string | null;
+    matchPorcentaje: number;
+    fechaPublicacion: string | null;
+    descripcion: string;
+    educacionRequerida: string[];
+    experienciaSolicitada: string[];
+    idioma: string[];
+    jornada: string[];
+    skills: { nombre: string; laTienes: boolean }[];
+  } = {
     id: 'demo-1',
     titulo: 'Data Analyst Jr.',
     empresa: 'TechCorp Latam',
     empresaDescripcion: 'Fintech líder en LATAM · 500-1000 empleados · Buenos Aires',
-    logoUrl: '',
+    logoUrl: null,
     area: 'Data Analytics',
     nivel: 'Jr. / Entry Level',
     modalidad: 'Híbrido',
@@ -473,6 +493,7 @@ export default function PlaygroundScreen() {
               titulo="Analista de Datos Jr."
               empresa="Nubank"
               estado="En_revision"
+              logoUrl={null}
               mensajesNuevos={1}
               onVerMensajes={() => {}}
             />
@@ -480,6 +501,7 @@ export default function PlaygroundScreen() {
               titulo="Data Analyst Trainee"
               empresa="Globant"
               estado="Rechazada"
+              logoUrl={null}
               feedback="Hola Maria. Nos encantó tu perfil y tu motivación. En esta ocasión avanzamos con candidatos con mayor dominio de PowerBI. Te animamos a fortalecer esa skill y volver a intentarlo en el futuro. ¡Mucho éxito!"
               skillRechazada="PowerBI"
               onFortalecer={() => {}}
@@ -488,6 +510,7 @@ export default function PlaygroundScreen() {
               titulo="SQL Developer"
               empresa="Tech Solutions"
               estado="Cerrado"
+              logoUrl={null}
             />
           </div>
 

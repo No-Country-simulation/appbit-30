@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckIcon } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StepIndicatorProps {
@@ -62,7 +62,7 @@ export function StepIndicator({
                     'border-[var(--color-border)] text-[var(--color-text-muted)]',
                 )}
               >
-                {isCompleted ? <CheckIcon className='size-4' /> : stepNumber}
+                {isCompleted ? <Check className='size-4' /> : stepNumber}
               </div>
 
               {label && (

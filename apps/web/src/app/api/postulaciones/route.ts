@@ -4,6 +4,15 @@ import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
 import { Prisma } from '@/src/server/generated/prisma';
+import {
+  apiErrorResponse,
+  getRequestId,
+  logApiError,
+} from '@/src/server/api/api-error';
+import {
+  estadoLabels,
+  getLabel,
+} from '@/src/lib/label-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,29 +38,30 @@ function calcularMatchPorcentaje(
   return Math.round((matches / requisitos.length) * 100);
 }
 
-const estadoLabels: Record<string, string> = {
-  Enviada: 'Enviada',
-  Vista: 'Vista',
-  En_proceso: 'En_revision',
-  Rechazada: 'Rechazada',
-  Aceptada: 'Aceptada',
-};
+export async function GET(request: Request) {
+  const requestId = getRequestId(request);
 
-export async function GET() {
   try {
     const authUser = await getCurrentAuthUser();
 
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrorResponse({
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: 'Necesitás iniciar sesión para ver tus postulaciones.',
+        requestId,
+      });
     }
 
     const usuario = await findLinkedUsuario(authUser, postulacionUsuarioSelect);
 
     if (!usuario) {
-      return NextResponse.json(
-        { error: 'User not found. Complete onboarding first.' },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'USER_NOT_FOUND',
+        message: 'No encontramos tu perfil. Completá el onboarding para continuar.',
+        requestId,
+      });
     }
 
     const postulaciones = await dbClient.postulaciones.findMany({
@@ -76,7 +86,7 @@ export async function GET() {
       titulo: p.vacante.titulo,
       empresa: p.vacante.empresa.nombre,
       logoUrl: p.vacante.empresa.logo_url,
-      estado: estadoLabels[p.estado] ?? p.estado,
+      estado: getLabel(estadoLabels, p.estado, p.estado),
       matchPorcentaje: p.match_porcentaje ? Number(p.match_porcentaje) : null,
       feedback: null,
       skillRechazada: null,
@@ -86,50 +96,61 @@ export async function GET() {
 
     return NextResponse.json({ postulaciones: formatted });
   } catch (error) {
-    console.error('Error fetching postulaciones:', error);
+    logApiError({
+      route: 'GET /api/postulaciones',
+      requestId,
+      error,
+      context: { code: 'POSTULACIONES_FETCH_FAILED' },
+    });
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return apiErrorResponse({
+      status: 500,
+      code: 'POSTULACIONES_FETCH_FAILED',
+      message: 'No pudimos cargar tus postulaciones. Intentá de nuevo.',
+      requestId,
+    });
   }
 }
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+
   try {
     const authUser = await getCurrentAuthUser();
 
     if (!authUser) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 },
-      );
+      return apiErrorResponse({
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: 'Necesitás iniciar sesión para postularte.',
+        requestId,
+      });
     }
 
     const rawBody = await request.json();
     const parsed = postulacionRequestSchema.safeParse(rawBody);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Datos inválidos',
-          errors: parsed.error.flatten().fieldErrors,
+      return apiErrorResponse({
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'Datos inválidos',
+        requestId,
+        details: {
+          fieldErrors: parsed.error.flatten().fieldErrors,
         },
-        { status: 400 },
-      );
+      });
     }
 
     const usuario = await findLinkedUsuario(authUser, postulacionUsuarioSelect);
 
     if (!usuario) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Usuario no encontrado. Complete onboarding first.',
-        },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'USER_NOT_FOUND',
+        message: 'No encontramos tu perfil. Completá el onboarding para continuar.',
+        requestId,
+      });
     }
 
     const { vacante_id, mensaje_motivacion, usar_cv_guardado } = parsed.data;
@@ -145,17 +166,21 @@ export async function POST(request: Request) {
     });
 
     if (!vacante) {
-      return NextResponse.json(
-        { success: false, message: 'Vacante no encontrada' },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'VACANTE_NOT_FOUND',
+        message: 'La vacante no existe.',
+        requestId,
+      });
     }
 
     if (!vacante.activa) {
-      return NextResponse.json(
-        { success: false, message: 'La vacante ya no está activa' },
-        { status: 400 },
-      );
+      return apiErrorResponse({
+        status: 400,
+        code: 'VACANTE_INACTIVE',
+        message: 'La vacante ya no está activa.',
+        requestId,
+      });
     }
 
     const existing = await dbClient.postulaciones.findUnique({
@@ -168,10 +193,12 @@ export async function POST(request: Request) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { success: false, message: 'Ya te postulaste a esta vacante' },
-        { status: 409 },
-      );
+      return apiErrorResponse({
+        status: 409,
+        code: 'ALREADY_APPLIED',
+        message: 'Ya te postulaste a esta vacante.',
+        requestId,
+      });
     }
 
     const userSkills = await dbClient.usuarioHabilidades.findMany({
@@ -198,15 +225,18 @@ export async function POST(request: Request) {
       postulacionId: result.postulacion_id,
     });
   } catch (error) {
-    console.error('Error creating postulacion:', error);
+    logApiError({
+      route: 'POST /api/postulaciones',
+      requestId,
+      error,
+      context: { code: 'POSTULACION_CREATE_FAILED' },
+    });
 
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : 'Error interno del servidor',
-      },
-      { status: 500 },
-    );
+    return apiErrorResponse({
+      status: 500,
+      code: 'POSTULACION_CREATE_FAILED',
+      message: 'No pudimos enviar tu postulación. Intentá de nuevo.',
+      requestId,
+    });
   }
 }

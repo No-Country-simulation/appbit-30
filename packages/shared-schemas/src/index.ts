@@ -10,14 +10,13 @@ export const orientationSchema = z.object({
   goal: z.string(),
 });
 
-// Validación de texto según especificación del documento de salud
 export const validText = (field: string) =>
   z
     .string()
     .optional()
     .refine(
       (val) => {
-        if (!val || !val.trim()) return true; // vacío es válido
+        if (!val || !val.trim()) return true;
         if (val.trim().length < 3) return false;
         const letras = new Set(val.match(/[a-zA-ZáéíóúñÑ]/g) || []);
         if (letras.size < 2) return false;
@@ -70,11 +69,10 @@ function isValidBirthDate(value: string) {
   return dateUtc <= todayUtc;
 }
 
-// --- SCHEMAS PARA BIENESTAR (HU 9.3) ---
 export const wellbeingRequestSchema = z.object({
   userId: z.string(),
   emoji: wellbeingEmojiSchema,
-  nota_diaria: z.number().min(0).max(10).optional(), // Si no viene, se infiere del emoji
+  nota_diaria: z.number().min(0).max(10).optional(),
   motivo: validText('motivo'),
   contexto: validText('contexto'),
   historial_semanal: z.array(z.number().min(0).max(10)).optional(),
@@ -116,7 +114,7 @@ export const checkinRequestSchema = z.object({
 });
 
 export type CheckinRequest = z.infer<typeof checkinRequestSchema>;
-// --- SCHEMAS PARA ONBOARDING (FE-002) ---
+
 export const onboardingStep1Schema = z
   .object({
     fechaNacimiento: z.string().refine(isValidBirthDate, {
@@ -186,7 +184,15 @@ export const onboardingStep2Schema = z
             'Portugues',
             'Frances',
           ] as const),
-          nivel: z.enum(['A1', 'A2', 'B1', 'B2', 'C1'] as const),
+          nivel: z.enum([
+            'A1',
+            'A2',
+            'B1',
+            'B2',
+            'C1',
+            'C2',
+            'Nativo',
+          ] as const),
         }),
       )
       .min(1, { message: 'Seleccioná al menos un idioma' }),
@@ -195,7 +201,9 @@ export const onboardingStep2Schema = z
         z.enum(['Part_time', 'Full_time', 'Contractor', 'Freelance'] as const),
       )
       .min(1, { message: 'Seleccioná al menos una disponibilidad' }),
-    ubicacionTrabajo: z.enum(['Presencial', 'Hibrido', 'Remoto'] as const),
+    ubicacionTrabajo: z
+      .array(z.enum(['Presencial', 'Hibrido', 'Remoto'] as const))
+      .min(1, { message: 'Seleccioná al menos una modalidad' }),
   })
   .strip();
 
@@ -229,12 +237,16 @@ export const onboardingStep4Schema = z
     dispositivos: z
       .array(z.enum(['Solo_celular', 'PC_Laptop', 'Tablet'] as const))
       .min(1, { message: 'Seleccioná al menos un dispositivo' }),
-    tipoConexion: z.enum([
-      'Banda_ancha_estable',
-      'Datos_moviles',
-      'Conexion_inestable',
-      'Sin_conexion_casa',
-    ] as const),
+    tipoConexion: z
+      .array(
+        z.enum([
+          'Banda_ancha_estable',
+          'Datos_moviles',
+          'Conexion_inestable',
+          'Sin_conexion_casa',
+        ] as const),
+      )
+      .min(1, { message: 'Seleccioná al menos un tipo de conexión' }),
     whatsappCodigo: z
       .string()
       .regex(/^\+\d{1,4}$/, 'Código de país inválido (ej: +54)')
@@ -246,23 +258,76 @@ export const onboardingStep4Schema = z
   })
   .strip();
 
+const PHONE_LENGTH_MAP: Record<string, number> = {
+  '+54': 10,
+  '+55': 11,
+  '+56': 9,
+  '+57': 10,
+  '+52': 10,
+  '+51': 9,
+  '+598': 8,
+  '+595': 9,
+  '+591': 8,
+  '+593': 9,
+  '+58': 10,
+  '+53': 8,
+  '+1': 10,
+  '+502': 8,
+  '+504': 8,
+  '+503': 8,
+  '+505': 8,
+  '+506': 8,
+  '+507': 8,
+  '+34': 9,
+  '+44': 10,
+  '+351': 9,
+};
+
 export const onboardingSchema = z
   .object({
     ...onboardingStep1Schema.shape,
     ...onboardingStep2Schema.shape,
     ...onboardingStep3Schema.shape,
+    ...onboardingStep4Schema.shape,
   })
-  .refine(
-    (data) => {
-      if (
-        (data.whatsappCodigo && !data.whatsappNumero) ||
-        (!data.whatsappCodigo && data.whatsappNumero)
-      )
-        return false;
-      return true;
-    },
-    { message: 'whatsappCodigo y whatsappNumero deben completarse juntos' },
-  );
+  .superRefine((data, ctx) => {
+    if (
+      (data.whatsappCodigo && !data.whatsappNumero) ||
+      (!data.whatsappCodigo && data.whatsappNumero)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['whatsappNumero'],
+        message: 'whatsappCodigo y whatsappNumero deben completarse juntos',
+      });
+    }
+    if (data.whatsappCodigo && data.whatsappNumero) {
+      const expectedLen = PHONE_LENGTH_MAP[data.whatsappCodigo];
+      if (expectedLen && data.whatsappNumero.length !== expectedLen) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `El número debe tener ${expectedLen} dígitos para ${data.whatsappCodigo}`,
+          path: ['whatsappNumero'],
+        });
+      }
+    }
+    if (data.nivelExperienciaTecnologia === 'Con_conocimientos_previos') {
+      if (data.habilidadesTecnicas.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['habilidadesTecnicas'],
+          message: 'Seleccioná al menos una habilidad técnica',
+        });
+      }
+      if (data.habilidadesBlandas.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['habilidadesBlandas'],
+          message: 'Seleccioná al menos una habilidad blanda',
+        });
+      }
+    }
+  });
 
 export type OnboardingRequest = z.infer<typeof onboardingSchema>;
 
@@ -272,7 +337,6 @@ export const onboardingResponseSchema = z.object({
   userId: z.string(),
 });
 
-// --- SCHEMAS PARA DASHBOARD (FE-003) ---
 export const dashboardResponseSchema = z.object({
   perfil_completado: z.number(),
   match_perfil: z.number(),
@@ -347,7 +411,6 @@ export const dashboardResponseSchema = z.object({
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 
-// --- SCHEMAS PARA SKILLS (FE-003) ---
 export const skillsResponseSchema = z.object({
   habilidades: z.array(
     z.object({
@@ -383,7 +446,6 @@ export const skillsResponseSchema = z.object({
 
 export type SkillsResponse = z.infer<typeof skillsResponseSchema>;
 
-// --- SCHEMAS PARA ONBOARDING AI (FE-002 / FE-003) ---
 export const onboardingAIRequestSchema = z.object({
   usuarioId: z.string(),
   fechaNacimiento: z.string().refine(isValidBirthDate, {
@@ -438,7 +500,9 @@ export const onboardingAIResponseSchema = z.object({
   habilidadesCount: z.number().optional(),
 });
 
-// --- SCHEMAS PARA EMPLEABILIDAD (FE-004) ---
+export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
+export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
+
 export const postulacionRequestSchema = z.object({
   vacante_id: z.string().uuid(),
   mensaje_motivacion: z.string().max(2000).optional(),
@@ -511,7 +575,6 @@ export const postulacionCreateResponseSchema = z.object({
   postulacionId: z.string(),
 });
 
-export type PostulacionCreateResponse = z.infer<typeof postulacionCreateResponseSchema>;
-
-export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
-export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
+export type PostulacionCreateResponse = z.infer<
+  typeof postulacionCreateResponseSchema
+>;

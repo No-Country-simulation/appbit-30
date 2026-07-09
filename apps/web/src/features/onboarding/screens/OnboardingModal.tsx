@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/src/i18n/navigation';
 import {
@@ -19,14 +19,16 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import {
-  AppButton,
   AppInput,
+  AppButton,
   ChoiceChip,
   CountryCodeSelect,
   StepIndicator,
   AppDateInput,
   getLocalTodayIso,
   isValidIsoDate,
+  countries,
+  formatPhoneNumber,
 } from '@/src/components';
 import { Body, Caption } from '@/src/components/typography';
 import { FieldError } from '@/src/features/onboarding/components';
@@ -42,8 +44,8 @@ import {
 
 const SELECT_TRIGGER_CLASSES =
   'h-11 w-full min-w-0 max-w-full justify-between rounded-[8px] border border-[var(--color-input-border)] bg-[var(--color-card)] px-3 py-2 font-body text-base leading-tight text-[var(--color-text)] focus:border-[var(--color-primary)] focus:ring-[3px] focus:ring-[var(--color-input-focus-ring)] sm:text-sm data-[size=default]:!h-11';
-const SIN_CONOCIMIENTO = 'Sin_conocimiento';
-const CON_CONOCIMIENTOS = 'Con_conocimientos';
+const SIN_CONOCIMIENTO = 'Desde_cero' as const;
+const CON_CONOCIMIENTOS = 'Con_conocimientos_previos' as const;
 
 const TEXT_ONLY_REGEX = /^[a-zA-ZáéíóúñÑüÜ\s'-]*$/;
 const NUMBERS_ONLY_REGEX = /^\d*$/;
@@ -60,13 +62,13 @@ interface FormData {
   areasInteres: string[];
   idiomas: { idioma: string; nivel: string }[];
   disponibilidad: string[];
+  ubicacionTrabajo: string[];
   nivelExperienciaTecnologia: string;
   habilidadesTecnicas: string[];
   habilidadesBlandas: string[];
-  ubicacionTrabajo: string;
   objetivos: string[];
   dispositivos: string[];
-  tipoConexion: string;
+  tipoConexion: string[];
   whatsappCodigo: string;
   whatsappNumero: string;
 }
@@ -83,13 +85,13 @@ const INITIAL_FORM_DATA: FormData = {
   areasInteres: [],
   idiomas: [],
   disponibilidad: [],
+  ubicacionTrabajo: [],
   nivelExperienciaTecnologia: '',
   habilidadesTecnicas: [],
   habilidadesBlandas: [],
-  ubicacionTrabajo: '',
   objetivos: [],
   dispositivos: [],
-  tipoConexion: '',
+  tipoConexion: [],
   whatsappCodigo: '',
   whatsappNumero: '',
 };
@@ -148,7 +150,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 const STEP_LABEL_KEYS = [
   'stepLabelPersonales',
@@ -173,7 +175,16 @@ export function OnboardingModal({
   const t = useTranslations('Onboarding');
   const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const [open, setOpen] = useState(defaultOpen);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window === 'undefined') return 1 as Step;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_STEP);
+      const n = Number(saved);
+      return (n >= 1 && n <= 4 ? n : 1) as Step;
+    } catch {
+      return 1 as Step;
+    }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectOpenRef = useRef(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -186,9 +197,17 @@ export function OnboardingModal({
     }
   }, []);
 
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>(getStoredFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_STEP, String(step));
+  }, [step]);
 
   function toggleArray(
     field: keyof Pick<
@@ -197,8 +216,12 @@ export function OnboardingModal({
       | 'momentoProfesional'
       | 'areasInteres'
       | 'disponibilidad'
+      | 'ubicacionTrabajo'
+      | 'habilidadesTecnicas'
+      | 'habilidadesBlandas'
       | 'objetivos'
       | 'dispositivos'
+      | 'tipoConexion'
     >,
     value: string,
   ) {
@@ -231,7 +254,6 @@ export function OnboardingModal({
         ),
       };
     });
-
     setShowErrors(false);
   }
 
@@ -240,7 +262,6 @@ export function OnboardingModal({
       ...prev,
       nivelExperienciaTecnologia: value,
     }));
-
     setShowErrors(false);
   }
 
@@ -290,12 +311,43 @@ export function OnboardingModal({
         d.areasInteres.length > 0 &&
         d.idiomas.some((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
-        !!d.ubicacionTrabajo
+        d.ubicacionTrabajo.length > 0
       );
     }
+    if (step === 3) {
+      if (!d.nivelExperienciaTecnologia) return false;
+      if (d.nivelExperienciaTecnologia === SIN_CONOCIMIENTO) {
+        return true;
+      }
+      return (
+        d.habilidadesTecnicas.length > 0 && d.habilidadesBlandas.length > 0
+      );
+    }
+    const isWhatsappValid =
+      (!d.whatsappCodigo && !d.whatsappNumero) ||
+      (!!d.whatsappCodigo && !!d.whatsappNumero);
     return (
-      d.objetivos.length > 0 && d.dispositivos.length > 0 && !!d.tipoConexion
+      d.objetivos.length > 0 &&
+      d.dispositivos.length > 0 &&
+      d.tipoConexion.length > 0 &&
+      isWhatsappValid
     );
+  }
+
+  function hasPartialWhatsapp() {
+    return (
+      (!!formData.whatsappCodigo && !formData.whatsappNumero) ||
+      (!formData.whatsappCodigo && !!formData.whatsappNumero)
+    );
+  }
+
+  function clearWhatsapp() {
+    setFormData((prev) => ({
+      ...prev,
+      whatsappCodigo: '',
+      whatsappNumero: '',
+    }));
+    setShowErrors(false);
   }
 
   function handleNext() {
@@ -304,7 +356,7 @@ export function OnboardingModal({
       return;
     }
     setShowErrors(false);
-    if (step < 3) {
+    if (step < 4) {
       setStep((step + 1) as Step);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -333,6 +385,14 @@ export function OnboardingModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        habilidadesTecnicas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesTecnicas,
+        habilidadesBlandas:
+          formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
+            ? []
+            : formData.habilidadesBlandas,
         locale,
       }),
     })
@@ -382,6 +442,7 @@ export function OnboardingModal({
   function resetForm() {
     setStep(1);
     setFormData(INITIAL_FORM_DATA);
+    clearStorage();
     setShowErrors(false);
     setIsLoading(false);
     setSubmitError(null);
@@ -431,6 +492,8 @@ export function OnboardingModal({
     { value: 'B1', label: t('nivelOption3') },
     { value: 'B2', label: t('nivelOption4') },
     { value: 'C1', label: t('nivelOption5') },
+    { value: 'C2', label: t('nivelOption6') },
+    { value: 'Nativo', label: t('nivelOption7') },
   ];
 
   const disponibilidadOptions = [
@@ -482,15 +545,21 @@ export function OnboardingModal({
   ];
 
   const currentGreeting =
-    step === 1 ? t('step1Greeting')
-    : step === 2 ? t('step2Greeting')
-    : step === 3 ? t('step3Greeting')
-    : t('step4Greeting');
+    step === 1
+      ? t('step1Greeting')
+      : step === 2
+        ? t('step2Greeting')
+        : step === 3
+          ? t('step3Greeting')
+          : t('step4Greeting');
   const currentSubtitle =
-    step === 1 ? t('step1Subtitle')
-    : step === 2 ? t('step2Subtitle')
-    : step === 3 ? t('step3Subtitle')
-    : t('step4Subtitle');
+    step === 1
+      ? t('step1Subtitle')
+      : step === 2
+        ? t('step2Subtitle')
+        : step === 3
+          ? t('step3Subtitle')
+          : t('step4Subtitle');
 
   const selectedMarketAreas = formData.areasInteres.filter(isAreaInteresValue);
 
@@ -577,9 +646,7 @@ export function OnboardingModal({
                           }}
                         />
 
-                        <FieldError
-                          show={showErrors && !isFechaNacimientoValid}
-                        />
+                        <FieldError show={showErrors && !isFechaNacimientoValid} />
                       </div>
 
                       <div>
@@ -632,9 +699,7 @@ export function OnboardingModal({
                               <SelectValue placeholder={t('paisPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value='Argentina'>
-                                Argentina
-                              </SelectItem>
+                              <SelectItem value='Argentina'>Argentina</SelectItem>
                               <SelectItem value='Brasil'>Brasil</SelectItem>
                               <SelectItem value='Chile'>Chile</SelectItem>
                               <SelectItem value='Colombia'>Colombia</SelectItem>
@@ -818,7 +883,6 @@ export function OnboardingModal({
                               idiomasList.find((l) => l.value === idioma.idioma)
                                 ?.label
                             }
-                            :
                           </Body>
                           <div className='flex flex-wrap gap-2'>
                             {nivelesList.map((nivel) => (
@@ -921,8 +985,7 @@ export function OnboardingModal({
                       />
                     </div>
 
-                    {formData.nivelExperienciaTecnologia ===
-                      CON_CONOCIMIENTOS && (
+                    {formData.nivelExperienciaTecnologia === CON_CONOCIMIENTOS && (
                       <>
                         <div>
                           <Body>
@@ -949,11 +1012,7 @@ export function OnboardingModal({
                                     {MARKET_SKILL_LEVELS.map((level) => (
                                       <div key={level}>
                                         <p className='mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]'>
-                                          {t(
-                                            MARKET_SKILL_LEVEL_LABEL_KEYS[
-                                              level
-                                            ],
-                                          )}
+                                          {t(MARKET_SKILL_LEVEL_LABEL_KEYS[level])}
                                         </p>
 
                                         <div className='flex flex-wrap gap-2'>

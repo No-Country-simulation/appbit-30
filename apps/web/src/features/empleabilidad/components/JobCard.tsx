@@ -9,12 +9,12 @@ import { cn } from '@/lib/utils';
 interface Props {
   titulo: string;
   empresa: string;
-  logoUrl?: string;
+  logoUrl: string | null;
   modalidad: string;
   ubicacion: string;
   matchPorcentaje: number;
   skills: string[];
-  distancia?: string;
+  distancia?: string | null;
   onClick: () => void;
   onAplicar: () => void;
 }

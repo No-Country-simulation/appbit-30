@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
+import {
+  apiErrorResponse,
+  getRequestId,
+  logApiError,
+} from '@/src/server/api/api-error';
+import {
+  areaLabels,
+  nivelLabels,
+  modalidadLabels,
+  jornadaLabels,
+  getLabel,
+} from '@/src/lib/label-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,13 +39,20 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ vacante_id: string }> },
 ) {
+  const requestId = getRequestId(_request);
+
   try {
     const { vacante_id } = await params;
 
     const authUser = await getCurrentAuthUser();
 
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrorResponse({
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: 'Necesitás iniciar sesión para ver el detalle de la vacante.',
+        requestId,
+      });
     }
 
     const usuario = await findLinkedUsuario(authUser, {
@@ -41,10 +60,12 @@ export async function GET(
     });
 
     if (!usuario) {
-      return NextResponse.json(
-        { error: 'User not found. Complete onboarding first.' },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'USER_NOT_FOUND',
+        message: 'No encontramos tu perfil. Completá el onboarding para continuar.',
+        requestId,
+      });
     }
 
     const userId = usuario.usuario_id;
@@ -81,10 +102,12 @@ export async function GET(
     ]);
 
     if (!vacante) {
-      return NextResponse.json(
-        { error: 'Vacante not found' },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'VACANTE_NOT_FOUND',
+        message: 'La vacante no existe.',
+        requestId,
+      });
     }
 
     const matchPorcentaje = calcularMatchPorcentaje(vacante.requisitos, userSkills);
@@ -96,36 +119,6 @@ export async function GET(
     const empresaDescripcion = [sectorSize, vacante.ciudad].filter(Boolean).join(' · ');
 
     const ubicacion = [vacante.ciudad, vacante.pais].filter(Boolean).join(', ');
-
-    const areaLabels: Record<string, string> = {
-      Data_Analytics: 'Data Analytics',
-      Desarrollo_Web: 'Desarrollo Web',
-      UX_UI_Design: 'UX/UI Design',
-      Ciberseguridad: 'Ciberseguridad',
-      Cloud_DevOps: 'Cloud DevOps',
-      Inteligencia_Artificial: 'Inteligencia Artificial',
-      Marketing_Digital: 'Marketing Digital',
-      Product_Management: 'Product Management',
-    };
-
-    const nivelLabels: Record<string, string> = {
-      Jr_Entry_Level: 'Jr. / Entry Level',
-      Semi_Senior: 'Semi Senior',
-      Senior: 'Senior',
-    };
-
-    const modalidadLabels: Record<string, string> = {
-      Presencial: 'Presencial',
-      Hibrido: 'Híbrido',
-      Remoto: '100% Remoto',
-    };
-
-    const jornadaLabels: Record<string, string> = {
-      Jornada_completa: 'Jornada completa',
-      Media_jornada: 'Media jornada',
-      Relacion_dependencia: 'Relación de dependencia',
-      Freelance: 'Freelance',
-    };
 
     const educacionRequerida = vacante.educacion_requerida
       ? vacante.educacion_requerida.split(',').map((s) => s.trim())
@@ -140,7 +133,7 @@ export async function GET(
       : [];
 
     const jornada = vacante.jornada
-      ? [jornadaLabels[vacante.jornada] ?? vacante.jornada]
+      ? [getLabel(jornadaLabels, vacante.jornada, vacante.jornada)]
       : [];
 
     const formatted = {
@@ -149,9 +142,9 @@ export async function GET(
       empresa: vacante.empresa.nombre,
       empresaDescripcion: empresaDescripcion || null,
       logoUrl: vacante.empresa.logo_url,
-      area: areaLabels[vacante.area] ?? vacante.area,
-      nivel: nivelLabels[vacante.nivel] ?? vacante.nivel,
-      modalidad: modalidadLabels[vacante.modalidad] ?? vacante.modalidad,
+      area: getLabel(areaLabels, vacante.area, vacante.area),
+      nivel: getLabel(nivelLabels, vacante.nivel, vacante.nivel),
+      modalidad: getLabel(modalidadLabels, vacante.modalidad, vacante.modalidad),
       modalidadDetallada: vacante.detalle_modalidad ?? null,
       ubicacion,
       distancia: vacante.distancia_zona ?? null,
@@ -170,11 +163,18 @@ export async function GET(
 
     return NextResponse.json(formatted);
   } catch (error) {
-    console.error('Error fetching vacante detail:', error);
+    logApiError({
+      route: 'GET /api/vacantes/[vacante_id]',
+      requestId,
+      error,
+      context: { code: 'VACANTE_DETAIL_FETCH_FAILED' },
+    });
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return apiErrorResponse({
+      status: 500,
+      code: 'VACANTE_DETAIL_FETCH_FAILED',
+      message: 'No pudimos cargar el detalle de la vacante. Intentá de nuevo.',
+      requestId,
+    });
   }
 }

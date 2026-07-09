@@ -11,10 +11,10 @@ interface Props {
   titulo: string;
   empresa: string;
   estado: string;
-  logoUrl?: string;
-  matchPorcentaje?: number;
-  feedback?: string;
-  skillRechazada?: string;
+  logoUrl: string | null;
+  matchPorcentaje?: number | null;
+  feedback?: string | null;
+  skillRechazada?: string | null;
   mensajesNuevos?: number;
   onVerMensajes?: () => void;
   onFortalecer?: () => void;

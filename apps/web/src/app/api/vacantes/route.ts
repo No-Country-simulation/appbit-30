@@ -3,6 +3,18 @@ import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
 import { AreaInteresEnum, ModalidadVacanteEnum } from '@/src/server/generated/prisma';
+import {
+  apiErrorResponse,
+  getRequestId,
+  logApiError,
+} from '@/src/server/api/api-error';
+import {
+  areaLabels,
+  nivelLabels,
+  modalidadLabels,
+  jornadaLabels,
+  getLabel,
+} from '@/src/lib/label-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,11 +37,18 @@ function calcularMatchPorcentaje(
 }
 
 export async function GET(request: Request) {
+  const requestId = getRequestId(request);
+
   try {
     const authUser = await getCurrentAuthUser();
 
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrorResponse({
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: 'Necesitás iniciar sesión para ver las vacantes.',
+        requestId,
+      });
     }
 
     const usuario = await findLinkedUsuario(authUser, {
@@ -37,10 +56,12 @@ export async function GET(request: Request) {
     });
 
     if (!usuario) {
-      return NextResponse.json(
-        { error: 'User not found. Complete onboarding first.' },
-        { status: 404 },
-      );
+      return apiErrorResponse({
+        status: 404,
+        code: 'USER_NOT_FOUND',
+        message: 'No encontramos tu perfil. Completá el onboarding para continuar.',
+        requestId,
+      });
     }
 
     const userId = usuario.usuario_id;
@@ -107,36 +128,6 @@ export async function GET(request: Request) {
 
       const ubicacion = [v.ciudad, v.pais].filter(Boolean).join(', ');
 
-      const areaLabels: Record<string, string> = {
-        Data_Analytics: 'Data Analytics',
-        Desarrollo_Web: 'Desarrollo Web',
-        UX_UI_Design: 'UX/UI Design',
-        Ciberseguridad: 'Ciberseguridad',
-        Cloud_DevOps: 'Cloud DevOps',
-        Inteligencia_Artificial: 'Inteligencia Artificial',
-        Marketing_Digital: 'Marketing Digital',
-        Product_Management: 'Product Management',
-      };
-
-      const nivelLabels: Record<string, string> = {
-        Jr_Entry_Level: 'Jr. / Entry Level',
-        Semi_Senior: 'Semi Senior',
-        Senior: 'Senior',
-      };
-
-      const modalidadLabels: Record<string, string> = {
-        Presencial: 'Presencial',
-        Hibrido: 'Híbrido',
-        Remoto: '100% Remoto',
-      };
-
-      const jornadaLabels: Record<string, string> = {
-        Jornada_completa: 'Jornada completa',
-        Media_jornada: 'Media jornada',
-        Relacion_dependencia: 'Relación de dependencia',
-        Freelance: 'Freelance',
-      };
-
       const educacionRequerida = v.educacion_requerida
         ? v.educacion_requerida.split(',').map((s) => s.trim())
         : [];
@@ -150,7 +141,7 @@ export async function GET(request: Request) {
         : [];
 
       const jornada = v.jornada
-        ? [jornadaLabels[v.jornada] ?? v.jornada]
+        ? [getLabel(jornadaLabels, v.jornada, v.jornada)]
         : [];
 
       return {
@@ -159,9 +150,9 @@ export async function GET(request: Request) {
         empresa: v.empresa.nombre,
         empresaDescripcion: empresaDescripcion || null,
         logoUrl: v.empresa.logo_url,
-        area: areaLabels[v.area] ?? v.area,
-        nivel: nivelLabels[v.nivel] ?? v.nivel,
-        modalidad: modalidadLabels[v.modalidad] ?? v.modalidad,
+        area: getLabel(areaLabels, v.area, v.area),
+        nivel: getLabel(nivelLabels, v.nivel, v.nivel),
+        modalidad: getLabel(modalidadLabels, v.modalidad, v.modalidad),
         modalidadDetallada: v.detalle_modalidad ?? null,
         ubicacion,
         distancia: v.distancia_zona ?? null,
@@ -181,11 +172,18 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ vacantes: formatted });
   } catch (error) {
-    console.error('Error fetching vacantes:', error);
+    logApiError({
+      route: 'GET /api/vacantes',
+      requestId,
+      error,
+      context: { code: 'VACANTES_FETCH_FAILED' },
+    });
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return apiErrorResponse({
+      status: 500,
+      code: 'VACANTES_FETCH_FAILED',
+      message: 'No pudimos cargar las vacantes. Intentá de nuevo.',
+      requestId,
+    });
   }
 }

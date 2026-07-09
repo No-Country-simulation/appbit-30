@@ -38,6 +38,7 @@ export default function EmployabilityClient() {
         setVacantes(vacData.vacantes);
         setPostulaciones(postData.postulaciones);
       } catch (err) {
+        console.error('[EmployabilityClient] fetchData error:', err);
         setError(err instanceof Error ? err.message : 'Error al cargar datos');
       } finally {
         setLoading(false);
@@ -69,7 +70,8 @@ export default function EmployabilityClient() {
           usar_cv_guardado: data.usar_cv_guardado,
         }),
       });
-    } catch {
+    } catch (err) {
+      console.error('[EmployabilityClient] handlePostular error:', err);
       // Silently fail — user already saw success message
     }
   }
@@ -123,12 +125,12 @@ export default function EmployabilityClient() {
                 key={v.id}
                 titulo={v.titulo}
                 empresa={v.empresa}
-                logoUrl={v.logoUrl ?? undefined}
+                logoUrl={v.logoUrl ?? null}
                 modalidad={v.modalidad}
                 ubicacion={v.ubicacion}
                 matchPorcentaje={v.matchPorcentaje}
                 skills={v.skills.map((s) => s.nombre)}
-                distancia={v.distancia ?? undefined}
+                distancia={v.distancia ?? null}
                 onClick={() => handleAplicar(v)}
                 onAplicar={() => handleAplicar(v)}
               />
@@ -143,11 +145,11 @@ export default function EmployabilityClient() {
                 key={p.id}
                 titulo={p.titulo}
                 empresa={p.empresa}
-                logoUrl={p.logoUrl ?? undefined}
+                logoUrl={p.logoUrl ?? null}
                 estado={p.estado}
-                matchPorcentaje={p.matchPorcentaje ?? undefined}
-                feedback={p.feedback ?? undefined}
-                skillRechazada={p.skillRechazada ?? undefined}
+                matchPorcentaje={p.matchPorcentaje ?? null}
+                feedback={p.feedback ?? null}
+                skillRechazada={p.skillRechazada ?? null}
                 mensajesNuevos={p.mensajesNuevos}
                 onVerMensajes={p.mensajesNuevos > 0 ? () => {} : undefined}
                 onFortalecer={p.skillRechazada ? () => {} : undefined}

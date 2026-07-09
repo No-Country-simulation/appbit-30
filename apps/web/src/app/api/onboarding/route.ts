@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { onboardingSchema } from '@appbit/shared-schemas';
 import { dbClient } from '../../../server/clients/db.client';
-import type { NivelIdiomaEnum } from '../../../server/generated/prisma';
-import { IdiomaAppEnum } from '../../../server/generated/prisma';
+import { NivelIdiomaEnum, IdiomaAppEnum, EstadoHabilidadEnum } from '../../../server/generated/prisma';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import {
   apiErrorResponse,
@@ -219,6 +218,7 @@ export async function POST(request: Request) {
           perfil_completado: 100,
           onboarding_status: 'COMPLETED' as const,
           actualizado_en: new Date(),
+          tipo_conexion: data.tipoConexion[0] ?? 'Banda_ancha_estable',
         };
 
         if (usuario) {
