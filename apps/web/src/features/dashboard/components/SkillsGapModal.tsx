@@ -12,9 +12,11 @@ import {
 import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
 
+export type SkillStatus = 'acquired' | 'in_progress' | 'missing';
+
 export interface SkillRow {
   habilidad: string;
-  estado: 'Adquirida' | 'En progreso' | 'Faltante';
+  estado: SkillStatus;
 }
 
 interface Props {
@@ -26,10 +28,16 @@ interface Props {
   isLoading?: boolean;
 }
 
-const badgeVariant = {
-  Adquirida: 'success' as const,
-  'En progreso': 'warning' as const,
-  Faltante: 'danger' as const,
+const badgeVariant: Record<SkillStatus, 'success' | 'warning' | 'danger'> = {
+  acquired: 'success',
+  in_progress: 'warning',
+  missing: 'danger',
+};
+
+const skillStatusLabelKey: Record<SkillStatus, string> = {
+  acquired: 'skillStatusAcquired',
+  in_progress: 'skillStatusInProgress',
+  missing: 'skillStatusMissing',
 };
 
 function CircularProgress({ value }: { value: number }) {
@@ -117,15 +125,27 @@ export function SkillsGapModal({
                 {skills.map((skill) => (
                   <div
                     key={skill.habilidad}
-                    className='grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
+                    className='min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-card)] p-3'
                   >
-                    <p className='min-w-0 break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
-                      {skill.habilidad}
-                    </p>
+                    <div className='min-w-0'>
+                      <p className='text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                        {t('habilidadRequerida')}
+                      </p>
 
-                    <AppBadge variant={badgeVariant[skill.estado]}>
-                      {skill.estado}
-                    </AppBadge>
+                      <p className='mt-1 min-w-0 break-words text-sm font-semibold leading-snug text-[var(--color-text)]'>
+                        {skill.habilidad}
+                      </p>
+                    </div>
+
+                    <div className='mt-3 min-w-0'>
+                      <p className='mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]'>
+                        {t('estado')}
+                      </p>
+
+                      <AppBadge variant={badgeVariant[skill.estado]}>
+                        {t(skillStatusLabelKey[skill.estado] as never)}
+                      </AppBadge>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -135,11 +155,11 @@ export function SkillsGapModal({
                   <table className='w-full table-fixed text-sm'>
                     <thead className='sticky top-0 z-10'>
                       <tr className='bg-[var(--color-body)] text-left text-xs font-semibold text-[var(--color-text-muted)]'>
-                        <th className='w-[70%] px-4 py-3'>
+                        <th className='w-[62%] px-4 py-3'>
                           {t('habilidadRequerida')}
                         </th>
 
-                        <th className='w-[30%] px-4 py-3'>{t('estado')}</th>
+                        <th className='w-[38%] px-4 py-3'>{t('estado')}</th>
                       </tr>
                     </thead>
 
@@ -152,7 +172,7 @@ export function SkillsGapModal({
 
                           <td className='px-4 py-3'>
                             <AppBadge variant={badgeVariant[skill.estado]}>
-                              {skill.estado}
+                              {t(skillStatusLabelKey[skill.estado] as never)}
                             </AppBadge>
                           </td>
                         </tr>
