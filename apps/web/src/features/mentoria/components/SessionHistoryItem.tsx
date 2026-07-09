@@ -17,19 +17,28 @@ const tipoLabels: Record<string, string> = {
   preparacionEntrevistas: 'preparacionEntrevistas',
 };
 
-export function SessionHistoryItem({ nombre, tipoSesion, fecha, onVerNotas }: Props) {
+export function SessionHistoryItem({
+  nombre,
+  tipoSesion,
+  fecha,
+  onVerNotas,
+}: Props) {
   const t = useTranslations('Mentoria');
   const tipoLabel = tipoLabels[tipoSesion] ?? tipoSesion;
 
   return (
-    <div className='flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4'>
-      <div className='flex items-center gap-3'>
-        <div className='flex size-10 items-center justify-center rounded-full bg-violet-100 text-violet-700'>
+    <article className='flex min-w-0 flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex min-w-0 items-center gap-3'>
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700'>
           <User className='size-5' />
         </div>
-        <div>
-          <h4 className='font-medium text-[var(--color-text)]'>{nombre}</h4>
-          <p className='text-sm text-[var(--color-text-muted)]'>
+
+        <div className='min-w-0'>
+          <h4 className='break-words font-medium text-[var(--color-text)]'>
+            {nombre}
+          </h4>
+
+          <p className='break-words text-sm text-[var(--color-text-muted)]'>
             {t(tipoLabel)} • {fecha}
           </p>
         </div>
@@ -37,12 +46,12 @@ export function SessionHistoryItem({ nombre, tipoSesion, fecha, onVerNotas }: Pr
 
       <AppButton
         variant='outline'
-        className='inline-flex items-center gap-1.5 text-xs'
+        className='inline-flex w-full items-center gap-1.5 text-xs sm:w-auto'
         onClick={onVerNotas}
       >
-        <FileText className='size-3.5' />
+        <FileText className='size-3.5 shrink-0' />
         {t('verNotasCompartidas')}
       </AppButton>
-    </div>
+    </article>
   );
 }

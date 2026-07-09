@@ -9,6 +9,7 @@ import { BeMentorModal } from '../components/BeMentorModal';
 import { MentorFilters } from '../components/MentorFilters';
 import { MentorListItem } from '../components/MentorListItem';
 import { SessionHistoryItem } from '../components/SessionHistoryItem';
+import type { MentoriaData } from '../types';
 
 const mockMentors = [
   {
@@ -69,20 +70,38 @@ const mockSessions = [
 
 type Tab = 'explorar' | 'historial';
 
-export default function MentoriaClient() {
+interface Props {
+  data: MentoriaData;
+}
+
+export default function MentoriaClient({ data }: Props) {
   const t = useTranslations('Mentoria');
   const [tab, setTab] = useState<Tab>('explorar');
   const [beMentorModalOpen, setBeMentorModalOpen] = useState(false);
 
   return (
-    <AppShell>
-      <div className='space-y-6'>
-        <h1 className='text-2xl font-bold text-[var(--color-text)]'>{t('title')}</h1>
+    <AppShell
+      userName={data.user.name}
+      avatarUrl={data.user.avatarUrl}
+      profilePercent={data.user.profilePercent}
+      perfilBreakdown={data.user.perfilBreakdown}
+    >
+      <div className='min-w-0 space-y-6'>
+        <div className='min-w-0'>
+          <h1 className='break-words text-2xl font-bold leading-tight text-[var(--color-text)] sm:text-3xl'>
+            {t('title')}
+          </h1>
 
-        <div className='flex gap-6 border-b border-[var(--color-border)]'>
+          <p className='mt-1 max-w-3xl break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
+            {t('subtitle')}
+          </p>
+        </div>
+
+        <div className='flex min-w-0 gap-6 overflow-x-auto border-b border-[var(--color-border)]'>
           <button
+            type='button'
             onClick={() => setTab('explorar')}
-            className={`pb-3 text-sm font-medium transition-colors ${
+            className={`shrink-0 pb-3 text-sm font-medium transition-colors ${
               tab === 'explorar'
                 ? 'border-b-2 border-violet-500 text-violet-600'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
@@ -90,9 +109,11 @@ export default function MentoriaClient() {
           >
             {t('explorarMentores')}
           </button>
+
           <button
+            type='button'
             onClick={() => setTab('historial')}
-            className={`pb-3 text-sm font-medium transition-colors ${
+            className={`shrink-0 pb-3 text-sm font-medium transition-colors ${
               tab === 'historial'
                 ? 'border-b-2 border-violet-500 text-violet-600'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
@@ -103,41 +124,53 @@ export default function MentoriaClient() {
         </div>
 
         {tab === 'explorar' && (
-          <div className='space-y-6'>
-            <section>
-              <h2 className='mb-4 text-lg font-bold text-[var(--color-text)]'>{t('title')}</h2>
-              <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          <div className='min-w-0 space-y-6'>
+            <section className='min-w-0 space-y-4'>
+              <div className='min-w-0'>
+                <h2 className='break-words text-lg font-bold text-[var(--color-text)]'>
+                  {t('mentoresDestacados')}
+                </h2>
+
+                <p className='mt-1 break-words text-sm leading-relaxed text-[var(--color-text-muted)]'>
+                  {t('mentoresDestacadosDesc')}
+                </p>
+              </div>
+
+              <div className='grid min-w-0 grid-cols-1 gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]'>
                 {mockMentors.map((mentor) => (
-                  <div key={mentor.id} className='mx-auto w-full max-w-sm'>
-                    <MentorCard
-                      foto={mentor.foto}
-                      nombre={mentor.nombre}
-                      rol={mentor.rol}
-                      empresa={mentor.empresa}
-                      skills={mentor.skills}
-                      rating={mentor.rating}
-                      totalResenas={mentor.totalResenas}
-                      esTopMentor={mentor.esTopMentor}
-                      onAgendar={() => {}}
-                    />
-                  </div>
+                  <MentorCard
+                    key={mentor.id}
+                    foto={mentor.foto}
+                    nombre={mentor.nombre}
+                    rol={mentor.rol}
+                    empresa={mentor.empresa}
+                    skills={mentor.skills}
+                    rating={mentor.rating}
+                    totalResenas={mentor.totalResenas}
+                    esTopMentor={mentor.esTopMentor}
+                    onAgendar={() => {}}
+                  />
                 ))}
-                <div className='mx-auto w-full max-w-sm'>
-                  <BeMentorCard onClick={() => setBeMentorModalOpen(true)} />
-                </div>
+
+                <BeMentorCard onClick={() => setBeMentorModalOpen(true)} />
               </div>
             </section>
 
-            <section>
-              <h2 className='mb-4 text-lg font-bold text-[var(--color-text)]'>{t('encontraTuMentor')}</h2>
+            <section className='min-w-0 space-y-4'>
+              <div className='min-w-0'>
+                <h2 className='break-words text-lg font-bold text-[var(--color-text)]'>
+                  {t('encontraTuMentor')}
+                </h2>
+              </div>
+
               <MentorFilters />
 
-              <div className='mt-4 space-y-3'>
+              <div className='min-w-0 space-y-3'>
                 {mockMentors.map((mentor) => (
                   <MentorListItem
                     key={mentor.id}
                     nombre={mentor.nombre}
-                    rol={`${mentor.rol} en ${mentor.empresa}`}
+                    rol={`${mentor.rol} ${t('en')} ${mentor.empresa}`}
                     rating={mentor.rating}
                     totalSesiones={mentor.totalResenas}
                     onAgendar={() => {}}
@@ -149,7 +182,7 @@ export default function MentoriaClient() {
         )}
 
         {tab === 'historial' && (
-          <section>
+          <section className='min-w-0 space-y-3'>
             {mockSessions.map((session) => (
               <SessionHistoryItem
                 key={session.id}
@@ -166,8 +199,7 @@ export default function MentoriaClient() {
       <BeMentorModal
         open={beMentorModalOpen}
         onOpenChange={setBeMentorModalOpen}
-        onSubmit={(data) => {
-          console.log('Solicitud de mentor:', data);
+        onSubmit={() => {
           setBeMentorModalOpen(false);
         }}
       />

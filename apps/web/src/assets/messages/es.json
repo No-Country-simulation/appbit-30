@@ -570,7 +570,12 @@
     "experiencia": "Experiencia",
     "experienciaPlaceholder": "Contanos sobre tu experiencia profesional y de mentoría...",
     "disponibilidad": "Disponibilidad horaria",
-    "enviarSolicitud": "Enviar solicitud"
+    "disponibilidadPlaceholder": "Ej: Martes y Jueves de 18 a 20hs",
+    "enviarSolicitud": "Enviar solicitud",
+    "subtitle": "Conectá con personas que ya recorrieron caminos similares y pueden orientarte en tus próximos pasos.",
+    "mentoresDestacados": "Mentores destacados",
+    "mentoresDestacadosDesc": "Contenido curado para ayudarte a preparar entrevistas, revisar tu perfil y tomar mejores decisiones de carrera.",
+    "en": "en"
   },
   "Bienestar": {
     "title": "Tu Bienestar",
