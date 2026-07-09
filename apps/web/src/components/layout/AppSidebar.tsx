@@ -24,7 +24,7 @@ const navGroups = [
   ],
   [
     { labelKey: 'navExperiencias', icon: Star, href: '/experiencias' },
-    { labelKey: 'navMentorias', icon: Users, href: '#' },
+    { labelKey: 'navMentorias', icon: Users, href: '/mentoria' },
   ],
   [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
