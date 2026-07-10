@@ -8,6 +8,7 @@ import {
   wellbeingRequestSchema,
   onboardingAIRequestSchema,
   jobMatchRequestSchema,
+  learningPathRequestSchema,
 } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
 import { dbClient } from './db.client.js';
@@ -1048,6 +1049,183 @@ Respuesta JSON estricta, sin markdown:
         requestId,
         code: 'JOB_MATCH_FAILED',
         error: 'Error al calcular match',
+      },
+      500,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /learning-path/recommend
+// ---------------------------------------------------------------------------
+app.post('/learning-path/recommend', async (c) => {
+  const requestId = getRequestId(c);
+  const startedAt = Date.now();
+
+  try {
+    const body = await c.req.json();
+
+    const validation = learningPathRequestSchema.safeParse(body);
+    if (!validation.success) {
+      logStructured({
+        level: 'warn',
+        route: 'POST /learning-path/recommend',
+        requestId,
+        message: 'Invalid learning path payload',
+        context: {
+          details: validation.error.format(),
+        },
+      });
+
+      return c.json(
+        {
+          success: false,
+          requestId,
+          code: 'VALIDATION_ERROR',
+          error: 'Datos inválidos',
+          details: validation.error.format(),
+        },
+        400,
+      );
+    }
+
+    const { userId, gapItems, courseCatalog } = validation.data;
+
+    const fallbackRecommendations = (() => {
+      const lowerGaps = gapItems.map((g) => g.toLowerCase().trim());
+      const matched = courseCatalog
+        .filter((c) => lowerGaps.some((g) => c.habilidad_principal.toLowerCase().includes(g) || g.includes(c.habilidad_principal.toLowerCase())))
+        .sort((a, b) => {
+          if (a.es_gratis && !b.es_gratis) return -1;
+          if (!a.es_gratis && b.es_gratis) return 1;
+          return a.duracion_horas - b.duracion_horas;
+        })
+        .slice(0, 5)
+        .map((c) => ({
+          courseId: c.id,
+          title: c.title,
+          reason: c.es_gratis ? 'Curso gratuito que cubre esta habilidad' : 'Curso recomendado para esta área',
+        }));
+
+      return matched;
+    })();
+
+    let aiResponse: { recommendations: { courseId: string; title: string; reason: string }[] } | null = null;
+    let aiProviderStatus: 'ok' | 'fallback' = 'ok';
+    let fallbackReason: string | null = null;
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is missing');
+      }
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const prompt = `Actuá como asesor de aprendizaje de la App BiT.
+Dado un usuario con estas brechas de habilidades (gaps), recomendá los mejores cursos del catálogo para cubrirlas.
+
+GAPS DEL USUARIO:
+${gapItems.join(', ')}
+
+CATÁLOGO DE CURSOS DISPONIBLES:
+${JSON.stringify(
+  courseCatalog.map((c) => ({
+    id: c.id,
+    title: c.title,
+    habilidad_principal: c.habilidad_principal,
+    es_gratis: c.es_gratis,
+    duracion_horas: c.duracion_horas,
+  })),
+  null,
+  2,
+)}
+
+Instrucciones:
+1. Elegí hasta 5 cursos que mejor cubran los gaps del usuario.
+2. Priorizá cursos GRATIS y de menor duración.
+3. No repitas cursos.
+4. Cada recomendación debe incluir una razón breve (máx 100 caracteres).
+
+Respuesta JSON estricta, sin markdown:
+{
+  "recommendations": [
+    { "courseId": string, "title": string, "reason": string }
+  ]
+}`;
+
+      const result = await model.generateContent(prompt);
+      aiResponse = parseGeminiJson<{
+        recommendations: { courseId: string; title: string; reason: string }[];
+      }>(result.response.text());
+    } catch (error) {
+      const classified = classifyGeminiError(error);
+      aiProviderStatus = 'fallback';
+      fallbackReason = classified.code;
+
+      logStructured({
+        level: 'error',
+        route: 'POST /learning-path/recommend',
+        requestId,
+        message: 'Gemini learning path failed; using fallback recommendations',
+        error,
+        context: {
+          usuarioId: userId,
+          providerStatus: classified.status,
+          providerCode: classified.code,
+          durationMs: Date.now() - startedAt,
+        },
+      });
+    }
+
+    const validAiResponse =
+      aiResponse &&
+      Array.isArray(aiResponse.recommendations) &&
+      aiResponse.recommendations.length > 0;
+
+    const recommendations = validAiResponse
+      ? aiResponse!.recommendations.slice(0, 5)
+      : fallbackRecommendations;
+
+    logStructured({
+      level: aiProviderStatus === 'ok' ? 'info' : 'warn',
+      route: 'POST /learning-path/recommend',
+      requestId,
+      message:
+        aiProviderStatus === 'ok'
+          ? 'Learning path recommendations generated with AI'
+          : 'Learning path recommendations generated with fallback',
+      context: {
+        usuarioId: userId,
+        recommendationsCount: recommendations.length,
+        aiProviderStatus,
+        fallbackReason,
+        durationMs: Date.now() - startedAt,
+      },
+    });
+
+    return c.json({
+      gaps: gapItems,
+      recommendations,
+    });
+  } catch (error) {
+    logStructured({
+      level: 'error',
+      route: 'POST /learning-path/recommend',
+      requestId,
+      message: 'Learning path route failed',
+      error,
+      context: {
+        durationMs: Date.now() - startedAt,
+      },
+    });
+
+    return c.json(
+      {
+        success: false,
+        requestId,
+        code: 'LEARNING_PATH_FAILED',
+        error: 'Error al generar recomendaciones',
       },
       500,
     );
