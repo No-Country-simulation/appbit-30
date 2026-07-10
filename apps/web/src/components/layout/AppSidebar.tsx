@@ -23,8 +23,8 @@ const navGroups = [
     { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
-    { labelKey: 'navExperiencias', icon: Star, href: '#' },
-    { labelKey: 'navMentorias', icon: Users, href: '#' },
+    { labelKey: 'navExperiencias', icon: Star, href: '/experiencias' },
+    { labelKey: 'navMentorias', icon: Users, href: '/mentoria' },
   ],
   [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
