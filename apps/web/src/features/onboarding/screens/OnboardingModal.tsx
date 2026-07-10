@@ -303,7 +303,8 @@ export function OnboardingModal({
         }) &&
         !!d.genero &&
         !!d.pais &&
-        !!d.ciudad
+        !!d.provinciaEstado.trim() &&
+        !!d.ciudad.trim()
       );
     }
 
@@ -360,11 +361,15 @@ export function OnboardingModal({
   }
 
   function handleNext() {
+    setSubmitError(null);
+
     if (!isStepValid()) {
       setShowErrors(true);
       return;
     }
+
     setShowErrors(false);
+
     if (step < 4) {
       setStep((step + 1) as Step);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -372,7 +377,9 @@ export function OnboardingModal({
   }
 
   function handleBack() {
+    setSubmitError(null);
     setShowErrors(false);
+
     if (step > 1) {
       setStep((step - 1) as Step);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -394,6 +401,9 @@ export function OnboardingModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        provinciaEstado: formData.provinciaEstado.trim(),
+        ciudad: formData.ciudad.trim(),
+        zonaResidencia: formData.zonaResidencia.trim(),
         habilidadesTecnicas:
           formData.nivelExperienciaTecnologia === SIN_CONOCIMIENTO
             ? []
@@ -731,13 +741,21 @@ export function OnboardingModal({
                           <AppInput
                             value={formData.provinciaEstado}
                             onChange={(e) => {
-                              if (TEXT_ONLY_REGEX.test(e.target.value))
+                              if (TEXT_ONLY_REGEX.test(e.target.value)) {
                                 setFormData((prev) => ({
                                   ...prev,
                                   provinciaEstado: e.target.value,
                                 }));
+                                setShowErrors(false);
+                              }
                             }}
                             placeholder={t('provinciaEstadoPlaceholder')}
+                          />
+
+                          <FieldError
+                            show={
+                              showErrors && !formData.provinciaEstado.trim()
+                            }
                           />
                         </div>
                       </div>
@@ -1301,30 +1319,56 @@ export function OnboardingModal({
                   </div>
                 )}
               </div>
+            </div>
 
-              <DialogFooter className='relative shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
-                {step > 1 && (
-                  <AppButton variant='outline' onClick={handleBack}>
-                    {t('backButton')}
-                  </AppButton>
-                )}
-                {step < 4 ? (
-                  <AppButton onClick={handleNext}>
-                    {t('nextButton')} →
-                  </AppButton>
-                ) : (
-                  <AppButton onClick={handleFinish} disabled={isLoading}>
-                    {isLoading ? t('savingButton') : t('finishButton')}
-                  </AppButton>
-                )}
-                {submitError && (
-                  <div className='mt-2 flex items-center gap-1.5 text-[var(--color-danger)]'>
-                    <AlertCircleIcon className='size-4 shrink-0' />
-                    <Caption className='text-[var(--color-danger)]'>
-                      {submitError}
-                    </Caption>
-                  </div>
-                )}
+            <div className='shrink-0 border-t border-[var(--color-border)] px-4 py-4 sm:px-6'>
+              {submitError && (
+                <div
+                  role='alert'
+                  className='mb-4 flex min-w-0 items-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm leading-relaxed text-[var(--color-danger-text)]'
+                >
+                  <AlertCircleIcon className='mt-0.5 size-4 shrink-0' />
+
+                  <p className='min-w-0 whitespace-pre-line break-words'>
+                    {submitError}
+                  </p>
+                </div>
+              )}
+
+              <DialogFooter className='p-0'>
+                <div className='flex w-full min-w-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end'>
+                  {step > 1 && (
+                    <AppButton
+                      type='button'
+                      variant='outline'
+                      className='w-full !whitespace-nowrap sm:w-auto'
+                      onClick={handleBack}
+                      disabled={isLoading}
+                    >
+                      {t('backButton')}
+                    </AppButton>
+                  )}
+
+                  {step < 4 ? (
+                    <AppButton
+                      type='button'
+                      className='w-full !whitespace-nowrap sm:w-auto'
+                      onClick={handleNext}
+                      disabled={isLoading}
+                    >
+                      {t('nextButton')} →
+                    </AppButton>
+                  ) : (
+                    <AppButton
+                      type='button'
+                      className='w-full !whitespace-nowrap sm:w-auto'
+                      onClick={handleFinish}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? t('savingButton') : t('finishButton')}
+                    </AppButton>
+                  )}
+                </div>
               </DialogFooter>
             </div>
           </div>

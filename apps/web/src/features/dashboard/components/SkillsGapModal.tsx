@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/src/i18n/navigation';
 import {
   Dialog,
   DialogContent,
@@ -87,6 +88,7 @@ export function SkillsGapModal({
   isLoading = false,
 }: Props) {
   const t = useTranslations('Dashboard');
+  const router = useRouter();
 
   const hasGap = typeof porcentaje === 'number';
   const hasSkills = skills.length > 0;
@@ -194,6 +196,10 @@ export function SkillsGapModal({
             variant='primary'
             className='w-full sm:w-auto'
             disabled={!hasSkills}
+            onClick={() => {
+              onOpenChange(false);
+              router.push('/formacion');
+            }}
           >
             {t('skillsModalButton')}
           </AppButton>

@@ -23,8 +23,8 @@ const navGroups = [
     { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
-    { labelKey: 'navExperiencias', icon: Star, href: '#' },
-    { labelKey: 'navMentorias', icon: Users, href: '#' },
+    { labelKey: 'navExperiencias', icon: Star, href: '/experiencias' },
+    { labelKey: 'navMentorias', icon: Users, href: '/mentoria' },
   ],
   [{ labelKey: 'navBienestar', icon: Heart, href: '/bienestar' }],
 ];
@@ -56,7 +56,6 @@ export function AppSidebar({
   onNavigate,
 }: Props) {
   const t = useTranslations('Dashboard');
-  const tCommon = useTranslations('Common');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -102,8 +101,8 @@ export function AppSidebar({
       )}
     >
       <div className='flex h-[72px] shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-6'>
-        <span className='truncate font-heading text-lg font-black text-[var(--color-text)]'>
-          {tCommon('brand')}
+        <span className='truncate font-heading text-lg font-black tracking-wide text-[var(--color-text)]'>
+          Bi<span className='text-[var(--color-secondary)]'>.</span>T
         </span>
       </div>
 
