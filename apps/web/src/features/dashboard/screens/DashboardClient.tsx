@@ -409,10 +409,10 @@ export default function DashboardClient({
           isLoading={isLoadingDashboard}
         />
 
-        <RadarBanner
+        {/* <RadarBanner
           vacantesCompatibles={vacantesDisponibles}
           isLoading={isLoadingDashboard}
-        />
+        /> */}
 
         <div className='grid min-w-0 grid-cols-1 gap-4 md:gap-5 xl:grid-cols-12'>
           <div className='xl:col-span-4'>
@@ -441,6 +441,7 @@ export default function DashboardClient({
               isLoading={isLoadingDashboard}
               hasCheckinToday={hasCheckinToday}
               todayCheckin={todayCheckin}
+              onHistoryClick={() => router.push('/bienestar')}
               onEmojiClick={(moodId) => {
                 if (hasCheckinToday) {
                   return;
