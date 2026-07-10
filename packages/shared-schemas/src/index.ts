@@ -578,3 +578,32 @@ export const postulacionCreateResponseSchema = z.object({
 export type PostulacionCreateResponse = z.infer<
   typeof postulacionCreateResponseSchema
 >;
+
+// --- HU 9.1: MATCH EMPLEABILIDAD ---
+export const jobMatchRequestSchema = z.object({
+  userId: z.string(),
+  userProfile: z.object({
+    skills: z.array(z.string()),
+    education: z.string(),
+    englishLevel: z.string(),
+  }),
+  jobVacancy: z.object({
+    id: z.string(),
+    title: z.string(),
+    requiredSkills: z.array(z.string()),
+    requiredEducation: z.string(),
+    requiredEnglishLevel: z.string(),
+  }),
+  commuteScore: z.number().min(0).max(100),
+});
+
+export type JobMatchRequest = z.infer<typeof jobMatchRequestSchema>;
+
+export const jobMatchResponseSchema = z.object({
+  matchScore: z.number().min(0).max(100),
+  technicalCompatibility: z.number().min(0).max(100),
+  gaps: z.array(z.string()),
+  summary: z.string(),
+});
+
+export type JobMatchResponse = z.infer<typeof jobMatchResponseSchema>;
