@@ -7,6 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   wellbeingRequestSchema,
   onboardingAIRequestSchema,
+  jobMatchRequestSchema,
 } from '@appbit/shared-schemas';
 import { EMOJI_VALUES } from '@appbit/shared-types';
 import { dbClient } from './db.client.js';
@@ -861,6 +862,192 @@ Respuesta JSON estricta, sin markdown:
         usuarioId: debugUserId,
         code: 'AI_ONBOARDING_FAILED',
         error: 'Error al procesar onboarding',
+      },
+      500,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /job-match/calculate
+// ---------------------------------------------------------------------------
+app.post('/job-match/calculate', async (c) => {
+  const requestId = getRequestId(c);
+  const startedAt = Date.now();
+
+  try {
+    const body = await c.req.json();
+
+    const validation = jobMatchRequestSchema.safeParse(body);
+    if (!validation.success) {
+      logStructured({
+        level: 'warn',
+        route: 'POST /job-match/calculate',
+        requestId,
+        message: 'Invalid job match payload',
+        context: {
+          details: validation.error.format(),
+        },
+      });
+
+      return c.json(
+        {
+          success: false,
+          requestId,
+          code: 'VALIDATION_ERROR',
+          error: 'Datos inválidos',
+          details: validation.error.format(),
+        },
+        400,
+      );
+    }
+
+    const { userId, userProfile, jobVacancy, commuteScore } = validation.data;
+
+    const fallbackTechnicalScore = (() => {
+      if (userProfile.skills.length === 0 || jobVacancy.requiredSkills.length === 0) return 0;
+      const userSkillSet = new Set(userProfile.skills.map((s) => s.toLowerCase().trim()));
+      const matches = jobVacancy.requiredSkills.filter((s) =>
+        userSkillSet.has(s.toLowerCase().trim()),
+      ).length;
+      return Math.round((matches / jobVacancy.requiredSkills.length) * 100);
+    })();
+
+    let aiResponse: {
+      technicalScore: number;
+      gaps: string[];
+      summary: string;
+    } | null = null;
+    let aiProviderStatus: 'ok' | 'fallback' = 'ok';
+    let fallbackReason: string | null = null;
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is missing');
+      }
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const prompt = `Actuá como asesor de empleabilidad de la App BiT.
+Compará el perfil del usuario con los requisitos de la vacante y determiná su compatibilidad.
+
+PERFIL DEL USUARIO:
+- Habilidades: ${userProfile.skills.join(', ')}
+- Educación: ${userProfile.education}
+- Nivel de inglés: ${userProfile.englishLevel}
+
+VACANTE:
+- Título: ${jobVacancy.title}
+- Habilidades requeridas: ${jobVacancy.requiredSkills.join(', ')}
+- Educación requerida: ${jobVacancy.requiredEducation}
+- Nivel de inglés requerido: ${jobVacancy.requiredEnglishLevel}
+
+Instrucciones:
+1. Calculá un technicalScore (0-100) basado en qué tanto cubre el perfil los requisitos.
+2. Identificá las habilidades faltantes (gaps) que el usuario debería adquirir.
+3. Generá un resumen breve (máx 200 caracteres) con la recomendación.
+
+Respuesta JSON estricta, sin markdown:
+{
+  "technicalScore": number,
+  "gaps": string[],
+  "summary": string
+}`;
+
+      const result = await model.generateContent(prompt);
+      aiResponse = parseGeminiJson<{
+        technicalScore: number;
+        gaps: string[];
+        summary: string;
+      }>(result.response.text());
+    } catch (error) {
+      const classified = classifyGeminiError(error);
+      aiProviderStatus = 'fallback';
+      fallbackReason = classified.code;
+
+      logStructured({
+        level: 'error',
+        route: 'POST /job-match/calculate',
+        requestId,
+        message: 'Gemini job match failed; using fallback calculation',
+        error,
+        context: {
+          usuarioId: userId,
+          providerStatus: classified.status,
+          providerCode: classified.code,
+          durationMs: Date.now() - startedAt,
+        },
+      });
+    }
+
+    const validAiResponse =
+      aiResponse &&
+      typeof aiResponse.technicalScore === 'number' &&
+      !Number.isNaN(aiResponse.technicalScore);
+
+    const technicalCompatibility = validAiResponse
+      ? Math.round(Math.max(0, Math.min(100, aiResponse!.technicalScore)))
+      : fallbackTechnicalScore;
+
+    const gaps =
+      validAiResponse && Array.isArray(aiResponse!.gaps)
+        ? aiResponse!.gaps
+        : [];
+
+    const summary =
+      validAiResponse && aiResponse!.summary
+        ? aiResponse!.summary
+        : `Compatibilidad técnica: ${technicalCompatibility}%`;
+
+    const matchScore = Math.round(
+      technicalCompatibility * 0.85 + commuteScore * 0.15,
+    );
+
+    logStructured({
+      level: aiProviderStatus === 'ok' ? 'info' : 'warn',
+      route: 'POST /job-match/calculate',
+      requestId,
+      message:
+        aiProviderStatus === 'ok'
+          ? 'Job match calculated with AI'
+          : 'Job match calculated with fallback',
+      context: {
+        usuarioId: userId,
+        vacanteId: jobVacancy.id,
+        matchScore,
+        technicalCompatibility,
+        gapsCount: gaps.length,
+        aiProviderStatus,
+        fallbackReason,
+        durationMs: Date.now() - startedAt,
+      },
+    });
+
+    return c.json({
+      matchScore,
+      technicalCompatibility,
+      gaps,
+      summary,
+    });
+  } catch (error) {
+    logStructured({
+      level: 'error',
+      route: 'POST /job-match/calculate',
+      requestId,
+      message: 'Job match route failed',
+      error,
+      context: {
+        durationMs: Date.now() - startedAt,
+      },
+    });
+
+    return c.json(
+      {
+        success: false,
+        requestId,
+        code: 'JOB_MATCH_FAILED',
+        error: 'Error al calcular match',
       },
       500,
     );
