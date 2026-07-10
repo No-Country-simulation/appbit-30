@@ -25,7 +25,9 @@ export function UrgentHelpCard() {
       <AppButton
         variant='primary'
         className='w-full bg-red-600 text-white shadow-none hover:bg-red-700'
-        disabled
+        onClick={() => {
+          window.location.href = 'tel:188';
+        }}
       >
         {t('llamar')}
       </AppButton>

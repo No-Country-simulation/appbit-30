@@ -22,11 +22,7 @@ interface PerfilBreakdown {
 
 interface Props {
   onMenuClick?: () => void;
-
-  // Lo dejamos por compatibilidad con AppShell/DashboardClient.
-  // El header ya no lo usa visualmente.
   onCheckinClick?: () => void;
-
   profilePercent?: number;
   perfilBreakdown?: PerfilBreakdown;
 }
@@ -48,27 +44,27 @@ export function AppHeader({
   const items = perfilBreakdown
     ? [
         {
-          key: 'onboarding',
+          key: 'onboarding' as const,
           label: t('perfilBreakdownOnboarding'),
           points: 50,
         },
         {
-          key: 'movilidad',
+          key: 'movilidad' as const,
           label: t('perfilBreakdownMovilidad'),
           points: 20,
         },
         {
-          key: 'avatar',
+          key: 'avatar' as const,
           label: t('perfilBreakdownAvatar'),
           points: 10,
         },
         {
-          key: 'ubicacion',
+          key: 'ubicacion' as const,
           label: t('perfilBreakdownUbicacion'),
           points: 10,
         },
         {
-          key: 'whatsapp',
+          key: 'whatsapp' as const,
           label: t('perfilBreakdownWhatsapp'),
           points: 10,
         },
@@ -142,30 +138,43 @@ export function AppHeader({
       </div>
 
       <Dialog open={breakdownOpen} onOpenChange={setBreakdownOpen}>
-        <DialogContent className='sm:max-w-xs'>
-          <DialogHeader>
-            <DialogTitle>{t('perfilBreakdownTitle')}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className='safe-modal-content w-[min(calc(100vw-1rem),22rem)] p-0'>
+          <div className='border-b border-[var(--color-border)] px-4 py-4 sm:px-5'>
+            <DialogHeader>
+              <DialogTitle className='break-words text-base leading-tight'>
+                {t('perfilBreakdownTitle')}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
-          <ul className='space-y-2 text-sm'>
-            {items.map((item) => (
-              <li key={item.key} className='flex items-center gap-2'>
-                <span>
-                  {perfilBreakdown?.[item.key as keyof PerfilBreakdown]
-                    ? '✅'
-                    : '❌'}
-                </span>
+          <div className='px-4 py-4 sm:px-5'>
+            <ul className='space-y-3 text-sm'>
+              {items.map((item) => {
+                const completed = perfilBreakdown?.[item.key];
 
-                <span className='flex-1 text-[var(--color-text)]'>
-                  {item.label}
-                </span>
+                return (
+                  <li
+                    key={item.key}
+                    className='flex min-w-0 items-center justify-between gap-3'
+                  >
+                    <div className='flex min-w-0 items-center gap-2'>
+                      <span className='shrink-0' aria-hidden>
+                        {completed ? '✅' : '❌'}
+                      </span>
 
-                <span className='text-xs text-[var(--color-text-muted)]'>
-                  +{item.points}%
-                </span>
-              </li>
-            ))}
-          </ul>
+                      <span className='min-w-0 break-words text-[var(--color-text)]'>
+                        {item.label}
+                      </span>
+                    </div>
+
+                    <span className='shrink-0 text-xs font-medium text-[var(--color-text-muted)]'>
+                      +{item.points}%
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </DialogContent>
       </Dialog>
     </header>

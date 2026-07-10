@@ -25,7 +25,7 @@ interface Props {
   hasCheckinToday?: boolean;
   todayCheckin?: TodayCheckin | null;
   onEmojiClick?: (moodId: string) => void;
-  onHistorialClick?: () => void;
+  onHistoryClick?: () => void;
 }
 
 export function WellbeingCard({
@@ -34,7 +34,7 @@ export function WellbeingCard({
   hasCheckinToday = false,
   todayCheckin = null,
   onEmojiClick,
-  onHistorialClick,
+  onHistoryClick,
 }: Props) {
   const t = useTranslations('Dashboard');
 
@@ -62,7 +62,7 @@ export function WellbeingCard({
 
         <button
           type='button'
-          onClick={onHistorialClick}
+          onClick={onHistoryClick}
           className='shrink-0 text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]'
         >
           {t('historial')}
