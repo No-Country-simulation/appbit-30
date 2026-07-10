@@ -14,6 +14,7 @@ import {
   jornadaLabels,
   getLabel,
 } from '@/src/lib/label-helpers';
+import { calcularMatchConAI } from '@/src/lib/job-match-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,16 +24,6 @@ function formatDate(date: Date): string {
     month: 'long',
     year: 'numeric',
   });
-}
-
-function calcularMatchPorcentaje(
-  requisitos: { habilidad_id: string }[],
-  userSkills: { habilidad_id: string }[],
-): number {
-  if (requisitos.length === 0) return 0;
-  const userSkillIds = new Set(userSkills.map((s) => s.habilidad_id));
-  const matches = requisitos.filter((r) => userSkillIds.has(r.habilidad_id)).length;
-  return Math.round((matches / requisitos.length) * 100);
 }
 
 export async function GET(
@@ -110,7 +101,16 @@ export async function GET(
       });
     }
 
-    const matchPorcentaje = calcularMatchPorcentaje(vacante.requisitos, userSkills);
+    const matchPorcentaje = await calcularMatchConAI(
+      vacante.requisitos,
+      userSkills,
+      userId,
+      vacante.vacante_id,
+      vacante.titulo,
+      vacante.educacion_requerida,
+      vacante.idiomas_requeridos as string[] | undefined,
+      vacante.distancia_zona,
+    );
 
     const sectorSize = [vacante.empresa.sector, vacante.empresa.tamanio]
       .filter(Boolean)

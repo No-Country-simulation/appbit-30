@@ -13,6 +13,7 @@ import {
   estadoLabels,
   getLabel,
 } from '@/src/lib/label-helpers';
+import { calcularMatchConAI } from '@/src/lib/job-match-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,16 +27,6 @@ function formatDate(date: Date): string {
     month: 'long',
     year: 'numeric',
   });
-}
-
-function calcularMatchPorcentaje(
-  requisitos: { habilidad_id: string }[],
-  userSkills: { habilidad_id: string }[],
-): number {
-  if (requisitos.length === 0) return 0;
-  const userSkillIds = new Set(userSkills.map((s) => s.habilidad_id));
-  const matches = requisitos.filter((r) => userSkillIds.has(r.habilidad_id)).length;
-  return Math.round((matches / requisitos.length) * 100);
 }
 
 export async function GET(request: Request) {
@@ -159,8 +150,18 @@ export async function POST(request: Request) {
       where: { vacante_id },
       select: {
         activa: true,
+        vacante_id: true,
+        titulo: true,
+        educacion_requerida: true,
+        idiomas_requeridos: true,
+        distancia_zona: true,
         requisitos: {
-          select: { habilidad_id: true },
+          select: {
+            habilidad_id: true,
+            habilidad: {
+              select: { nombre: true },
+            },
+          },
         },
       },
     });
@@ -206,7 +207,16 @@ export async function POST(request: Request) {
       select: { habilidad_id: true },
     });
 
-    const matchPorcentaje = calcularMatchPorcentaje(vacante.requisitos, userSkills);
+    const matchPorcentaje = await calcularMatchConAI(
+      vacante.requisitos,
+      userSkills,
+      usuario.usuario_id,
+      vacante.vacante_id,
+      vacante.titulo,
+      vacante.educacion_requerida,
+      vacante.idiomas_requeridos as string[] | undefined,
+      vacante.distancia_zona,
+    );
 
     const result = await dbClient.postulaciones.create({
       data: {

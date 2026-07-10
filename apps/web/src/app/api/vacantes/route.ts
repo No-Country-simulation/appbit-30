@@ -15,6 +15,7 @@ import {
   jornadaLabels,
   getLabel,
 } from '@/src/lib/label-helpers';
+import { calcularMatchConAI } from '@/src/lib/job-match-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,16 +25,6 @@ function formatDate(date: Date): string {
     month: 'long',
     year: 'numeric',
   });
-}
-
-function calcularMatchPorcentaje(
-  requisitos: { habilidad_id: string }[],
-  userSkills: { habilidad_id: string }[],
-): number {
-  if (requisitos.length === 0) return 0;
-  const userSkillIds = new Set(userSkills.map((s) => s.habilidad_id));
-  const matches = requisitos.filter((r) => userSkillIds.has(r.habilidad_id)).length;
-  return Math.round((matches / requisitos.length) * 100);
 }
 
 export async function GET(request: Request) {
@@ -117,8 +108,17 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    const formatted = vacantes.map((v) => {
-      const matchPorcentaje = calcularMatchPorcentaje(v.requisitos, userSkills);
+    const formatted = await Promise.all(vacantes.map(async (v) => {
+      const matchPorcentaje = await calcularMatchConAI(
+        v.requisitos,
+        userSkills,
+        userId,
+        v.vacante_id,
+        v.titulo,
+        v.educacion_requerida,
+        v.idiomas_requeridos as string[] | undefined,
+        v.distancia_zona,
+      );
 
       const sectorSize = [v.empresa.sector, v.empresa.tamanio]
         .filter(Boolean)
@@ -168,7 +168,7 @@ export async function GET(request: Request) {
           laTienes: userSkills.some((us) => us.habilidad_id === r.habilidad.habilidad_id),
         })),
       };
-    });
+    }));
 
     return NextResponse.json({ vacantes: formatted });
   } catch (error) {
