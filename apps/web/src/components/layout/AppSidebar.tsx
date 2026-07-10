@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 const navGroups = [
   [
     { labelKey: 'navInicio', icon: LayoutDashboard, href: '/dashboard' },
-    { labelKey: 'navEmpleos', icon: Briefcase, href: '#' },
+    { labelKey: 'navEmpleos', icon: Briefcase, href: '/empleabilidad' },
     { labelKey: 'navFormacion', icon: GraduationCap, href: '/formacion' },
   ],
   [
