@@ -607,3 +607,42 @@ export const jobMatchResponseSchema = z.object({
 });
 
 export type JobMatchResponse = z.infer<typeof jobMatchResponseSchema>;
+
+// --- HU 9.2: RUTAS DE APRENDIZAJE ---
+export const courseCatalogItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  habilidad_principal: z.string(),
+  activo: z.boolean(),
+  es_gratis: z.boolean(),
+  duracion_horas: z.number(),
+});
+
+export type CourseCatalogItem = z.infer<typeof courseCatalogItemSchema>;
+
+export const learningPathRequestSchema = z.object({
+  userId: z.string(),
+  currentSkills: z.array(z.string()),
+  targetJob: z.string(),
+  gapItems: z.array(z.string()),
+  courseCatalog: z.array(courseCatalogItemSchema),
+});
+
+export type LearningPathRequest = z.infer<typeof learningPathRequestSchema>;
+
+export const learningPathRecommendationSchema = z.object({
+  courseId: z.string(),
+  title: z.string(),
+  reason: z.string(),
+});
+
+export type LearningPathRecommendation = z.infer<
+  typeof learningPathRecommendationSchema
+>;
+
+export const learningPathResponseSchema = z.object({
+  gaps: z.array(z.string()),
+  recommendations: z.array(learningPathRecommendationSchema),
+});
+
+export type LearningPathResponse = z.infer<typeof learningPathResponseSchema>;
