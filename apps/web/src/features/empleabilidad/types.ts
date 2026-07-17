@@ -36,13 +36,13 @@ export interface VacanteItem {
 export type PostulacionEstado =
   | 'Enviada'
   | 'Vista'
-  | 'En_revision'
+  | 'En_proceso'
   | 'Rechazada'
-  | 'Aceptada'
-  | 'Cerrado';
+  | 'Aceptada';
 
 export interface PostulacionItem {
   id: string;
+  vacanteId: string;
   titulo: string;
   empresa: string;
   logoUrl: string | null;
