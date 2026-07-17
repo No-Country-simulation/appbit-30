@@ -683,6 +683,8 @@
     "curriculumVitae": "Currículo",
     "usarCvGuardado": "Usar meu CV salvo no BiT",
     "enviarPostulacion": "Enviar candidatura",
+    "enviandoPostulacion": "Enviando candidatura...",
+    "postulacionError": "Não foi possível enviar a candidatura. Tente novamente.",
     "estadoEnviada": "Enviada",
     "estadoVista": "Vista",
     "estadoEnRevision": "Em revisão",

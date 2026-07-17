@@ -16,7 +16,9 @@ interface Props {
   onPostular: (data: {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
-  }) => void;
+  }) => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 export function JobDetailModal({
@@ -24,6 +26,8 @@ export function JobDetailModal({
   onOpenChange,
   vacante,
   onPostular,
+  isSubmitting,
+  submitError,
 }: Props) {
   const t = useTranslations('Empleabilidad');
 
@@ -165,7 +169,11 @@ export function JobDetailModal({
                   {t('postulateAhora')}
                 </h4>
 
-                <PostulationForm onSubmit={onPostular} />
+                <PostulationForm
+                  onSubmit={onPostular}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                />
               </section>
             </div>
           </div>
