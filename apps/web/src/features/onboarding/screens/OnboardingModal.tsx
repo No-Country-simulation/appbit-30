@@ -165,6 +165,45 @@ interface OnboardingModalProps {
   onCompleted?: () => void | Promise<void>;
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
+function getWhatsappCountry(code: string) {
+  return countries.find((country) => country.code === code);
+}
+
+function getWhatsappValidationError(params: { code: string; number: string }) {
+  const code = params.code;
+  const digits = onlyDigits(params.number);
+
+  if (!code && !digits) return null;
+
+  if (!code && digits) {
+    return 'Seleccioná el código de país para tu WhatsApp.';
+  }
+
+  if (code && !digits) {
+    return 'Ingresá tu número de WhatsApp o borrá el código de país.';
+  }
+
+  const country = getWhatsappCountry(code);
+
+  if (country && digits.length !== country.phoneLength) {
+    return `El número debe tener ${country.phoneLength} dígitos para ${code}.`;
+  }
+
+  if (!country && (digits.length < 8 || digits.length > 15)) {
+    return 'Ingresá un número de WhatsApp válido.';
+  }
+
+  return null;
+}
+
+function isWhatsappValid(code: string, number: string) {
+  return getWhatsappValidationError({ code, number }) === null;
+}
+
 export function OnboardingModal({
   children,
   defaultOpen = false,
@@ -331,23 +370,23 @@ export function OnboardingModal({
       );
     }
 
-    const isWhatsappValid =
-      (!d.whatsappCodigo && !d.whatsappNumero) ||
-      (!!d.whatsappCodigo && !!d.whatsappNumero);
-
     return (
       d.objetivos.length > 0 &&
       d.dispositivos.length > 0 &&
       d.tipoConexion.length > 0 &&
-      isWhatsappValid
+      isWhatsappValid(d.whatsappCodigo, d.whatsappNumero)
     );
   }
 
-  function hasPartialWhatsapp() {
-    return (
-      (!!formData.whatsappCodigo && !formData.whatsappNumero) ||
-      (!formData.whatsappCodigo && !!formData.whatsappNumero)
-    );
+  function getCurrentWhatsappError() {
+    return getWhatsappValidationError({
+      code: formData.whatsappCodigo,
+      number: formData.whatsappNumero,
+    });
+  }
+
+  function hasWhatsappError() {
+    return Boolean(getCurrentWhatsappError());
   }
 
   function clearWhatsapp() {
@@ -396,11 +435,15 @@ export function OnboardingModal({
     setIsLoading(true);
     setSubmitError(null);
 
+    const normalizedWhatsappNumero = onlyDigits(formData.whatsappNumero);
+
     fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        whatsappCodigo: formData.whatsappCodigo || '',
+        whatsappNumero: normalizedWhatsappNumero,
         provinciaEstado: formData.provinciaEstado.trim(),
         ciudad: formData.ciudad.trim(),
         zonaResidencia: formData.zonaResidencia.trim(),
@@ -1251,12 +1294,19 @@ export function OnboardingModal({
                         <div className='min-w-0'>
                           <CountryCodeSelect
                             value={formData.whatsappCodigo}
-                            onChange={(v) =>
+                            onChange={(value) => {
                               setFormData((prev) => ({
                                 ...prev,
-                                whatsappCodigo: v,
-                              }))
-                            }
+                                whatsappCodigo: value,
+                                whatsappNumero:
+                                  prev.whatsappCodigo !== value
+                                    ? ''
+                                    : prev.whatsappNumero,
+                              }));
+
+                              setShowErrors(false);
+                              setSubmitError(null);
+                            }}
                             onOpenChange={(v) => {
                               selectOpenRef.current = v;
                             }}
@@ -1278,13 +1328,19 @@ export function OnboardingModal({
                                   blocks,
                                 )}
                                 onChange={(e) => {
-                                  const raw = e.target.value.replace(/\D/g, '');
-                                  if (raw.length <= maxLen)
+                                  const raw = onlyDigits(e.target.value);
+
+                                  if (raw.length <= maxLen) {
                                     setFormData((prev) => ({
                                       ...prev,
                                       whatsappNumero: raw,
                                     }));
+
+                                    setShowErrors(false);
+                                    setSubmitError(null);
+                                  }
                                 }}
+                                disabled={!formData.whatsappCodigo}
                                 placeholder={country?.phoneHint ?? ''}
                               />
                             );
@@ -1307,11 +1363,11 @@ export function OnboardingModal({
                           {t('whatsappInfo')}
                         </Caption>
                       </div>
-                      {hasPartialWhatsapp() && (
-                        <div className='flex items-start gap-1.5 text-[var(--color-danger)] mb-6'>
+                      {showErrors && hasWhatsappError() && (
+                        <div className='mb-6 flex items-start gap-1.5 text-[var(--color-danger)]'>
                           <AlertCircleIcon className='size-4 shrink-0' />
                           <Caption className='text-[var(--color-danger)]'>
-                            {t('whatsappPairError')}
+                            {getCurrentWhatsappError()}
                           </Caption>
                         </div>
                       )}
