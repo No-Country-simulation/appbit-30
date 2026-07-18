@@ -14,7 +14,7 @@ interface Props {
   logoUrl: string | null;
   modalidad: string;
   ubicacion: string;
-  matchPorcentaje: number;
+  matchPorcentaje: number | null;
   skills: string[];
   distancia?: string | null;
   isApplied?: boolean;
@@ -76,13 +76,15 @@ export function JobCard({
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
-            matchPorcentaje >= 70
+            matchPorcentaje !== null && matchPorcentaje >= 70
               ? 'bg-green-100 text-green-700'
               : 'bg-amber-100 text-amber-700',
           )}
         >
           <Percent className='size-3.5 shrink-0' />
-          {matchPorcentaje}% {t('match')}
+          {matchPorcentaje === null
+            ? t('matchNoDisponible')
+            : `${matchPorcentaje}% ${t('match')}`}
         </span>
 
         {isApplied && (

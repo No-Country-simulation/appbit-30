@@ -67,16 +67,30 @@ export interface VacanteFilters {
 }
 
 export function calculateMatch(
-  requisitos: Array<{ habilidad_id: string }>,
+  requisitos: Array<{ habilidad_id: string; prioridad: number }>,
   userSkillIds: ReadonlySet<string>,
 ) {
-  if (requisitos.length === 0) return 0;
+  if (requisitos.length === 0) return null;
 
-  const matches = requisitos.filter((item) =>
-    userSkillIds.has(item.habilidad_id),
-  ).length;
+  const priorityWeight = (priority: number) => {
+    if (priority === 1) return 3;
+    if (priority === 2) return 2;
+    return 1;
+  };
 
-  return Math.round((matches / requisitos.length) * 100);
+  const totalWeight = requisitos.reduce(
+    (total, item) => total + priorityWeight(item.prioridad),
+    0,
+  );
+  const matchedWeight = requisitos.reduce(
+    (total, item) =>
+      userSkillIds.has(item.habilidad_id)
+        ? total + priorityWeight(item.prioridad)
+        : total,
+    0,
+  );
+
+  return Math.round((matchedWeight / totalWeight) * 100);
 }
 
 async function getUserSkillIds(usuarioId: string) {
@@ -166,11 +180,18 @@ export async function listVacantes(
 
   const mapped = vacantes
     .map((vacante) => mapVacante(vacante, userSkillIds))
-    .sort(
-      (a, b) =>
-        b.matchPorcentaje - a.matchPorcentaje ||
-        b.fechaPublicacion.localeCompare(a.fechaPublicacion),
-    );
+    .sort((a, b) => {
+      if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
+      if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
+
+      const matchDifference =
+        (b.matchPorcentaje ?? 0) - (a.matchPorcentaje ?? 0);
+
+      return (
+        matchDifference ||
+        b.fechaPublicacion.localeCompare(a.fechaPublicacion)
+      );
+    });
   const start = (filters.page - 1) * filters.limit;
 
   return {
@@ -205,7 +226,7 @@ export async function calculateVacanteMatch(
       where: { vacante_id: vacanteId, activa: true },
       select: {
         vacante_id: true,
-        requisitos: { select: { habilidad_id: true } },
+        requisitos: { select: { habilidad_id: true, prioridad: true } },
       },
     }),
     getUserSkillIds(usuarioId),

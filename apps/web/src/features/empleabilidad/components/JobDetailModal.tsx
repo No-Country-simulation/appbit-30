@@ -91,7 +91,9 @@ export function JobDetailModal({
 
                   <span className='inline-flex max-w-full items-center rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold leading-snug text-green-700'>
                     <span className='min-w-0 break-words'>
-                      {vacante.matchPorcentaje}% {t('match')}
+                      {vacante.matchPorcentaje === null
+                        ? t('matchNoDisponible')
+                        : `${vacante.matchPorcentaje}% ${t('match')}`}
                     </span>
                   </span>
                 </div>

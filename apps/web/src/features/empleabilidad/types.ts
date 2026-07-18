@@ -23,7 +23,7 @@ export interface VacanteItem {
   modalidadDetallada: string | null;
   ubicacion: string;
   distancia: string | null;
-  matchPorcentaje: number;
+  matchPorcentaje: number | null;
   fechaPublicacion: string;
   descripcion: string | null;
   educacionRequerida: string[];
