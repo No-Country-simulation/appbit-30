@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
 import { HeroBanner } from '../components/HeroBanner';
-import { RadarBanner } from '../components/RadarBanner';
 import { SkillsGapCard } from '../components/SkillsGapCard';
 import { ActionPlanCard } from '../components/ActionPlanCard';
 import { WellbeingCard } from '../components/WellbeingCard';
@@ -407,6 +406,8 @@ export default function DashboardClient({
           cursosPendientes={cursosPendientes}
           vacantesDisponibles={vacantesDisponibles}
           isLoading={isLoadingDashboard}
+          onVerVacantes={() => router.push('/empleabilidad')}
+          onContinuarRuta={() => router.push('/formacion')}
         />
 
         {/* <RadarBanner

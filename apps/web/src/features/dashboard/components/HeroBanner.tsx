@@ -8,6 +8,8 @@ interface Props {
   cursosPendientes?: number;
   vacantesDisponibles?: number;
   isLoading?: boolean;
+  onVerVacantes?: () => void;
+  onContinuarRuta?: () => void;
 }
 
 export function HeroBanner({
@@ -15,6 +17,8 @@ export function HeroBanner({
   cursosPendientes,
   vacantesDisponibles,
   isLoading = false,
+  onVerVacantes,
+  onContinuarRuta,
 }: Props) {
   const t = useTranslations('Dashboard');
 
@@ -39,12 +43,16 @@ export function HeroBanner({
         </p>
 
         <div className='mt-5 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap'>
-          <AppButton className='w-full !border-[#c9a84c] !bg-[#c9a84c] !text-[#1a1a2e] hover:!bg-[#d4b85a] sm:w-auto'>
+          <AppButton
+            onClick={onContinuarRuta}
+            className='w-full !border-[#c9a84c] !bg-[#c9a84c] !text-[#1a1a2e] hover:!bg-[#d4b85a] sm:w-auto'
+          >
             {t('continuarRuta')}
           </AppButton>
 
           <AppButton
             variant='outline'
+            onClick={onVerVacantes}
             className='w-full !border-white/30 !text-white hover:!border-white hover:!bg-white/10 sm:w-auto'
           >
             {t('verVacantes')}
