@@ -704,6 +704,7 @@
     "sinAplicaciones": "Todavía no tenés postulaciones. Cuando te postules a una oportunidad, va a aparecer acá.",
     "hoy": "hoy",
     "match": "Match",
+    "matchNoDisponible": "Match: N/A",
     "decision": "Decisión",
     "candidaturaEnviada": "Postulación enviada",
     "verCandidatura": "Ver postulación"
