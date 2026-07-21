@@ -105,6 +105,15 @@ async function getUserSkillIds(usuarioId: string) {
   return new Set(skills.map((item) => item.habilidad_id));
 }
 
+async function getUserInterestAreas(usuarioId: string) {
+  const areas = await dbClient.usuarioAreasInteres.findMany({
+    where: { usuario_id: usuarioId },
+    select: { area: true },
+  });
+
+  return new Set(areas.map((item) => item.area));
+}
+
 function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
@@ -150,9 +159,18 @@ export async function listVacantes(
   filters: VacanteFilters,
 ) {
   const search = filters.search?.trim();
+  const [userSkillIds, userInterestAreas] = await Promise.all([
+    getUserSkillIds(usuarioId),
+    getUserInterestAreas(usuarioId),
+  ]);
+  const allowedAreas = filters.area
+    ? userInterestAreas.has(filters.area)
+      ? [filters.area]
+      : []
+    : Array.from(userInterestAreas);
   const where: Prisma.VacantesWhereInput = {
     activa: true,
-    area: filters.area,
+    area: { in: allowedAreas },
     modalidad: filters.modalidad,
     ...(search
       ? {
@@ -169,17 +187,18 @@ export async function listVacantes(
       : {}),
   };
 
-  const [vacantes, userSkillIds] = await Promise.all([
-    dbClient.vacantes.findMany({
-      where,
-      include: VACANTE_INCLUDE,
-      orderBy: { fecha_publicacion: 'desc' },
-    }),
-    getUserSkillIds(usuarioId),
-  ]);
+  const vacantes = await dbClient.vacantes.findMany({
+    where,
+    include: VACANTE_INCLUDE,
+    orderBy: { fecha_publicacion: 'desc' },
+  });
 
   const mapped = vacantes
     .map((vacante) => mapVacante(vacante, userSkillIds))
+    .filter(
+      (vacante) =>
+        vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
+    )
     .sort((a, b) => {
       if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
       if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
