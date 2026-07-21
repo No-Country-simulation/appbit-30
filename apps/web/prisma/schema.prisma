@@ -7,20 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model staging_assinantes {
-  assinante_hash   String?
-  home_cluster     String?
-  home_municipio   String?
-  income_cluster   String?
-  age_group        String?
-  mobility_pattern String?
-  flag_flagship    String?
-
-  @@ignore
-}
-
 enum GeneroEnum {
   Masculino
   Femenino
@@ -60,11 +46,13 @@ enum AreaInteresEnum {
 }
 
 enum NivelIdiomaEnum {
-  A1_Basico @map("A1 (Básico)")
-  A2_Elemental @map("A2 (Elemental)")
-  B1_Intermedio @map("B1 (Intermedio)")
-  B2_Avanzado @map("B2 (Avanzado)")
-  C1_Fluido @map("C1 (Fluido)")
+  A1_Basico      @map("A1 (Básico)")
+  A2_Elemental   @map("A2 (Elemental)")
+  B1_Intermedio  @map("B1 (Intermedio)")
+  B2_Avanzado    @map("B2 (Avanzado)")
+  C1_Fluido      @map("C1 (Fluido)")
+  C2_Profesional @map("C2 (Profesional)")
+  Nativo
 }
 
 enum DisponibilidadEnum {
@@ -191,6 +179,13 @@ enum OnboardingStatusEnum {
   PENDING
   IN_PROGRESS
   COMPLETED
+}
+
+enum TipoContenidoCursoEnum {
+  Curso_externo
+  Roadmap_externo
+  Practica
+  Guia
 }
 
 // ============================================
@@ -380,6 +375,8 @@ model HabilidadesMercado {
   usuario_habilidades UsuarioHabilidades[]
   requisitos_vacante  RequisitosVacante[]
   cursos              Cursos[]          // cursos que tienen esta habilidad como principal
+  curso_habilidades   CursoHabilidades[]
+  leccion_habilidades LeccionHabilidades[]
 
   @@index([nombre], map: "idx_hab_nombre")
   @@index([area_principal], map: "idx_hab_area")
@@ -391,6 +388,7 @@ model UsuarioHabilidades {
   usuario_id      String               @db.Uuid
   habilidad_id    String               @db.Uuid
   estado          EstadoHabilidadEnum  @default(Faltante)
+  progreso_porcentaje Int              @default(0) @db.SmallInt
   actualizado_en  DateTime             @default(now()) @db.Timestamptz
 
   usuario         Usuarios             @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
@@ -576,6 +574,8 @@ model Cursos {
   descripcion           String?         @db.Text
   area                  AreaInteresEnum
   tipo                  TipoRecursoEnum @default(Gratuito)
+  tipo_contenido        TipoContenidoCursoEnum @default(Curso_externo)
+  nivel_recomendado     String?                @db.VarChar(50)
   plataforma            String?         @db.VarChar(255)
   url_externa           String?         @db.Text
   duracion_estimada_dias Int?
@@ -585,6 +585,7 @@ model Cursos {
   creado_en             DateTime        @default(now()) @db.Timestamptz
 
   habilidad             HabilidadesMercado? @relation(fields: [habilidad_principal], references: [habilidad_id])
+  curso_habilidades     CursoHabilidades[]
   modulos               Modulos[]
   inscripciones         InscripcionesCurso[]
   plan_accion           PlanAccion[]
@@ -594,6 +595,22 @@ model Cursos {
   @@index([area], map: "idx_curso_area")
   @@index([activo], map: "idx_curso_activo")
   @@map("cursos")
+}
+
+model CursoHabilidades {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  curso_id     String             @db.Uuid
+  habilidad_id String             @db.Uuid
+  peso         Int                @default(1) @db.SmallInt
+  creado_en    DateTime           @default(now()) @db.Timestamptz
+
+  curso        Cursos             @relation(fields: [curso_id], references: [curso_id], onDelete: Cascade)
+  habilidad    HabilidadesMercado @relation(fields: [habilidad_id], references: [habilidad_id])
+
+  @@unique([curso_id, habilidad_id])
+  @@index([curso_id], map: "idx_chab_curso")
+  @@index([habilidad_id], map: "idx_chab_habilidad")
+  @@map("curso_habilidades")
 }
 
 model Modulos {
@@ -623,9 +640,26 @@ model Lecciones {
 
   modulo           Modulos   @relation(fields: [modulo_id], references: [modulo_id], onDelete: Cascade)
   progreso         ProgresoLeccion[]
+  leccion_habilidades LeccionHabilidades[]
 
   @@index([modulo_id], map: "idx_lec_modulo")
   @@map("lecciones")
+}
+
+model LeccionHabilidades {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leccion_id   String             @db.Uuid
+  habilidad_id String             @db.Uuid
+  peso         Int                @default(1) @db.SmallInt
+  creado_en    DateTime           @default(now()) @db.Timestamptz
+
+  leccion      Lecciones          @relation(fields: [leccion_id], references: [leccion_id], onDelete: Cascade)
+  habilidad    HabilidadesMercado @relation(fields: [habilidad_id], references: [habilidad_id])
+
+  @@unique([leccion_id, habilidad_id])
+  @@index([leccion_id], map: "idx_lhab_leccion")
+  @@index([habilidad_id], map: "idx_lhab_habilidad")
+  @@map("leccion_habilidades")
 }
 
 model InscripcionesCurso {
@@ -701,6 +735,11 @@ model PlanAccion {
   prioridad         PrioridadPlanEnum
   curso_vinculado_id String?          @db.Uuid
   accion_label      String?           @db.VarChar(100)
+  tipo_item         String? @db.VarChar(50)
+  descripcion       String? @db.Text
+  estado            String? @default("pending") @db.VarChar(50)
+  skill_objetivo_id String? @db.Uuid
+  match_minimo      Int?    @db.SmallInt
   completado        Boolean           @default(false)
   orden             Int               @default(0) @db.SmallInt
   creado_en         DateTime          @default(now()) @db.Timestamptz
