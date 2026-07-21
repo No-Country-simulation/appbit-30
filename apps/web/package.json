@@ -12,6 +12,7 @@
     "db:seed": "prisma db seed",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:check-migration-status": "prisma migrate status",
     "build": "pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build && prisma generate && next build"
   },
   "dependencies": {

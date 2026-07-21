@@ -7,20 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model staging_assinantes {
-  assinante_hash   String?
-  home_cluster     String?
-  home_municipio   String?
-  income_cluster   String?
-  age_group        String?
-  mobility_pattern String?
-  flag_flagship    String?
-
-  @@ignore
-}
-
 enum GeneroEnum {
   Masculino
   Femenino
@@ -60,11 +46,13 @@ enum AreaInteresEnum {
 }
 
 enum NivelIdiomaEnum {
-  A1_Basico @map("A1 (Básico)")
-  A2_Elemental @map("A2 (Elemental)")
-  B1_Intermedio @map("B1 (Intermedio)")
-  B2_Avanzado @map("B2 (Avanzado)")
-  C1_Fluido @map("C1 (Fluido)")
+  A1_Basico      @map("A1 (Básico)")
+  A2_Elemental   @map("A2 (Elemental)")
+  B1_Intermedio  @map("B1 (Intermedio)")
+  B2_Avanzado    @map("B2 (Avanzado)")
+  C1_Fluido      @map("C1 (Fluido)")
+  C2_Profesional @map("C2 (Profesional)")
+  Nativo
 }
 
 enum DisponibilidadEnum {
