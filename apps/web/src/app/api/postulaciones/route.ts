@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import {
   calculateVacanteMatch,
 } from '@/src/features/empleabilidad/server/employability.service';
-import { getAuthenticatedUsuarioId } from '@/src/features/empleabilidad/server/get-authenticated-usuario';
 import { listPostulaciones } from '@/src/features/empleabilidad/server/postulaciones.service';
+import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 import { dbClient } from '@/src/server/clients/db.client';
 import { Prisma } from '@/src/server/generated/prisma';
 

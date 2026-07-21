@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getVacanteById } from '@/src/features/empleabilidad/server/employability.service';
-import { getAuthenticatedUsuarioId } from '@/src/features/empleabilidad/server/get-authenticated-usuario';
+import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 
 export const dynamic = 'force-dynamic';
 

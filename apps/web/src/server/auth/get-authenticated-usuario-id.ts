@@ -1,5 +1,5 @@
-import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
-import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
+import { getCurrentAuthUser } from './get-current-auth-user';
+import { findLinkedUsuario } from './find-linked-usuario';
 
 export async function getAuthenticatedUsuarioId() {
   const authUser = await getCurrentAuthUser();
