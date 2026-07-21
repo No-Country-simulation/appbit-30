@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useTranslations } from 'next-intl';
-import { CheckCircle, MapPin, Percent } from 'lucide-react';
+import { CheckCircle, MapPin } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppButton } from '@/src/components/app/AppButton';
 import { cn } from '@/lib/utils';
@@ -81,7 +81,6 @@ export function JobCard({
               : 'bg-amber-100 text-amber-700',
           )}
         >
-          <Percent className='size-3.5 shrink-0' />
           {matchPorcentaje === null
             ? t('matchNoDisponible')
             : `${matchPorcentaje}% ${t('match')}`}
