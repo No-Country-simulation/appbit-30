@@ -33,6 +33,11 @@ function buildCoordinates(series: readonly Point[], width: number, height: numbe
   }));
 }
 
+function periodDate(period: string) {
+  const [year, month] = period.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+}
+
 export function MatchEvolutionChart({ series, compact = false }: Props) {
   const locale = useLocale();
   const t = useTranslations('Dashboard');
@@ -88,7 +93,7 @@ export function MatchEvolutionChart({ series, compact = false }: Props) {
         {series.map((point) => (
           <span key={point.period}>
             {new Intl.DateTimeFormat(locale, { month: 'short' }).format(
-              new Date(`${point.period}-01T00:00:00Z`),
+              periodDate(point.period),
             )}
           </span>
         ))}

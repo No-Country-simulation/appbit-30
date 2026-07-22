@@ -146,8 +146,8 @@ export default function DashboardClient({
     }
   }, [skillsData, isLoadingSkills]);
 
-  const loadProgressHistory = useCallback(async () => {
-    if (progressHistory || isLoadingProgressHistory) return;
+  const loadProgressHistory = useCallback(async (force = false) => {
+    if ((!force && progressHistory) || isLoadingProgressHistory) return;
 
     setIsLoadingProgressHistory(true);
     setProgressHistoryError(false);
@@ -292,21 +292,8 @@ export default function DashboardClient({
     return Math.max(0, Math.min(100, Math.round(value)));
   }
 
-  const skillsMatchFromUserSkills = (() => {
-    const resumen = skillsData?.resumen;
-
-    if (!resumen) {
-      return undefined;
-    }
-
-    const total = resumen.adquiridas + resumen.faltantes + resumen.enProgreso;
-
-    if (total === 0) {
-      return undefined;
-    }
-
-    return clampPercent((resumen.adquiridas / total) * 100);
-  })();
+  const skillsMatchFromUserSkills =
+    skillsData?.resumen.matchActual ?? undefined;
 
   const orientacionGapPorcentual =
     data?.orientacion?.gap_porcentual ??
@@ -315,9 +302,13 @@ export default function DashboardClient({
 
   const skillsMatchPorcentaje = isLoadingDashboard
     ? undefined
-    : orientacionGapPorcentual != null
-      ? clampPercent(100 - Number(orientacionGapPorcentual))
-      : skillsMatchFromUserSkills;
+    : data?.progressHistorySummary?.currentMatch != null
+      ? clampPercent(data.progressHistorySummary.currentMatch)
+      : skillsMatchFromUserSkills != null
+        ? clampPercent(skillsMatchFromUserSkills)
+        : orientacionGapPorcentual != null
+          ? clampPercent(100 - Number(orientacionGapPorcentual))
+          : undefined;
 
   const areaValuesFromDashboard = data?.areasInteres ?? [];
 
@@ -455,7 +446,7 @@ export default function DashboardClient({
               historySummary={data?.progressHistorySummary}
               onVerHistorial={() => {
                 setProgressHistoryModalOpen(true);
-                void loadProgressHistory();
+                void loadProgressHistory(true);
               }}
             />
           </div>
@@ -539,7 +530,7 @@ export default function DashboardClient({
           setProgressHistoryModalOpen(nextOpen);
 
           if (nextOpen) {
-            void loadProgressHistory();
+            void loadProgressHistory(true);
           }
         }}
         data={progressHistory}
