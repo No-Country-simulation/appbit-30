@@ -430,7 +430,7 @@ app.post('/wellbeing/analyze', async (c) => {
     const alerta = nota_semanal < 5.5 || tendencia_baja;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `Actúa como psicólogo experto de la App BiT.
 Analiza este check-in emocional:
@@ -751,7 +751,7 @@ Respuesta JSON estricta, sin markdown:
       }
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
       const result = await model.generateContent(prompt);
 
       aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
