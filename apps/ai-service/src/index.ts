@@ -11,6 +11,10 @@ import {
 import { EMOJI_VALUES } from '@appbit/shared-types';
 import { dbClient } from './db.client.js';
 import {
+  applyOptionalPlanCopy,
+  buildDeterministicPlan,
+} from './plan-action.js';
+import {
   EstadoHabilidadEnum,
   PrioridadPlanEnum,
   IdiomaAppEnum,
@@ -33,139 +37,6 @@ function parseGeminiJson<T>(raw: string): T {
   return JSON.parse(cleanJson) as T;
 }
 
-function truncateText(value: unknown, maxLength: number) {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const cleaned = value.trim().replace(/\s+/g, ' ');
-
-  if (!cleaned) {
-    return null;
-  }
-
-  if (cleaned.length <= maxLength) {
-    return cleaned;
-  }
-
-  return cleaned.slice(0, maxLength - 1).trimEnd();
-}
-
-function fallbackPlanTitle(locale?: string) {
-  return locale === 'pt' ? 'Plano de ação' : 'Plan de acción';
-}
-
-type SafePlanItem = {
-  titulo: string;
-  prioridad: string;
-  curso_sugerido: string | null;
-  skill_objetivo: string | null;
-  accion_label: string | null;
-};
-
-function normalizePlanItems(items: unknown, locale?: string): SafePlanItem[] {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  return items.slice(0, 5).map((item, index) => {
-    const rawItem =
-      item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
-
-    return {
-      titulo:
-        truncateText(rawItem.titulo, 255) ??
-        `${fallbackPlanTitle(locale)} ${index + 1}`,
-      prioridad: truncateText(rawItem.prioridad, 50) ?? 'Media_prioridad',
-      curso_sugerido: truncateText(rawItem.curso_sugerido, 255),
-      skill_objetivo: truncateText(rawItem.skill_objetivo, 255),
-      accion_label: truncateText(rawItem.accion_label, 100),
-    };
-  });
-}
-
-function buildFallbackPlanItems(params: {
-  fallbackGapItems: { habilidad: string }[];
-  cursosDisponibles: {
-    titulo: string;
-    habilidad?: { nombre: string } | null;
-    curso_habilidades?: {
-      habilidad_id: string;
-      habilidad: { nombre: string };
-    }[];
-  }[];
-  locale?: string;
-}): SafePlanItem[] {
-  const { fallbackGapItems, cursosDisponibles, locale } = params;
-
-  const courseBySkillName = new Map<string, string>();
-
-  for (const course of cursosDisponibles) {
-    const skillNames = [
-      ...(course.habilidad?.nombre ? [course.habilidad.nombre] : []),
-      ...(course.curso_habilidades?.map(
-        (mapping) => mapping.habilidad.nombre,
-      ) ?? []),
-    ];
-
-    for (const skillName of skillNames) {
-      const key = skillName.trim().toLowerCase();
-      if (!courseBySkillName.has(key)) {
-        courseBySkillName.set(key, course.titulo);
-      }
-    }
-  }
-
-  const itemsFromGap = fallbackGapItems.slice(0, 3).map((item, index) => ({
-    titulo:
-      locale === 'pt'
-        ? `Reforçar fundamentos de ${item.habilidad}`
-        : `Reforzar fundamentos de ${item.habilidad}`,
-    prioridad: index === 0 ? 'Alta_prioridad' : 'Media_prioridad',
-    curso_sugerido:
-      courseBySkillName.get(item.habilidad.trim().toLowerCase()) ?? null,
-    skill_objetivo: item.habilidad,
-    accion_label: locale === 'pt' ? 'Começar agora' : 'Empezar ahora',
-  }));
-
-  if (itemsFromGap.length > 0) {
-    return itemsFromGap;
-  }
-
-  return [
-    {
-      titulo:
-        locale === 'pt'
-          ? 'Completar o primeiro curso recomendado'
-          : 'Completar el primer curso recomendado',
-      prioridad: 'Alta_prioridad',
-      curso_sugerido: cursosDisponibles[0]?.titulo ?? null,
-      skill_objetivo: null,
-      accion_label: locale === 'pt' ? 'Ver curso' : 'Ver curso',
-    },
-    {
-      titulo:
-        locale === 'pt'
-          ? 'Construir um projeto simples para praticar'
-          : 'Construir un proyecto simple para practicar',
-      prioridad: 'Media_prioridad',
-      curso_sugerido: null,
-      skill_objetivo: null,
-      accion_label: locale === 'pt' ? 'Planejar projeto' : 'Planear proyecto',
-    },
-    {
-      titulo:
-        locale === 'pt'
-          ? 'Atualizar o perfil com novas habilidades'
-          : 'Actualizar el perfil con nuevas habilidades',
-      prioridad: 'Baja_prioridad',
-      curso_sugerido: null,
-      skill_objetivo: null,
-      accion_label: locale === 'pt' ? 'Atualizar perfil' : 'Actualizar perfil',
-    },
-  ];
-}
-
 type LogLevel = 'info' | 'warn' | 'error';
 
 interface LogStructuredParams {
@@ -185,11 +56,10 @@ interface GeminiResponse {
     nivel_actual: string;
   }[];
   trayectoria_sugerida: string[];
-  plan_accion: {
+  plan_redaccion: {
+    key: string;
     titulo: string;
-    prioridad: string;
-    curso_sugerido: string | null;
-    skill_objetivo: string | null;
+    descripcion: string;
     accion_label: string;
   }[];
 }
@@ -638,9 +508,26 @@ app.post('/api/onboarding', async (c) => {
         nivel_actual: `${skill.progreso_porcentaje}%`,
       }));
 
-    const fallbackPlanAccion = buildFallbackPlanItems({
-      fallbackGapItems,
-      cursosDisponibles,
+    const deterministicPlan = buildDeterministicPlan({
+      skills: existingUserSkills.map((skill) => ({
+        id: skill.habilidad_id,
+        name: skill.habilidad.nombre,
+        progress: skill.progreso_porcentaje,
+      })),
+      courses: cursosDisponibles.map((course) => ({
+        id: course.curso_id,
+        title: course.titulo,
+        skillIds: Array.from(
+          new Set([
+            ...course.curso_habilidades.map(
+              (mapping) => mapping.habilidad_id,
+            ),
+            ...(course.habilidad_principal
+              ? [course.habilidad_principal]
+              : []),
+          ]),
+        ),
+      })),
       locale: data.locale,
     });
 
@@ -709,33 +596,42 @@ ${cursosDisponibles
   })
   .join('\n')}
 
+PLAN DE ACCIÓN FIJO (las reglas del producto ya eligieron skill, curso, prioridad y orden):
+${JSON.stringify(
+  deterministicPlan.map((item) => ({
+    key: item.key,
+    titulo_actual: item.title,
+    descripcion_actual: item.description,
+    accion_label_actual: item.actionLabel,
+    prioridad_fija: item.priority,
+    skill_id_fija: item.skillId,
+    curso_id_fijo: item.courseId,
+    orden_fijo: item.order,
+  })),
+)}
+
 Instrucciones:
 1. No borres ni contradigas las habilidades registradas por el onboarding web.
 2. Si el nivel inicial declarado es "sin_conocimiento", asumí que el usuario necesita empezar desde fundamentos.
 3. Calculá una trayectoria profesional realista de 1 a 3 títulos de puesto.
-4. Generá un plan de acción con 3 a 5 items priorizados.
-5. El titulo de cada item debe tener máximo 5 palabras.
-6. El accion_label debe ser texto de botón, máximo 4 palabras.
-7. Cada curso_sugerido debe coincidir exactamente con el título de algún curso disponible. Si no hay curso aplicable, usá null.
-8. skill_objetivo debe coincidir exactamente con una habilidad faltante listada. Si el item no trabaja una habilidad concreta, usá null.
-9. No mezcles idiomas. Todos los textos visibles deben estar en ${idiomaRespuesta}.
-
-REGLA ANTI-ALUCINACIÓN:
-curso_sugerido debe ser exactamente uno de los títulos listados en CURSOS DISPONIBLES.
-Si ningún curso aplica, usar null.
-No inventes cursos, certificaciones, bootcamps ni plataformas.
+4. No elijas, agregues, elimines ni reordenes pasos del plan fijo.
+5. No decidas cursos, habilidades ni prioridades: esos campos son inmutables y no deben aparecer en tu respuesta.
+6. Solo podés mejorar titulo, descripcion y accion_label de cada key recibida.
+7. El titulo debe tener máximo 5 palabras y accion_label máximo 4 palabras.
+8. Conservá exactamente cada key y devolvé una sola entrada por key.
+9. No inventes cursos, certificaciones, bootcamps ni plataformas.
+10. No mezcles idiomas. Todos los textos visibles deben estar en ${idiomaRespuesta}.
 
 Respuesta JSON estricta, sin markdown:
 {
   "gap_porcentual": 45,
   "gap_items": [{ "habilidad": "string", "nivel_requerido": "string", "nivel_actual": "string" }],
   "trayectoria_sugerida": ["string"],
-  "plan_accion": [
+  "plan_redaccion": [
     {
+      "key": "key recibida",
       "titulo": "string",
-      "prioridad": "Alta_prioridad"|"Media_prioridad"|"Baja_prioridad",
-      "curso_sugerido": "string | null",
-      "skill_objetivo": "string | null",
+      "descripcion": "string",
       "accion_label": "string"
     }
   ]
@@ -752,7 +648,7 @@ Respuesta JSON estricta, sin markdown:
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(prompt, { timeout: 8_000 });
 
       aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
     } catch (error) {
@@ -793,12 +689,10 @@ Respuesta JSON estricta, sin markdown:
         ? aiResponse.trayectoria_sugerida.slice(0, 3)
         : fallbackTrayectoria;
 
-    const aiPlanAccion = aiResponse
-      ? normalizePlanItems(aiResponse.plan_accion, data.locale)
-      : [];
-
-    const safePlanAccion =
-      aiPlanAccion.length > 0 ? aiPlanAccion : fallbackPlanAccion;
+    const safePlanAccion = applyOptionalPlanCopy(
+      deterministicPlan,
+      aiResponse?.plan_redaccion,
+    );
 
     const aiGapPercent = toFiniteNumber(aiResponse?.gap_porcentual);
 
@@ -809,69 +703,18 @@ Respuesta JSON estricta, sin markdown:
       data.gap_inicial ?? dbGapPorcentual ?? aiGapPercent ?? fallbackGapPercent,
     );
 
-    const courseByExactTitle = new Map(
-      cursosDisponibles.map((curso) => [
-        curso.titulo.trim().toLowerCase(),
-        curso,
-      ]),
-    );
-
-    const skillByExactName = new Map(
-      habilidadesMercado.map((skill) => [
-        skill.nombre.trim().toLowerCase(),
-        skill,
-      ]),
-    );
-    const pendingSkillNames = new Set(
-      fallbackGapItems.map((item) => item.habilidad.trim().toLowerCase()),
-    );
-
-    const planRows = safePlanAccion.map((item, index) => {
-      const cursoKey = item.curso_sugerido?.trim().toLowerCase();
-      const skillKey = item.skill_objetivo?.trim().toLowerCase();
-      const skill =
-        skillKey && pendingSkillNames.has(skillKey)
-          ? (skillByExactName.get(skillKey) ?? null)
-          : null;
-      const suggestedCourse = cursoKey
-        ? (courseByExactTitle.get(cursoKey) ?? null)
-        : null;
-      const suggestedCourseSkillIds = suggestedCourse
-        ? new Set([
-            ...suggestedCourse.curso_habilidades.map(
-              (mapping) => mapping.habilidad_id,
-            ),
-            ...(suggestedCourse.habilidad_principal
-              ? [suggestedCourse.habilidad_principal]
-              : []),
-          ])
-        : null;
-      const courseForSkill = skill
-        ? cursosDisponibles.find(
-            (course) =>
-              course.habilidad_principal === skill.habilidad_id ||
-              course.curso_habilidades.some(
-                (mapping) => mapping.habilidad_id === skill.habilidad_id,
-              ),
-          )
-        : null;
-      const course =
-        suggestedCourse &&
-        (!skill || suggestedCourseSkillIds?.has(skill.habilidad_id))
-          ? suggestedCourse
-          : courseForSkill;
-
+    const planRows = safePlanAccion.map((item) => {
       return {
         usuario_id: userId,
-        titulo: item.titulo,
-        prioridad: normalizePrioridad(item.prioridad),
-        orden: index + 1,
-        curso_vinculado_id: course?.curso_id ?? null,
-        skill_objetivo_id: skill?.habilidad_id ?? null,
-        tipo_item: course ? 'course' : 'action',
-        descripcion: skill ? `${item.titulo}: ${skill.nombre}` : item.titulo,
+        titulo: item.title,
+        prioridad: normalizePrioridad(item.priority),
+        orden: item.order,
+        curso_vinculado_id: item.courseId,
+        skill_objetivo_id: item.skillId,
+        tipo_item: item.courseId ? 'course' : 'action',
+        descripcion: item.description,
         estado: 'pending',
-        accion_label: item.accion_label,
+        accion_label: item.actionLabel,
       };
     });
 
