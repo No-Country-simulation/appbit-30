@@ -377,6 +377,7 @@ model HabilidadesMercado {
   cursos              Cursos[]          // cursos que tienen esta habilidad como principal
   curso_habilidades   CursoHabilidades[]
   leccion_habilidades LeccionHabilidades[]
+  plan_accion_objetivo PlanAccion[] @relation("PlanAccionSkillObjetivo")
 
   @@index([nombre], map: "idx_hab_nombre")
   @@index([area_principal], map: "idx_hab_area")
@@ -747,8 +748,10 @@ model PlanAccion {
 
   usuario           Usuarios          @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
   curso             Cursos?           @relation(fields: [curso_vinculado_id], references: [curso_id])
+  skill_objetivo     HabilidadesMercado? @relation("PlanAccionSkillObjetivo", fields: [skill_objetivo_id], references: [habilidad_id], onDelete: SetNull)
 
   @@index([usuario_id], map: "idx_plan_usuario")
+  @@index([skill_objetivo_id], map: "idx_plan_skill_objetivo")
   @@map("plan_accion")
 }
 

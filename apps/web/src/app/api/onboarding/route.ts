@@ -348,16 +348,20 @@ export async function POST(request: Request) {
           const selectedSkillNames = new Set<string>(data.habilidadesTecnicas);
 
           await tx.usuarioHabilidades.createMany({
-            data: habilidadesCatalogo.map((habilidad) => ({
-              usuario_id: usuarioId,
-              habilidad_id: habilidad.habilidad_id,
-              estado:
-                data.nivelExperienciaTecnologia === 'Desde_cero'
-                  ? EstadoHabilidadEnum.Faltante
-                  : selectedSkillNames.has(habilidad.nombre)
-                    ? EstadoHabilidadEnum.Adquirida
-                    : EstadoHabilidadEnum.Faltante,
-            })),
+            data: habilidadesCatalogo.map((habilidad) => {
+              const acquired =
+                data.nivelExperienciaTecnologia !== 'Desde_cero' &&
+                selectedSkillNames.has(habilidad.nombre);
+
+              return {
+                usuario_id: usuarioId,
+                habilidad_id: habilidad.habilidad_id,
+                estado: acquired
+                  ? EstadoHabilidadEnum.Adquirida
+                  : EstadoHabilidadEnum.Faltante,
+                progreso_porcentaje: acquired ? 100 : 0,
+              };
+            }),
             skipDuplicates: true,
           });
         }
