@@ -198,30 +198,29 @@ function buildProfilePercent(usuario: {
 
 function buildVacante(
   vacante: MockVacanteBase,
-  userSkillNames: string[],
+  userSkills: Array<{ name: string; progress: number }>,
 ): VacanteItem {
-  const normalizedUserSkills = new Set(userSkillNames.map(normalize));
-
-  const matchedCount = vacante.requiredSkills.filter((skill) =>
-    normalizedUserSkills.has(normalize(skill)),
-  ).length;
-
-  const rawMatch =
-    vacante.requiredSkills.length > 0
-      ? Math.round((matchedCount / vacante.requiredSkills.length) * 100)
-      : 0;
+  const progressBySkillName = new Map(
+    userSkills.map((skill) => [normalize(skill.name), skill.progress]),
+  );
 
   const matchPorcentaje =
-    userSkillNames.length === 0
-      ? 40
-      : Math.max(rawMatch, matchedCount > 0 ? 55 : 40);
+    vacante.requiredSkills.length > 0
+      ? Math.round(
+          vacante.requiredSkills.reduce(
+            (total, skill) =>
+              total + (progressBySkillName.get(normalize(skill)) ?? 0),
+            0,
+          ) / vacante.requiredSkills.length,
+        )
+      : 0;
 
   return {
     ...vacante,
     matchPorcentaje,
     skills: vacante.requiredSkills.map((skill) => ({
       nombre: skill,
-      laTienes: normalizedUserSkills.has(normalize(skill)),
+      laTienes: (progressBySkillName.get(normalize(skill)) ?? 0) > 0,
     })),
   };
 }
@@ -263,16 +262,23 @@ export async function getEmployabilityData(params: {
             nombre: true,
           },
         },
+        progreso_porcentaje: true,
       },
     }),
   ]);
 
-  const userSkillNames = userSkills
-    .map((item) => item.habilidad?.nombre)
-    .filter((skill): skill is string => Boolean(skill));
+  const skillsWithProgress = userSkills
+    .map((item) => ({
+      name: item.habilidad?.nombre,
+      progress: Math.max(0, Math.min(100, item.progreso_porcentaje)),
+    }))
+    .filter(
+      (skill): skill is { name: string; progress: number } =>
+        Boolean(skill.name),
+    );
 
   const vacantes = MOCK_VACANTES_BY_LOCALE[locale].map((vacante) =>
-    buildVacante(vacante, userSkillNames),
+    buildVacante(vacante, skillsWithProgress),
   );
 
   if (!usuario) {

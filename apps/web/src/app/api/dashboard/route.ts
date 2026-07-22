@@ -7,6 +7,8 @@ import {
   getRequestId,
   logApiError,
 } from '@/src/server/api/api-error';
+import { getProgressHistory } from '@/src/features/dashboard/server/progress-history';
+import { calculateSkillsMatch } from '@/src/server/progress/skill-progress';
 
 export const dynamic = 'force-dynamic';
 
@@ -282,6 +284,13 @@ export async function GET(request: Request) {
       },
     });
 
+    const progressHistoryPromise = getProgressHistory({
+      client: dbClient,
+      usuarioId: userId,
+      months: 4,
+      includeEvents: false,
+    });
+
     const [
       orientacionResult,
       planAccionResult,
@@ -290,6 +299,7 @@ export async function GET(request: Request) {
       notificacionesNoLeidasResult,
       perfilMovilidadResult,
       userSkillsResult,
+      progressHistoryResult,
     ] = await Promise.allSettled([
       orientacionPromise,
       planAccionPromise,
@@ -298,6 +308,7 @@ export async function GET(request: Request) {
       notificacionesNoLeidasPromise,
       perfilMovilidadPromise,
       userSkillsPromise,
+      progressHistoryPromise,
     ] as const);
 
     const degradedSections: string[] = [];
@@ -372,6 +383,16 @@ export async function GET(request: Request) {
       });
     }
 
+    if (progressHistoryResult.status === 'rejected') {
+      degradedSections.push('progressHistory');
+      logSettledError({
+        result: progressHistoryResult,
+        section: 'progressHistory',
+        requestId,
+        userId,
+      });
+    }
+
     const orientacion =
       orientacionResult.status === 'fulfilled' ? orientacionResult.value : null;
 
@@ -406,6 +427,11 @@ export async function GET(request: Request) {
     const userSkills =
       userSkillsResult.status === 'fulfilled' ? userSkillsResult.value : [];
 
+    const progressHistory =
+      progressHistoryResult.status === 'fulfilled'
+        ? progressHistoryResult.value
+        : null;
+
     const areasInteres = Array.from(
       new Set(
         userSkills
@@ -434,18 +460,15 @@ export async function GET(request: Request) {
 
     const totalUserSkills = userSkills.length;
 
-    const faltantes = userSkills.filter(
-      (skill) => skill.estado === 'Faltante',
-    ).length;
+    const computedMatchPorcentual =
+      totalUserSkills > 0 ? calculateSkillsMatch(userSkills) : null;
 
-    const computedGapPorcentual =
-      totalUserSkills > 0
-        ? clampPercent((faltantes / totalUserSkills) * 100)
-        : null;
-
-    const gapPorcentual = orientacion
-      ? clampPercent(Number(orientacion.gap_porcentual))
-      : computedGapPorcentual;
+    const gapPorcentual =
+      computedMatchPorcentual != null
+        ? clampPercent(100 - computedMatchPorcentual)
+        : orientacion
+          ? clampPercent(Number(orientacion.gap_porcentual))
+          : null;
 
     const fallbackGapItems = userSkills
       .filter((skill) => skill.estado === 'Faltante')
@@ -482,6 +505,14 @@ export async function GET(request: Request) {
         home_cluster: usuario.home_cluster,
       },
       areasInteres,
+      progressHistorySummary: progressHistory
+        ? {
+            initialMatch: progressHistory.initialMatch,
+            currentMatch: progressHistory.currentMatch,
+            variation: progressHistory.variation,
+            series: progressHistory.series,
+          }
+        : undefined,
       orientacion:
         gapPorcentual != null
           ? {

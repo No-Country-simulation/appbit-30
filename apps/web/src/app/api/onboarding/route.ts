@@ -13,6 +13,7 @@ import {
   getRequestId,
   logApiError,
 } from '@/src/server/api/api-error';
+import { getUserSkillsMatch } from '@/src/server/progress/skill-progress';
 
 const NIVEL_IDIOMA_MAP: Partial<Record<string, NivelIdiomaEnum>> = {
   A1: NivelIdiomaEnum.A1_Basico,
@@ -513,6 +514,25 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    await dbClient.$transaction(async (tx) => {
+      const initialMatch = await getUserSkillsMatch(tx, result.usuarioId);
+
+      await tx.historialProgreso.createMany({
+        data: [
+          {
+            usuario_id: result.usuarioId,
+            tipo_evento: 'Onboarding',
+            entidad_id: result.usuarioId,
+            titulo: 'Onboarding completado',
+            match_anterior: initialMatch,
+            match_nuevo: initialMatch,
+            metadatos: {},
+          },
+        ],
+        skipDuplicates: true,
+      });
+    });
 
     return NextResponse.json({
       success: true,
