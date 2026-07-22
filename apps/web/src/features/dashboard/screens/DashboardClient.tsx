@@ -1,12 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
 import { HeroBanner } from '../components/HeroBanner';
-import { RadarBanner } from '../components/RadarBanner';
 import { SkillsGapCard } from '../components/SkillsGapCard';
 import { ActionPlanCard } from '../components/ActionPlanCard';
 import { WellbeingCard } from '../components/WellbeingCard';
@@ -21,24 +20,53 @@ interface Props {
   shouldOpenOnboarding: boolean;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    cache: 'no-store',
-  });
+type AiRecommendationsStatus = 'generating' | 'ready' | 'fallback';
 
-  if (!response.ok) {
-    throw new Error(`Error loading ${url}`);
+type DashboardClientResponse = DashboardResponse & {
+  aiRecommendationsReady?: boolean;
+  aiRecommendationsStatus?: AiRecommendationsStatus;
+};
+
+async function fetchJson<T>(
+  url: string,
+  options: {
+    timeoutMs?: number;
+  } = {},
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? 8000,
+  );
+
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error loading ${url}`);
+    }
+
+    return response.json() as Promise<T>;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
-
-  return response.json() as Promise<T>;
 }
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function hasGeneratedRecommendations(dashboard: DashboardResponse) {
-  return dashboard.planAccion.length > 0;
+function getAiRecommendationsStatus(
+  dashboard: DashboardClientResponse | null | undefined,
+): AiRecommendationsStatus {
+  return dashboard?.aiRecommendationsStatus ?? 'ready';
+}
+
+function hasResolvedRecommendations(dashboard: DashboardClientResponse) {
+  return getAiRecommendationsStatus(dashboard) !== 'generating';
 }
 
 const AREA_LABEL_KEYS = {
@@ -90,6 +118,131 @@ const SKILL_STATUS_ORDER: Record<SkillRow['estado'], number> = {
   acquired: 2,
 };
 
+type DashboardHero = {
+  titleKey:
+    | 'heroWellbeingTitle'
+    | 'heroJobsTitle'
+    | 'heroProgressTitle'
+    | 'heroStartTitle';
+  descriptionKey:
+    | 'heroWellbeingDescription'
+    | 'heroJobsDescription'
+    | 'heroProgressDescription'
+    | 'heroStartDescription'
+    | 'heroStartNoSkillsDescription';
+  tone: 'default' | 'learning' | 'jobs' | 'wellbeing';
+  values: Record<string, string | number | undefined>;
+  primaryLabelKey: 'heroCtaWellbeing' | 'heroCtaJobs' | 'heroCtaLearning';
+  primaryHref: string;
+  secondaryLabelKey?: 'heroCtaPlan' | 'heroCtaContinueProgress';
+  secondaryHref?: string;
+};
+
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+function getArrayLength(value: unknown) {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function compactTranslationValues(values: DashboardHero['values']) {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined),
+  ) as Record<string, string | number>;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+const ONBOARDING_DASHBOARD_CLICK_KEY = 'appbit:onboarding-dashboard-click-ms';
+
+const DASHBOARD_PERF_LOGS_ENABLED =
+  process.env.NEXT_PUBLIC_DASHBOARD_PERF_LOGS === 'true';
+
+function getNowMs() {
+  return Math.round(performance.now());
+}
+
+function readStoredDashboardClickMs() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(ONBOARDING_DASHBOARD_CLICK_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  const value = Number(raw);
+
+  return Number.isFinite(value) ? value : null;
+}
+
+function getDashboardClickDeltaMs() {
+  const startedAt = readStoredDashboardClickMs();
+
+  return startedAt != null ? Math.round(performance.now() - startedAt) : null;
+}
+
+function clearStoredDashboardClick() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.removeItem(ONBOARDING_DASHBOARD_CLICK_KEY);
+}
+
+function getPerfErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function logDashboardPerf(
+  event: string,
+  context: Record<string, unknown> = {},
+) {
+  if (!DASHBOARD_PERF_LOGS_ENABLED) {
+    return;
+  }
+
+  console.info(
+    JSON.stringify({
+      scope: 'dashboard-perf',
+      event,
+      atMs: getNowMs(),
+      fromOnboardingClickMs: getDashboardClickDeltaMs(),
+      ...context,
+    }),
+  );
+}
+
+function PlanGeneratingCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className='rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm'>
+      <p className='text-sm font-semibold text-[var(--color-text)]'>{title}</p>
+      <p className='mt-2 text-sm text-[var(--color-muted)]'>{description}</p>
+
+      <div className='mt-4 space-y-2'>
+        <div className='h-3 w-3/4 animate-pulse rounded-full bg-[var(--color-border)]' />
+        <div className='h-3 w-2/3 animate-pulse rounded-full bg-[var(--color-border)]' />
+        <div className='h-3 w-1/2 animate-pulse rounded-full bg-[var(--color-border)]' />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardClient({
   nombre: nombreProp,
   shouldOpenOnboarding,
@@ -98,7 +251,7 @@ export default function DashboardClient({
   const t = useTranslations('Dashboard');
   const tOnboarding = useTranslations('Onboarding');
 
-  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [data, setData] = useState<DashboardClientResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
 
@@ -108,11 +261,13 @@ export default function DashboardClient({
   const shouldShowOnboarding =
     shouldOpenOnboarding && !onboardingCompletedClient;
 
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState(
-    () => !shouldShowOnboarding,
-  );
+  const hasDashboardDataRef = useRef(false);
+  const [isRefreshingDashboard, setIsRefreshingDashboard] = useState(false);
 
   const [dashboardError, setDashboardError] = useState(false);
+
+  const isInitialDashboardLoading =
+    !shouldShowOnboarding && !data && !dashboardError;
 
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
@@ -120,22 +275,98 @@ export default function DashboardClient({
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
   const [checkinModalKey, setCheckinModalKey] = useState(0);
 
+  const dashboardShellLoggedRef = useRef(false);
+  const dashboardDataLoggedRef = useRef(false);
+  const aiRefreshScheduledRef = useRef(false);
+  const aiRefreshTimeoutsRef = useRef<number[]>([]);
+
+  const clearAiRefreshTimeouts = useCallback(() => {
+    aiRefreshTimeoutsRef.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    aiRefreshTimeoutsRef.current = [];
+  }, []);
+
   const loadSkills = useCallback(async () => {
     if (skillsData || isLoadingSkills) {
       return;
     }
 
+    const startedAt = performance.now();
+
+    logDashboardPerf('skills_fetch_start');
     setIsLoadingSkills(true);
 
     try {
       const skills = await fetchJson<SkillsResponse>('/api/skills');
       setSkillsData(skills);
+
+      logDashboardPerf('skills_fetch_success', {
+        durationMs: Math.round(performance.now() - startedAt),
+        skillsCount: skills.habilidades.length,
+      });
     } catch (error) {
       console.error('Error fetching skills data:', error);
+
+      logDashboardPerf('skills_fetch_error', {
+        durationMs: Math.round(performance.now() - startedAt),
+        message: getPerfErrorMessage(error),
+      });
     } finally {
       setIsLoadingSkills(false);
     }
   }, [skillsData, isLoadingSkills]);
+
+  const retryRecommendationsInBackground = useCallback(async () => {
+    const maxAttempts = 4;
+    const delayMs = 1500;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await sleep(delayMs);
+
+      const startedAt = performance.now();
+
+      logDashboardPerf('dashboard_background_retry_start', { attempt });
+
+      try {
+        const dash = await fetchJson<DashboardClientResponse>(
+          `/api/dashboard?timezone=${encodeURIComponent(
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+          )}`,
+          { timeoutMs: 8000 },
+        );
+
+        hasDashboardDataRef.current = true;
+        setData(dash);
+        setDashboardError(false);
+
+        logDashboardPerf('dashboard_background_retry_success', {
+          attempt,
+          durationMs: Math.round(performance.now() - startedAt),
+          requestId: dash.requestId,
+          planItems: dash.planAccion.length,
+          aiRecommendationsStatus: getAiRecommendationsStatus(dash),
+        });
+
+        if (hasResolvedRecommendations(dash)) {
+          break;
+        }
+      } catch (error) {
+        console.warn(
+          'Dashboard background recommendation refresh failed:',
+          error,
+        );
+
+        logDashboardPerf('dashboard_background_retry_error', {
+          attempt,
+          durationMs: Math.round(performance.now() - startedAt),
+          message: getPerfErrorMessage(error),
+        });
+
+        break;
+      }
+    }
+  }, []);
 
   const loadDashboard = useCallback(
     async (
@@ -145,43 +376,109 @@ export default function DashboardClient({
       } = {},
     ) => {
       if (shouldShowOnboarding && !options.force) {
+        logDashboardPerf('dashboard_fetch_skipped_onboarding_open', {
+          force: Boolean(options.force),
+        });
+
         return;
       }
 
-      const maxAttempts = options.waitForRecommendations ? 12 : 1;
-      const delayMs = 1500;
+      const hasExistingData = hasDashboardDataRef.current;
+      const fetchStartedAt = performance.now();
+
+      logDashboardPerf('dashboard_fetch_start', {
+        hasExistingData,
+        force: Boolean(options.force),
+        waitForRecommendations: Boolean(options.waitForRecommendations),
+      });
+
+      if (hasExistingData) {
+        setIsRefreshingDashboard(true);
+      }
 
       try {
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          const dash = await fetchJson<DashboardResponse>(
-            `/api/dashboard?timezone=${encodeURIComponent(
-              Intl.DateTimeFormat().resolvedOptions().timeZone,
-            )}`,
+        const dash = await fetchJson<DashboardClientResponse>(
+          `/api/dashboard?timezone=${encodeURIComponent(
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+          )}`,
+          { timeoutMs: 8000 },
+        );
+
+        logDashboardPerf('dashboard_fetch_success', {
+          durationMs: Math.round(performance.now() - fetchStartedAt),
+          requestId: dash.requestId,
+          planItems: dash.planAccion.length,
+          degradedSections: dash.degradedSections,
+          hasCheckinToday: dash.bienestar.hasCheckinToday,
+          aiRecommendationsStatus: getAiRecommendationsStatus(dash),
+        });
+
+        hasDashboardDataRef.current = true;
+        setData(dash);
+        setDashboardError(false);
+
+        logDashboardPerf('dashboard_state_set', {
+          durationMs: Math.round(performance.now() - fetchStartedAt),
+        });
+
+        if (
+          options.waitForRecommendations &&
+          !hasResolvedRecommendations(dash)
+        ) {
+          logDashboardPerf(
+            'dashboard_recommendations_background_retry_scheduled',
           );
 
-          setData(dash);
-          setDashboardError(false);
-
-          if (
-            !options.waitForRecommendations ||
-            hasGeneratedRecommendations(dash)
-          ) {
-            break;
-          }
-
-          if (attempt < maxAttempts) {
-            await sleep(delayMs);
-          }
+          void retryRecommendationsInBackground();
         }
       } catch (error) {
         console.error('Dashboard fetch error:', error);
+
+        logDashboardPerf('dashboard_fetch_error', {
+          durationMs: Math.round(performance.now() - fetchStartedAt),
+          message: getPerfErrorMessage(error),
+        });
+
         setDashboardError(true);
       } finally {
-        setIsLoadingDashboard(false);
+        setIsRefreshingDashboard(false);
       }
     },
-    [shouldShowOnboarding],
+    [retryRecommendationsInBackground, shouldShowOnboarding],
   );
+
+  useEffect(() => {
+    return () => {
+      clearAiRefreshTimeouts();
+    };
+  }, [clearAiRefreshTimeouts]);
+
+  useEffect(() => {
+    const status = getAiRecommendationsStatus(data);
+
+    if (status !== 'generating') {
+      aiRefreshScheduledRef.current = false;
+      clearAiRefreshTimeouts();
+      return;
+    }
+
+    if (aiRefreshScheduledRef.current) {
+      return;
+    }
+
+    aiRefreshScheduledRef.current = true;
+
+    const refreshDelaysMs = [4000, 9000, 14000];
+
+    aiRefreshTimeoutsRef.current = refreshDelaysMs.map((delayMs) =>
+      window.setTimeout(() => {
+        void loadDashboard({
+          force: true,
+          waitForRecommendations: false,
+        });
+      }, delayMs),
+    );
+  }, [clearAiRefreshTimeouts, data, loadDashboard]);
 
   useEffect(() => {
     if (shouldOpenOnboarding) {
@@ -197,17 +494,67 @@ export default function DashboardClient({
     };
   }, [loadDashboard, shouldOpenOnboarding]);
 
-  async function handleOnboardingCompleted() {
+  useEffect(() => {
+    if (shouldShowOnboarding || dashboardShellLoggedRef.current) {
+      return;
+    }
+
+    dashboardShellLoggedRef.current = true;
+
+    logDashboardPerf('dashboard_shell_rendered', {
+      hasInitialData: Boolean(data),
+      isInitialDashboardLoading,
+    });
+  }, [data, isInitialDashboardLoading, shouldShowOnboarding]);
+
+  useEffect(() => {
+    if (!data || dashboardDataLoggedRef.current) {
+      return;
+    }
+
+    dashboardDataLoggedRef.current = true;
+
+    let firstRaf = 0;
+    let secondRaf = 0;
+
+    firstRaf = window.requestAnimationFrame(() => {
+      secondRaf = window.requestAnimationFrame(() => {
+        logDashboardPerf('dashboard_first_useful_paint', {
+          planItems: data.planAccion.length,
+          hasCheckinToday: data.bienestar.hasCheckinToday,
+          degradedSections: data.degradedSections,
+          aiRecommendationsStatus: getAiRecommendationsStatus(data),
+        });
+
+        clearStoredDashboardClick();
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstRaf);
+      window.cancelAnimationFrame(secondRaf);
+    };
+  }, [data]);
+
+  function handleOnboardingCompleted() {
+    logDashboardPerf('onboarding_completed_received_by_dashboard_client');
+
     setOnboardingCompletedClient(true);
     setData(null);
     setSkillsData(null);
     setDashboardError(false);
-    setIsLoadingDashboard(true);
+    hasDashboardDataRef.current = false;
+    dashboardShellLoggedRef.current = false;
+    dashboardDataLoggedRef.current = false;
+    aiRefreshScheduledRef.current = false;
+    clearAiRefreshTimeouts();
 
-    await loadDashboard({
+    void loadDashboard({
       force: true,
       waitForRecommendations: true,
     });
+
+    logDashboardPerf('dashboard_load_scheduled_after_onboarding');
 
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', window.location.pathname);
@@ -217,15 +564,9 @@ export default function DashboardClient({
   const nombre = data?.usuario?.nombre_completo ?? nombreProp;
   const avatarUrl = data?.usuario?.avatar_url ?? null;
 
-  const cursosPendientes = isLoadingDashboard
-    ? undefined
-    : (data?.planAccion?.filter((p) => !p.completado).length ?? 0);
-
-  const vacantesDisponibles = isLoadingDashboard
-    ? undefined
-    : Array.isArray(data?.orientacion?.vacantes_compatibles)
-      ? data.orientacion.vacantes_compatibles.length
-      : 0;
+  const vacantesDisponibles = getArrayLength(
+    data?.orientacion?.vacantes_compatibles,
+  );
 
   const actionItems: ActionItem[] =
     data?.planAccion?.map((item) => {
@@ -256,13 +597,7 @@ export default function DashboardClient({
       };
     }) ?? [];
 
-  const promedioSemanal = isLoadingDashboard
-    ? undefined
-    : (data?.bienestar?.notaPromedio ?? 0);
-
-  function clampPercent(value: number) {
-    return Math.max(0, Math.min(100, Math.round(value)));
-  }
+  const promedioSemanal = data?.bienestar?.notaPromedio ?? 0;
 
   const skillsMatchFromUserSkills = (() => {
     const resumen = skillsData?.resumen;
@@ -285,9 +620,8 @@ export default function DashboardClient({
     skillsData?.orientacion?.gap_porcentual ??
     null;
 
-  const skillsMatchPorcentaje = isLoadingDashboard
-    ? undefined
-    : orientacionGapPorcentual != null
+  const skillsMatchPorcentaje =
+    orientacionGapPorcentual != null
       ? clampPercent(100 - Number(orientacionGapPorcentual))
       : skillsMatchFromUserSkills;
 
@@ -344,16 +678,94 @@ export default function DashboardClient({
         });
       }) ?? [];
 
-  const perfilCompletado = isLoadingDashboard
-    ? undefined
-    : (data?.perfil_completado ?? 0);
-
-  const perfilBreakdown = isLoadingDashboard
-    ? undefined
-    : data?.perfil_breakdown;
+  const perfilCompletado = data?.perfil_completado ?? undefined;
+  const perfilBreakdown = data?.perfil_breakdown;
 
   const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
   const todayCheckin = data?.bienestar?.todayCheckin ?? null;
+  const aiRecommendationsStatus = getAiRecommendationsStatus(data);
+
+  const dashboardHero = useMemo<DashboardHero>(() => {
+    const firstName = getFirstName(nombre);
+    const match = skillsMatchPorcentaje ?? data?.match_perfil ?? 0;
+    const hasWellbeingAttention =
+      todayCheckin?.nota_diaria != null && Number(todayCheckin.nota_diaria) < 4;
+
+    const canShowJobs = match >= 50 && vacantesDisponibles > 0;
+    const missingSkillsCount = Math.min(
+      getArrayLength(data?.orientacion?.gap_items),
+      3,
+    );
+
+    if (hasWellbeingAttention) {
+      return {
+        tone: 'wellbeing',
+        titleKey: 'heroWellbeingTitle',
+        descriptionKey: 'heroWellbeingDescription',
+        values: { nombre: firstName },
+        primaryLabelKey: 'heroCtaWellbeing',
+        primaryHref: '/bienestar',
+        secondaryLabelKey: 'heroCtaPlan',
+        secondaryHref: '/formacion',
+      };
+    }
+
+    if (canShowJobs) {
+      return {
+        tone: 'jobs',
+        titleKey: 'heroJobsTitle',
+        descriptionKey: 'heroJobsDescription',
+        values: {
+          nombre: firstName,
+          vacantes: vacantesDisponibles,
+        },
+        primaryLabelKey: 'heroCtaJobs',
+        primaryHref: '/empleabilidad',
+        secondaryLabelKey: 'heroCtaContinueProgress',
+        secondaryHref: '/formacion',
+      };
+    }
+
+    if (match > 0) {
+      return {
+        tone: 'learning',
+        titleKey: 'heroProgressTitle',
+        descriptionKey: 'heroProgressDescription',
+        values: {
+          nombre: firstName,
+          match,
+        },
+        primaryLabelKey: 'heroCtaLearning',
+        primaryHref: '/formacion',
+        secondaryLabelKey: 'heroCtaPlan',
+        secondaryHref: '/dashboard',
+      };
+    }
+
+    return {
+      tone: 'learning',
+      titleKey: 'heroStartTitle',
+      descriptionKey:
+        missingSkillsCount > 0
+          ? 'heroStartDescription'
+          : 'heroStartNoSkillsDescription',
+      values: {
+        nombre: firstName,
+        skills: missingSkillsCount,
+      },
+      primaryLabelKey: 'heroCtaLearning',
+      primaryHref: '/formacion',
+      secondaryLabelKey: 'heroCtaPlan',
+      secondaryHref: '/dashboard',
+    };
+  }, [
+    data?.match_perfil,
+    data?.orientacion?.gap_items,
+    nombre,
+    skillsMatchPorcentaje,
+    todayCheckin?.nota_diaria,
+    vacantesDisponibles,
+  ]);
 
   function handleActionPlanItemClick(item: {
     curso?: {
@@ -382,6 +794,16 @@ export default function DashboardClient({
     router.push('/formacion');
   }
 
+  const secondaryHeroAction =
+    dashboardHero.secondaryLabelKey && dashboardHero.secondaryHref
+      ? {
+          label: t(dashboardHero.secondaryLabelKey),
+          href: dashboardHero.secondaryHref,
+        }
+      : null;
+
+  const heroValues = compactTranslationValues(dashboardHero.values);
+
   return (
     <AppShell
       onCheckinClick={() => {
@@ -403,23 +825,32 @@ export default function DashboardClient({
         )}
 
         <HeroBanner
-          nombre={nombre}
-          cursosPendientes={cursosPendientes}
-          vacantesDisponibles={vacantesDisponibles}
-          isLoading={isLoadingDashboard}
+          title={t(dashboardHero.titleKey, heroValues)}
+          description={t(dashboardHero.descriptionKey, heroValues)}
+          tone={dashboardHero.tone}
+          isLoading={isInitialDashboardLoading}
+          isRefreshing={isRefreshingDashboard}
+          refreshingLabel={t('heroRefreshing')}
+          primaryAction={{
+            label: t(dashboardHero.primaryLabelKey),
+            onClick: () => router.push(dashboardHero.primaryHref),
+          }}
+          secondaryAction={
+            secondaryHeroAction
+              ? {
+                  label: secondaryHeroAction.label,
+                  onClick: () => router.push(secondaryHeroAction.href),
+                }
+              : undefined
+          }
         />
-
-        {/* <RadarBanner
-          vacantesCompatibles={vacantesDisponibles}
-          isLoading={isLoadingDashboard}
-        /> */}
 
         <div className='grid min-w-0 grid-cols-1 gap-4 md:gap-5 xl:grid-cols-12'>
           <div className='xl:col-span-4'>
             <SkillsGapCard
               porcentaje={skillsMatchPorcentaje}
               puesto={skillsPuesto}
-              isLoading={isLoadingDashboard}
+              isLoading={isInitialDashboardLoading}
               onVerDetalles={() => {
                 setSkillsModalOpen(true);
                 void loadSkills();
@@ -428,17 +859,24 @@ export default function DashboardClient({
           </div>
 
           <div className='xl:col-span-5'>
-            <ActionPlanCard
-              items={actionItems}
-              isLoading={isLoadingDashboard}
-              onItemClick={handleActionPlanItemClick}
-            />
+            {aiRecommendationsStatus === 'generating' ? (
+              <PlanGeneratingCard
+                title={t('planGeneratingTitle')}
+                description={t('planGeneratingDescription')}
+              />
+            ) : (
+              <ActionPlanCard
+                items={actionItems}
+                isLoading={isInitialDashboardLoading}
+                onItemClick={handleActionPlanItemClick}
+              />
+            )}
           </div>
 
           <div className='xl:col-span-3'>
             <WellbeingCard
               promedioSemanal={promedioSemanal}
-              isLoading={isLoadingDashboard}
+              isLoading={isInitialDashboardLoading}
               hasCheckinToday={hasCheckinToday}
               todayCheckin={todayCheckin}
               onHistoryClick={() => router.push('/bienestar')}
@@ -477,7 +915,7 @@ export default function DashboardClient({
         puesto={skillsPuesto}
         porcentaje={skillsMatchPorcentaje}
         skills={skillsRows}
-        isLoading={isLoadingDashboard || isLoadingSkills}
+        isLoading={isLoadingSkills}
       />
 
       <CheckinModal
@@ -493,11 +931,11 @@ export default function DashboardClient({
         }}
         initialMood={checkinMood}
         startAtStep={checkinStartStep}
-        onSaved={() =>
-          loadDashboard({
+        onSaved={() => {
+          void loadDashboard({
             force: true,
-          })
-        }
+          });
+        }}
       />
     </AppShell>
   );
