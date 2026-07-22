@@ -185,6 +185,7 @@ export async function GET(request: Request) {
       select: {
         plan_item_id: true,
         titulo: true,
+        descripcion: true,
         prioridad: true,
         completado: true,
         orden: true,
@@ -531,6 +532,7 @@ export async function GET(request: Request) {
       planAccion: planAccion.map((item) => ({
         plan_item_id: item.plan_item_id,
         titulo: item.titulo,
+        descripcion: item.descripcion,
         prioridad: item.prioridad,
         completado: item.completado,
         orden: item.orden,

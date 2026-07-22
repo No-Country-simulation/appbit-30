@@ -266,7 +266,9 @@ export default function DashboardClient({
           ? ('completado' as const)
           : item.prioridad === 'Alta_prioridad'
             ? ('alta' as const)
-            : ('media' as const),
+            : item.prioridad === 'Media_prioridad'
+              ? ('media' as const)
+              : ('baja' as const),
         actionLabel:
           item.accion_label ??
           (item.curso?.hasInternalContent

@@ -1,3 +1,5 @@
+import type { ActionPlanPriority } from '@appbit/shared-schemas';
+
 export interface FormacionDownloadItem {
   titulo: string;
   tamanioMb: number;
@@ -29,7 +31,7 @@ export interface FormacionActionPlanItem {
   id: string;
   title: string;
   description: string | null;
-  priority: 'Alta_prioridad' | 'Media_prioridad' | 'Baja_prioridad';
+  priority: ActionPlanPriority;
   completed: boolean;
   actionLabel: string | null;
   courseId: string | null;

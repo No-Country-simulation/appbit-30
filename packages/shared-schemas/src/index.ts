@@ -344,6 +344,14 @@ export const onboardingResponseSchema = z.object({
 });
 
 // --- SCHEMAS PARA DASHBOARD (FE-003) ---
+export const actionPlanPrioritySchema = z.enum([
+  'Alta_prioridad',
+  'Media_prioridad',
+  'Baja_prioridad',
+]);
+
+export type ActionPlanPriority = z.infer<typeof actionPlanPrioritySchema>;
+
 export const dashboardResponseSchema = z.object({
   perfil_completado: z.number(),
   match_perfil: z.number(),
@@ -386,7 +394,8 @@ export const dashboardResponseSchema = z.object({
     z.object({
       plan_item_id: z.string(),
       titulo: z.string(),
-      prioridad: z.string(),
+      descripcion: z.string().nullable(),
+      prioridad: actionPlanPrioritySchema,
       completado: z.boolean(),
       orden: z.number(),
       accion_label: z.string().nullable(),
