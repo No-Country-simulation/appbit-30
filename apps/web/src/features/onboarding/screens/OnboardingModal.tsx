@@ -98,6 +98,50 @@ const INITIAL_FORM_DATA: FormData = {
 const STORAGE_KEY = 'onboarding_form_data';
 const STORAGE_KEY_STEP = 'onboarding_step';
 
+const ONBOARDING_DASHBOARD_CLICK_KEY = 'appbit:onboarding-dashboard-click-ms';
+
+const ONBOARDING_PERF_LOGS_ENABLED =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.NEXT_PUBLIC_DASHBOARD_PERF_LOGS === 'true';
+
+function markOnboardingDashboardClick() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const value = performance.now();
+
+  window.sessionStorage.setItem(ONBOARDING_DASHBOARD_CLICK_KEY, String(value));
+
+  return value;
+}
+
+function getOnboardingPerfDelta(startedAt: number | null) {
+  if (startedAt == null) {
+    return null;
+  }
+
+  return Math.round(performance.now() - startedAt);
+}
+
+function logOnboardingPerf(
+  event: string,
+  context: Record<string, unknown> = {},
+) {
+  if (!ONBOARDING_PERF_LOGS_ENABLED) {
+    return;
+  }
+
+  console.info(
+    JSON.stringify({
+      scope: 'onboarding-dashboard-perf',
+      event,
+      atMs: Math.round(performance.now()),
+      ...context,
+    }),
+  );
+}
+
 const FORM_DATA_KEYS: (keyof FormData)[] = [
   'fechaNacimiento',
   'genero',
@@ -163,6 +207,45 @@ interface OnboardingModalProps {
   defaultOpen?: boolean;
   locked?: boolean;
   onCompleted?: () => void | Promise<void>;
+}
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
+function getWhatsappCountry(code: string) {
+  return countries.find((country) => country.code === code);
+}
+
+function getWhatsappValidationError(params: { code: string; number: string }) {
+  const code = params.code;
+  const digits = onlyDigits(params.number);
+
+  if (!code && !digits) return null;
+
+  if (!code && digits) {
+    return 'Seleccioná el código de país para tu WhatsApp.';
+  }
+
+  if (code && !digits) {
+    return 'Ingresá tu número de WhatsApp o borrá el código de país.';
+  }
+
+  const country = getWhatsappCountry(code);
+
+  if (country && digits.length !== country.phoneLength) {
+    return `El número debe tener ${country.phoneLength} dígitos para ${code}.`;
+  }
+
+  if (!country && (digits.length < 8 || digits.length > 15)) {
+    return 'Ingresá un número de WhatsApp válido.';
+  }
+
+  return null;
+}
+
+function isWhatsappValid(code: string, number: string) {
+  return getWhatsappValidationError({ code, number }) === null;
 }
 
 export function OnboardingModal({
@@ -313,7 +396,8 @@ export function OnboardingModal({
         d.nivelEducacion.length > 0 &&
         d.momentoProfesional.length > 0 &&
         d.areasInteres.length > 0 &&
-        d.idiomas.some((i) => i.idioma && i.nivel) &&
+        d.idiomas.length > 0 &&
+        d.idiomas.every((i) => i.idioma && i.nivel) &&
         d.disponibilidad.length > 0 &&
         d.ubicacionTrabajo.length > 0
       );
@@ -331,23 +415,23 @@ export function OnboardingModal({
       );
     }
 
-    const isWhatsappValid =
-      (!d.whatsappCodigo && !d.whatsappNumero) ||
-      (!!d.whatsappCodigo && !!d.whatsappNumero);
-
     return (
       d.objetivos.length > 0 &&
       d.dispositivos.length > 0 &&
       d.tipoConexion.length > 0 &&
-      isWhatsappValid
+      isWhatsappValid(d.whatsappCodigo, d.whatsappNumero)
     );
   }
 
-  function hasPartialWhatsapp() {
-    return (
-      (!!formData.whatsappCodigo && !formData.whatsappNumero) ||
-      (!formData.whatsappCodigo && !!formData.whatsappNumero)
-    );
+  function getCurrentWhatsappError() {
+    return getWhatsappValidationError({
+      code: formData.whatsappCodigo,
+      number: formData.whatsappNumero,
+    });
+  }
+
+  function hasWhatsappError() {
+    return Boolean(getCurrentWhatsappError());
   }
 
   function clearWhatsapp() {
@@ -392,15 +476,34 @@ export function OnboardingModal({
       return;
     }
 
+    const dashboardClickStartedAt = markOnboardingDashboardClick();
+
+    logOnboardingPerf('finish_click_valid', {
+      step,
+      selectedAreas: formData.areasInteres.length,
+      selectedTechSkills: formData.habilidadesTecnicas.length,
+      selectedSoftSkills: formData.habilidadesBlandas.length,
+      hasWhatsapp: Boolean(formData.whatsappCodigo && formData.whatsappNumero),
+    });
+
     setShowErrors(false);
     setIsLoading(true);
     setSubmitError(null);
+
+    const normalizedWhatsappNumero = onlyDigits(formData.whatsappNumero);
+    const submitStartedAt = performance.now();
+
+    logOnboardingPerf('onboarding_submit_start', {
+      fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+    });
 
     fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        whatsappCodigo: formData.whatsappCodigo || '',
+        whatsappNumero: normalizedWhatsappNumero,
         provinciaEstado: formData.provinciaEstado.trim(),
         ciudad: formData.ciudad.trim(),
         zonaResidencia: formData.zonaResidencia.trim(),
@@ -417,6 +520,14 @@ export function OnboardingModal({
     })
       .then(async (response) => {
         const result = await response.json().catch(() => null);
+
+        logOnboardingPerf('onboarding_submit_response', {
+          status: response.status,
+          ok: response.ok,
+          durationMs: Math.round(performance.now() - submitStartedAt),
+          fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+          requestId: result?.requestId ?? null,
+        });
 
         if (!response.ok) {
           const requestIdText = result?.requestId
@@ -441,16 +552,36 @@ export function OnboardingModal({
         }
 
         if (onCompleted) {
+          logOnboardingPerf('onboarding_completed_callback_start', {
+            fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+          });
+
           setOpen(false);
           resetForm();
+
           await onCompleted();
+
+          logOnboardingPerf('onboarding_completed_callback_done', {
+            fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+          });
+
           return;
         }
+
+        logOnboardingPerf('dashboard_redirect_start', {
+          fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+        });
 
         router.replace('/dashboard', { locale });
         router.refresh();
       })
       .catch((err) => {
+        logOnboardingPerf('onboarding_submit_error', {
+          durationMs: Math.round(performance.now() - submitStartedAt),
+          fromClickMs: getOnboardingPerfDelta(dashboardClickStartedAt),
+          message: err instanceof Error ? err.message : String(err),
+        });
+
         setSubmitError(err.message);
       })
       .finally(() => {
@@ -934,7 +1065,8 @@ export function OnboardingModal({
                       <FieldError
                         show={
                           showErrors &&
-                          !formData.idiomas.some((i) => i.idioma && i.nivel)
+                          (formData.idiomas.length === 0 ||
+                            formData.idiomas.some((i) => !i.idioma || !i.nivel))
                         }
                       />
                     </div>
@@ -1251,12 +1383,19 @@ export function OnboardingModal({
                         <div className='min-w-0'>
                           <CountryCodeSelect
                             value={formData.whatsappCodigo}
-                            onChange={(v) =>
+                            onChange={(value) => {
                               setFormData((prev) => ({
                                 ...prev,
-                                whatsappCodigo: v,
-                              }))
-                            }
+                                whatsappCodigo: value,
+                                whatsappNumero:
+                                  prev.whatsappCodigo !== value
+                                    ? ''
+                                    : prev.whatsappNumero,
+                              }));
+
+                              setShowErrors(false);
+                              setSubmitError(null);
+                            }}
                             onOpenChange={(v) => {
                               selectOpenRef.current = v;
                             }}
@@ -1278,13 +1417,19 @@ export function OnboardingModal({
                                   blocks,
                                 )}
                                 onChange={(e) => {
-                                  const raw = e.target.value.replace(/\D/g, '');
-                                  if (raw.length <= maxLen)
+                                  const raw = onlyDigits(e.target.value);
+
+                                  if (raw.length <= maxLen) {
                                     setFormData((prev) => ({
                                       ...prev,
                                       whatsappNumero: raw,
                                     }));
+
+                                    setShowErrors(false);
+                                    setSubmitError(null);
+                                  }
                                 }}
+                                disabled={!formData.whatsappCodigo}
                                 placeholder={country?.phoneHint ?? ''}
                               />
                             );
@@ -1307,11 +1452,11 @@ export function OnboardingModal({
                           {t('whatsappInfo')}
                         </Caption>
                       </div>
-                      {hasPartialWhatsapp() && (
-                        <div className='flex items-start gap-1.5 text-[var(--color-danger)] mb-6'>
+                      {showErrors && hasWhatsappError() && (
+                        <div className='mb-6 flex items-start gap-1.5 text-[var(--color-danger)]'>
                           <AlertCircleIcon className='size-4 shrink-0' />
                           <Caption className='text-[var(--color-danger)]'>
-                            {t('whatsappPairError')}
+                            {getCurrentWhatsappError()}
                           </Caption>
                         </div>
                       )}

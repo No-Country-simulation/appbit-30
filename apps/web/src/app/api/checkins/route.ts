@@ -187,8 +187,9 @@ function getFallbackWellbeingAnalysis(params: {
 }
 
 async function analyzeWellbeing(params: {
+  userId: string;
   locale: AppLocale;
-  emoji: string;
+  emoji: EstadoCheckinEmojiEnum;
   notaActual: number;
   motivos: string[];
   contexto?: string;
@@ -218,6 +219,7 @@ async function analyzeWellbeing(params: {
         'x-locale': params.locale,
       },
       body: JSON.stringify({
+        userId: params.userId,
         emoji: params.emoji,
         nota_diaria: params.notaActual,
         motivo:
@@ -232,11 +234,12 @@ async function analyzeWellbeing(params: {
     const rawText = await response.text().catch(() => '');
 
     if (!response.ok) {
-      console.error(
+      console.warn(
         JSON.stringify({
-          level: 'error',
+          level: 'warn',
           route: 'POST /api/checkins',
-          message: 'AI wellbeing service returned non-OK response',
+          message:
+            'AI wellbeing service returned non-OK response; using fallback',
           context: {
             status: response.status,
             statusText: response.statusText,
@@ -436,8 +439,9 @@ export async function POST(request: Request) {
     );
 
     const { analysis, source } = await analyzeWellbeing({
+      userId: usuario.usuario_id,
       locale: responseLocale,
-      emoji,
+      emoji: emojiEnum,
       notaActual: Number(notaDiaria),
       motivos,
       contexto: contexto?.trim(),

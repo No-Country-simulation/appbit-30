@@ -20,9 +20,66 @@ const app = new Hono();
 
 app.use('*', cors());
 
-app.get('/health', (c) =>
-  c.json({ status: 'up', text: 'AppBit AI Service - Operational' }),
+const ONBOARDING_AI_GEMINI_TIMEOUT_MS = Number(
+  process.env.ONBOARDING_AI_GEMINI_TIMEOUT_MS ?? 18000,
 );
+
+const ONBOARDING_AI_MAX_OUTPUT_TOKENS = Number(
+  process.env.ONBOARDING_AI_MAX_OUTPUT_TOKENS ?? 4096,
+);
+
+const ONBOARDING_AI_THINKING_BUDGET = Number(
+  process.env.ONBOARDING_AI_THINKING_BUDGET ?? 0,
+);
+
+const ONBOARDING_AI_COURSES_LIMIT = Number(
+  process.env.ONBOARDING_AI_COURSES_LIMIT ?? 5,
+);
+
+const ONBOARDING_AI_PROMPT_SKILLS_LIMIT = Number(
+  process.env.ONBOARDING_AI_PROMPT_SKILLS_LIMIT ?? 12,
+);
+
+const ONBOARDING_AI_RETRY_ATTEMPTS = Number(
+  process.env.ONBOARDING_AI_RETRY_ATTEMPTS ?? 2,
+);
+
+const ONBOARDING_AI_RETRY_BASE_DELAY_MS = Number(
+  process.env.ONBOARDING_AI_RETRY_BASE_DELAY_MS ?? 800,
+);
+
+const GEMINI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS ?? '')
+  .split(',')
+  .map((model) => model.trim())
+  .filter(Boolean);
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(errorMessage));
+      }, timeoutMs);
+    });
+
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -31,6 +88,80 @@ function clampPercent(value: number) {
 function parseGeminiJson<T>(raw: string): T {
   const cleanJson = raw.replace(/```json|```/g, '').trim();
   return JSON.parse(cleanJson) as T;
+}
+
+type SafeGeminiParseResult<T> =
+  | {
+      ok: true;
+      data: T;
+      raw: string;
+    }
+  | {
+      ok: false;
+      raw: string;
+      reason: string;
+      preview: string;
+    };
+
+function safeParseGeminiJson<T>(raw: string): SafeGeminiParseResult<T> {
+  const cleanJson = raw.replace(/```json|```/g, '').trim();
+
+  if (!cleanJson) {
+    return {
+      ok: false,
+      raw,
+      reason: 'EMPTY_RESPONSE',
+      preview: '',
+    };
+  }
+
+  try {
+    return {
+      ok: true,
+      data: JSON.parse(cleanJson) as T,
+      raw,
+    };
+  } catch {
+    const firstBrace = cleanJson.indexOf('{');
+    const lastBrace = cleanJson.lastIndexOf('}');
+
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const slicedJson = cleanJson.slice(firstBrace, lastBrace + 1);
+
+      try {
+        return {
+          ok: true,
+          data: JSON.parse(slicedJson) as T,
+          raw,
+        };
+      } catch {
+        // Fall through to the structured invalid JSON result below.
+      }
+    }
+
+    return {
+      ok: false,
+      raw,
+      reason: 'INVALID_OR_TRUNCATED_JSON',
+      preview: cleanJson.slice(0, 1000),
+    };
+  }
+}
+
+function getGeminiFinishReason(result: unknown) {
+  const response = (
+    result as {
+      response?: {
+        candidates?: Array<{
+          finishReason?: unknown;
+        }>;
+      };
+    }
+  ).response;
+
+  const finishReason = response?.candidates?.[0]?.finishReason;
+
+  return typeof finishReason === 'string' ? finishReason : null;
 }
 
 function truncateText(value: unknown, maxLength: number) {
@@ -251,6 +382,19 @@ function classifyGeminiError(error: unknown) {
   const rawStatus = Number(extra.status ?? extra.statusCode ?? extra.code);
 
   if (
+    rawStatus === 404 ||
+    message.includes('404') ||
+    message.includes('not found') ||
+    message.includes('no longer available') ||
+    (message.includes('model') && message.includes('available'))
+  ) {
+    return {
+      code: 'AI_PROVIDER_MODEL_UNAVAILABLE',
+      status: 404,
+    };
+  }
+
+  if (
     rawStatus === 429 ||
     message.includes('429') ||
     message.includes('too many requests') ||
@@ -265,6 +409,21 @@ function classifyGeminiError(error: unknown) {
   }
 
   if (
+    rawStatus === 503 ||
+    message.includes('503') ||
+    message.includes('service unavailable') ||
+    message.includes('unavailable') ||
+    message.includes('high demand') ||
+    message.includes('overloaded') ||
+    message.includes('temporarily overloaded')
+  ) {
+    return {
+      code: 'AI_PROVIDER_OVERLOADED',
+      status: 503,
+    };
+  }
+
+  if (
     message.includes('timeout') ||
     message.includes('aborted') ||
     message.includes('abort')
@@ -275,10 +434,27 @@ function classifyGeminiError(error: unknown) {
     };
   }
 
+  if (message.includes('invalid_json') || message.includes('json')) {
+    return {
+      code: 'AI_PROVIDER_INVALID_JSON',
+      status: 502,
+    };
+  }
+
   return {
     code: 'AI_PROVIDER_ERROR',
     status: 502,
   };
+}
+
+function isRetryableGeminiError(error: unknown) {
+  const classified = classifyGeminiError(error);
+
+  return (
+    classified.code === 'AI_PROVIDER_OVERLOADED' ||
+    classified.code === 'AI_PROVIDER_RATE_LIMIT' ||
+    classified.code === 'AI_PROVIDER_TIMEOUT'
+  );
 }
 
 function toFiniteNumber(value: unknown) {
@@ -352,6 +528,13 @@ function buildFallbackTrayectoria(areasInteres: string[], locale?: string) {
       : `Ruta inicial en ${labels.join(' + ')}${suffix}`,
   ];
 }
+
+// ---------------------------------------------------------------------------
+// GET /health
+// ---------------------------------------------------------------------------
+app.get('/health', (c) =>
+  c.json({ status: 'up', text: 'AppBit AI Service - Operational' }),
+);
 
 // ---------------------------------------------------------------------------
 // POST /wellbeing/analyze
@@ -521,52 +704,66 @@ app.post('/api/onboarding', async (c) => {
       );
     }
 
-    const [habilidadesMercado, cursosDisponibles, existingUserSkills] =
-      await Promise.all([
-        dbClient.habilidadesMercado.findMany({
-          where: {
-            area_principal: data.areasInteres.length
-              ? { in: data.areasInteres as any }
-              : undefined,
-          },
-          orderBy: { nombre: 'asc' },
-          select: {
-            habilidad_id: true,
-            nombre: true,
-            categoria: true,
-            area_principal: true,
-          },
-        }),
+    logStructured({
+      level: 'info',
+      route: 'POST /api/onboarding',
+      requestId,
+      message: 'AI onboarding DB preload started',
+      context: {
+        usuarioId: userId,
+        areasInteres: data.areasInteres,
+      },
+    });
 
-        dbClient.cursos.findMany({
-          where: {
-            activo: true,
-            area: data.areasInteres.length
-              ? { in: data.areasInteres as any }
-              : undefined,
-          },
-          orderBy: { titulo: 'asc' },
-          select: {
-            curso_id: true,
-            titulo: true,
-            area: true,
-          },
-        }),
+    const [cursosDisponibles, existingUserSkills] = await Promise.all([
+      dbClient.cursos.findMany({
+        where: {
+          activo: true,
+          area: data.areasInteres.length
+            ? { in: data.areasInteres as any }
+            : undefined,
+        },
+        orderBy: { titulo: 'asc' },
+        take: ONBOARDING_AI_COURSES_LIMIT,
+        select: {
+          curso_id: true,
+          titulo: true,
+          area: true,
+        },
+      }),
 
-        dbClient.usuarioHabilidades.findMany({
-          where: { usuario_id: userId },
-          include: {
-            habilidad: {
-              select: {
-                habilidad_id: true,
-                nombre: true,
-                categoria: true,
-                area_principal: true,
-              },
+      dbClient.usuarioHabilidades.findMany({
+        where: { usuario_id: userId },
+        include: {
+          habilidad: {
+            select: {
+              habilidad_id: true,
+              nombre: true,
+              categoria: true,
+              area_principal: true,
             },
           },
-        }),
-      ]);
+        },
+      }),
+    ]);
+
+    const habilidadesMercado = existingUserSkills
+      .map((skill) => skill.habilidad)
+      .slice(0, ONBOARDING_AI_PROMPT_SKILLS_LIMIT);
+
+    logStructured({
+      level: 'info',
+      route: 'POST /api/onboarding',
+      requestId,
+      message: 'AI onboarding DB preload done',
+      context: {
+        usuarioId: userId,
+        cursosCount: cursosDisponibles.length,
+        userSkillsCount: existingUserSkills.length,
+        habilidadesPromptCount: habilidadesMercado.length,
+        durationMs: Date.now() - startedAt,
+      },
+    });
 
     const idiomaRespuesta = data.locale === 'pt' ? 'Portugués' : 'Español';
 
@@ -600,82 +797,57 @@ app.post('/api/onboarding', async (c) => {
       data.locale,
     );
 
-    const prompt = `Actuá como asesor profesional de la App BiT para Latinoamérica.
-Generá el gemelo digital de este usuario basándote en su perfil y el mercado laboral disponible.
+    const prompt = `Sos el asesor profesional de App BiT.
 
-PERFIL DEL USUARIO:
+Generá recomendaciones personalizadas para este usuario.
+
+Perfil:
+- Área: ${data.areasInteres.map((area) => areaLabel(area, data.locale)).join(', ')}
 - Educación: ${data.nivelEducacion.join(', ')}
 - Momento profesional: ${data.momentoProfesional.join(', ')}
-- Áreas de interés: ${data.areasInteres.join(', ')}
-- Idiomas: ${data.idiomas.map((i) => `${i.idioma} (${i.nivel})`).join(', ')}
-- Disponibilidad: ${data.disponibilidad.join(', ')}
-- Ubicación trabajo preferida: ${data.ubicacionTrabajo}
-- Nivel inicial declarado: ${data.nivel_inicial ?? 'No especificado'}
-- Experiencia en tecnología: ${data.nivelExperienciaTecnologia}
-- Habilidades técnicas declaradas: ${
-      data.habilidadesTecnicas.length > 0
-        ? data.habilidadesTecnicas.join(', ')
-        : 'Ninguna'
-    }
-- Habilidades blandas declaradas: ${
-      data.habilidadesBlandas.length > 0
-        ? data.habilidadesBlandas.join(', ')
-        : 'Ninguna'
-    }
-- Gap inicial declarado: ${
-      data.gap_inicial != null ? `${data.gap_inicial}%` : 'No especificado'
-    }
+- Experiencia tecnología: ${data.nivelExperienciaTecnologia}
+- Nivel inicial: ${data.nivel_inicial ?? 'No especificado'}
 - Objetivos: ${data.objetivos.join(', ')}
-- Dispositivos disponibles: ${data.dispositivos.join(', ')}
-- Tipos de conexión: ${data.tipoConexion.join(', ')}
-- Ciudad: ${data.ciudad}, ${data.pais}
 - Idioma de respuesta: ${idiomaRespuesta}
 
-HABILIDADES DEL MERCADO DISPONIBLES:
-${habilidadesMercado
-  .map(
-    (h) =>
-      `- ${h.nombre} (${h.categoria ?? 'General'}) [${h.area_principal ?? 'Multiárea'}]`,
-  )
-  .join('\n')}
-
-HABILIDADES YA REGISTRADAS POR EL ONBOARDING WEB:
+Habilidades pendientes:
 ${existingUserSkills
-  .map((h) => `- ${h.habilidad.nombre}: ${h.estado}`)
+  .filter((h) => h.estado === EstadoHabilidadEnum.Faltante)
+  .slice(0, ONBOARDING_AI_PROMPT_SKILLS_LIMIT)
+  .map((h) => `- ${h.habilidad.nombre}`)
   .join('\n')}
 
-CURSOS DISPONIBLES:
-${cursosDisponibles.map((c) => `- ${c.titulo} (${c.area})`).join('\n')}
+Cursos disponibles:
+${cursosDisponibles.map((c) => `- ${c.titulo}`).join('\n')}
 
-Instrucciones:
-1. No borres ni contradigas las habilidades registradas por el onboarding web.
-2. Si el nivel inicial declarado es "sin_conocimiento", asumí que el usuario necesita empezar desde fundamentos.
-3. Calculá una trayectoria profesional realista de 1 a 3 títulos de puesto.
-4. Generá un plan de acción con 3 a 5 items priorizados.
-5. El titulo de cada item debe tener máximo 5 palabras.
-6. El accion_label debe ser texto de botón, máximo 4 palabras.
-7. Cada curso_sugerido debe coincidir exactamente con el título de algún curso disponible. Si no hay curso aplicable, usá null.
-8. No mezcles idiomas. Todos los textos visibles deben estar en ${idiomaRespuesta}.
+Respondé SOLO JSON válido, sin markdown.
 
-REGLA ANTI-ALUCINACIÓN:
-curso_sugerido debe ser exactamente uno de los títulos listados en CURSOS DISPONIBLES.
-Si ningún curso aplica, usar null.
-No inventes cursos, certificaciones, bootcamps ni plataformas.
-
-Respuesta JSON estricta, sin markdown:
+Schema:
 {
-  "gap_porcentual": 45,
-  "gap_items": [{ "habilidad": "string", "nivel_requerido": "string", "nivel_actual": "string" }],
+  "gap_porcentual": number,
+  "gap_items": [
+    {
+      "habilidad": "string",
+      "nivel_requerido": "string",
+      "nivel_actual": "string"
+    }
+  ],
   "trayectoria_sugerida": ["string"],
   "plan_accion": [
     {
-      "titulo": "string",
-      "prioridad": "Alta_prioridad"|"Media_prioridad"|"Baja_prioridad",
-      "curso_sugerido": "string | null",
-      "accion_label": "string"
+      "titulo": "máximo 5 palabras",
+      "prioridad": "Alta_prioridad" | "Media_prioridad" | "Baja_prioridad",
+      "curso_sugerido": "título exacto de curso o null",
+      "accion_label": "máximo 4 palabras"
     }
   ]
-}`;
+}
+
+Reglas:
+- Máximo 3 gap_items.
+- Máximo 3 plan_accion.
+- curso_sugerido debe coincidir exactamente con un curso listado o ser null.
+- Todo texto visible debe estar en ${idiomaRespuesta}.`;
 
     let aiResponse: GeminiResponse | null = null;
     let aiProviderStatus: 'ok' | 'fallback' = 'ok';
@@ -687,10 +859,177 @@ Respuesta JSON estricta, sin markdown:
       }
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-      const result = await model.generateContent(prompt);
 
-      aiResponse = parseGeminiJson<GeminiResponse>(result.response.text());
+      const generationConfig = {
+        temperature: 0.1,
+        maxOutputTokens: ONBOARDING_AI_MAX_OUTPUT_TOKENS,
+        responseMimeType: 'application/json',
+        thinkingConfig: {
+          thinkingBudget: ONBOARDING_AI_THINKING_BUDGET,
+        },
+      } as any;
+
+      const primaryModel = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+      const modelNames = Array.from(
+        new Set([primaryModel, ...GEMINI_FALLBACK_MODELS]),
+      );
+
+      let result: Awaited<
+        ReturnType<
+          ReturnType<typeof genAI.getGenerativeModel>['generateContent']
+        >
+      > | null = null;
+      let lastGeminiError: unknown = null;
+
+      for (const modelName of modelNames) {
+        for (
+          let attempt = 1;
+          attempt <= ONBOARDING_AI_RETRY_ATTEMPTS;
+          attempt++
+        ) {
+          const attemptStartedAt = Date.now();
+
+          try {
+            const model = genAI.getGenerativeModel({
+              model: modelName,
+              generationConfig,
+            });
+
+            logStructured({
+              level: 'info',
+              route: 'POST /api/onboarding',
+              requestId,
+              message: 'Gemini onboarding generation attempt started',
+              context: {
+                usuarioId: userId,
+                model: modelName,
+                attempt,
+                maxAttempts: ONBOARDING_AI_RETRY_ATTEMPTS,
+                timeoutMs: ONBOARDING_AI_GEMINI_TIMEOUT_MS,
+                maxOutputTokens: ONBOARDING_AI_MAX_OUTPUT_TOKENS,
+                thinkingBudget: ONBOARDING_AI_THINKING_BUDGET,
+                promptChars: prompt.length,
+                cursosCount: cursosDisponibles.length,
+                habilidadesCount: existingUserSkills.length,
+                durationMs: Date.now() - startedAt,
+              },
+            });
+
+            const geminiPromise = model.generateContent(prompt);
+
+            // Evita unhandled rejection si el timeout gana la carrera.
+            geminiPromise.catch(() => undefined);
+
+            result = await withTimeout(
+              geminiPromise,
+              ONBOARDING_AI_GEMINI_TIMEOUT_MS,
+              'GEMINI_ONBOARDING_TIMEOUT',
+            );
+
+            logStructured({
+              level: 'info',
+              route: 'POST /api/onboarding',
+              requestId,
+              message: 'Gemini onboarding generation attempt done',
+              context: {
+                usuarioId: userId,
+                model: modelName,
+                attempt,
+                finishReason: getGeminiFinishReason(result),
+                rawLength: result.response.text().length,
+                attemptDurationMs: Date.now() - attemptStartedAt,
+                durationMs: Date.now() - startedAt,
+              },
+            });
+
+            break;
+          } catch (attemptError) {
+            lastGeminiError = attemptError;
+
+            const classifiedAttempt = classifyGeminiError(attemptError);
+            const retryable = isRetryableGeminiError(attemptError);
+            const isLastAttemptForModel =
+              attempt >= ONBOARDING_AI_RETRY_ATTEMPTS;
+            const hasMoreModels =
+              modelNames.indexOf(modelName) < modelNames.length - 1;
+
+            logStructured({
+              level: retryable ? 'warn' : 'error',
+              route: 'POST /api/onboarding',
+              requestId,
+              message: 'Gemini onboarding generation attempt failed',
+              error: attemptError,
+              context: {
+                usuarioId: userId,
+                model: modelName,
+                attempt,
+                providerStatus: classifiedAttempt.status,
+                providerCode: classifiedAttempt.code,
+                retryable,
+                isLastAttemptForModel,
+                hasMoreModels,
+                attemptDurationMs: Date.now() - attemptStartedAt,
+                durationMs: Date.now() - startedAt,
+              },
+            });
+
+            if (!retryable || isLastAttemptForModel) {
+              break;
+            }
+
+            const delayMs =
+              ONBOARDING_AI_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+
+            await sleep(delayMs);
+          }
+        }
+
+        if (result) {
+          break;
+        }
+      }
+
+      if (!result) {
+        throw lastGeminiError ?? new Error('GEMINI_GENERATION_FAILED');
+      }
+
+      const rawGeminiText = result.response.text();
+      const finishReason = getGeminiFinishReason(result);
+      const parsedGemini = safeParseGeminiJson<GeminiResponse>(rawGeminiText);
+
+      if (!parsedGemini.ok) {
+        logStructured({
+          level: 'warn',
+          route: 'POST /api/onboarding',
+          requestId,
+          message: 'Gemini returned invalid onboarding JSON',
+          context: {
+            usuarioId: userId,
+            reason: parsedGemini.reason,
+            finishReason,
+            rawPreview: parsedGemini.preview,
+            rawLength: parsedGemini.raw.length,
+            durationMs: Date.now() - startedAt,
+          },
+        });
+
+        throw new Error(`GEMINI_INVALID_JSON:${parsedGemini.reason}`);
+      }
+
+      aiResponse = parsedGemini.data;
+
+      logStructured({
+        level: 'info',
+        route: 'POST /api/onboarding',
+        requestId,
+        message: 'Gemini onboarding generation done',
+        context: {
+          usuarioId: userId,
+          finishReason,
+          rawLength: rawGeminiText.length,
+          durationMs: Date.now() - startedAt,
+        },
+      });
     } catch (error) {
       const classified = classifyGeminiError(error);
 
@@ -698,7 +1037,7 @@ Respuesta JSON estricta, sin markdown:
       fallbackReason = classified.code;
 
       logStructured({
-        level: 'error',
+        level: 'warn',
         route: 'POST /api/onboarding',
         requestId,
         message:
@@ -752,30 +1091,28 @@ Respuesta JSON estricta, sin markdown:
       ]),
     );
 
-    const planRows = safePlanAccion.map((item, index) => {
-      const cursoKey = item.curso_sugerido?.trim().toLowerCase();
-      const cursoId = cursoKey
-        ? (cursoIdByExactTitle.get(cursoKey) ?? null)
-        : null;
+    const shouldReplacePlanAccion = aiProviderStatus === 'ok';
 
-      return {
-        usuario_id: userId,
-        titulo: item.titulo,
-        prioridad: normalizePrioridad(item.prioridad),
-        orden: index + 1,
-        curso_vinculado_id: cursoId,
-        accion_label: item.accion_label,
-      };
-    });
+    const planRows = shouldReplacePlanAccion
+      ? safePlanAccion.map((item, index) => {
+          const cursoKey = item.curso_sugerido?.trim().toLowerCase();
+          const cursoId = cursoKey
+            ? (cursoIdByExactTitle.get(cursoKey) ?? null)
+            : null;
+
+          return {
+            usuario_id: userId,
+            titulo: item.titulo,
+            prioridad: normalizePrioridad(item.prioridad),
+            orden: index + 1,
+            curso_vinculado_id: cursoId,
+            accion_label: item.accion_label,
+          };
+        })
+      : [];
 
     const orientacion = await dbClient.$transaction(
       async (tx) => {
-        await tx.planAccion.deleteMany({
-          where: {
-            usuario_id: userId,
-          },
-        });
-
         await tx.orientaciones.deleteMany({
           where: {
             usuario_id: userId,
@@ -795,15 +1132,24 @@ Respuesta JSON estricta, sin markdown:
           },
         });
 
-        if (planRows.length > 0) {
-          await tx.planAccion.createMany({
-            data: planRows,
+        if (shouldReplacePlanAccion) {
+          await tx.planAccion.deleteMany({
+            where: {
+              usuario_id: userId,
+            },
           });
+
+          if (planRows.length > 0) {
+            await tx.planAccion.createMany({
+              data: planRows,
+            });
+          }
         }
 
         return {
           orient,
           planCreados: planRows.length,
+          planReplaced: shouldReplacePlanAccion,
         };
       },
       {
@@ -824,6 +1170,7 @@ Respuesta JSON estricta, sin markdown:
         usuarioId: userId,
         orientacionId: orientacion.orient.orientacion_id,
         planAccionCount: orientacion.planCreados,
+        planReplaced: orientacion.planReplaced,
         habilidadesCount: existingUserSkills.length,
         aiProviderStatus,
         fallbackReason,
@@ -837,6 +1184,7 @@ Respuesta JSON estricta, sin markdown:
       usuarioId: userId,
       orientacionId: orientacion.orient.orientacion_id,
       planAccionCount: orientacion.planCreados,
+      planReplaced: orientacion.planReplaced,
       habilidadesCount: existingUserSkills.length,
       aiProviderStatus,
       fallbackReason,
