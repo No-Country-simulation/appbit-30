@@ -12,8 +12,126 @@ import { calculateSkillsMatch } from '@/src/server/progress/skill-progress';
 
 export const dynamic = 'force-dynamic';
 
+type AiRecommendationsStatus = 'generating' | 'ready' | 'fallback';
+
+const DASHBOARD_API_PERF_LOGS_ENABLED =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.DASHBOARD_PERF_LOGS === 'true';
+
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function getServerNowMs() {
+  return Date.now();
+}
+
+function getErrorSummary(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+    };
+  }
+
+  return {
+    name: 'UnknownError',
+    message: String(error),
+  };
+}
+
+function logDashboardApiPerf(
+  event: string,
+  context: Record<string, unknown> = {},
+) {
+  if (!DASHBOARD_API_PERF_LOGS_ENABLED) {
+    return;
+  }
+
+  console.info(
+    JSON.stringify({
+      level: 'info',
+      scope: 'dashboard-api-perf',
+      route: 'GET /api/dashboard',
+      event,
+      ...context,
+    }),
+  );
+}
+
+function createDashboardApiTimer(requestId: string) {
+  const requestStartedAt = getServerNowMs();
+
+  function mark(event: string, context: Record<string, unknown> = {}) {
+    logDashboardApiPerf(event, {
+      requestId,
+      elapsedMs: getServerNowMs() - requestStartedAt,
+      ...context,
+    });
+  }
+
+  async function measure<T>(
+    section: string,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    const sectionStartedAt = getServerNowMs();
+
+    mark('section_start', { section });
+
+    try {
+      const value = await run();
+
+      mark('section_done', {
+        section,
+        durationMs: getServerNowMs() - sectionStartedAt,
+      });
+
+      return value;
+    } catch (error) {
+      mark('section_error', {
+        section,
+        durationMs: getServerNowMs() - sectionStartedAt,
+        error: getErrorSummary(error),
+      });
+
+      throw error;
+    }
+  }
+
+  return {
+    mark,
+    measure,
+  };
+}
+
+function trackDashboardPromise<T>(
+  timer: ReturnType<typeof createDashboardApiTimer>,
+  section: string,
+  promise: PromiseLike<T>,
+): Promise<T> {
+  const sectionStartedAt = getServerNowMs();
+
+  timer.mark('db_section_start', { section });
+
+  return Promise.resolve(promise).then(
+    (value) => {
+      timer.mark('db_section_done', {
+        section,
+        durationMs: getServerNowMs() - sectionStartedAt,
+      });
+
+      return value;
+    },
+    (error) => {
+      timer.mark('db_section_error', {
+        section,
+        durationMs: getServerNowMs() - sectionStartedAt,
+        error: getErrorSummary(error),
+      });
+
+      throw error;
+    },
+  );
 }
 
 function getTimeZoneOffsetMs(date: Date, timeZone: string) {
@@ -90,7 +208,10 @@ function getUserDayRange(timeZone?: string) {
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 1);
 
-    return { start, end };
+    return {
+      start,
+      end,
+    };
   }
 }
 
@@ -119,6 +240,12 @@ function logSettledError({
   }
 }
 
+function getUniqueNonEmptyValues(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
+}
+
 const dashboardUsuarioSelect = {
   usuario_id: true,
   nombre_completo: true,
@@ -132,10 +259,15 @@ const dashboardUsuarioSelect = {
 
 export async function GET(request: Request) {
   const requestId = getRequestId(request);
+  const timer = createDashboardApiTimer(requestId);
   let debugUserId: string | null = null;
 
+  timer.mark('request_start');
+
   try {
-    const authUser = await getCurrentAuthUser();
+    const authUser = await timer.measure('auth_user', () =>
+      getCurrentAuthUser(),
+    );
 
     if (!authUser) {
       return apiErrorResponse({
@@ -146,7 +278,9 @@ export async function GET(request: Request) {
       });
     }
 
-    const usuario = await findLinkedUsuario(authUser, dashboardUsuarioSelect);
+    const usuario = await timer.measure('find_linked_usuario', () =>
+      findLinkedUsuario(authUser, dashboardUsuarioSelect),
+    );
 
     if (!usuario) {
       return apiErrorResponse({
@@ -161,27 +295,48 @@ export async function GET(request: Request) {
     const userId = usuario.usuario_id;
     debugUserId = userId;
 
+    timer.mark('usuario_resolved', {
+      userId,
+      onboardingStatus: usuario.onboarding_status,
+    });
+
     const url = new URL(request.url);
     const timezone = url.searchParams.get('timezone') ?? undefined;
     const { start: todayStart, end: todayEnd } = getUserDayRange(timezone);
+
+    timer.mark('timezone_resolved', {
+      timezone: timezone ?? null,
+      todayStart: todayStart.toISOString(),
+      todayEnd: todayEnd.toISOString(),
+    });
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const orientacionPromise = dbClient.orientaciones.findFirst({
-      where: { usuario_id: userId },
-      orderBy: { creado_en: 'desc' },
+      where: {
+        usuario_id: userId,
+      },
+      orderBy: {
+        creado_en: 'desc',
+      },
       select: {
         gap_porcentual: true,
         vacantes_compatibles: true,
         gap_items: true,
         trayectoria_sugerida: true,
+        confianza: true,
       },
     });
 
     const planAccionPromise = dbClient.planAccion.findMany({
-      where: { usuario_id: userId },
-      orderBy: { orden: 'asc' },
+      where: {
+        usuario_id: userId,
+      },
+      orderBy: {
+        orden: 'asc',
+      },
+      take: 6,
       select: {
         plan_item_id: true,
         titulo: true,
@@ -190,59 +345,21 @@ export async function GET(request: Request) {
         completado: true,
         orden: true,
         accion_label: true,
-        curso: {
-          select: {
-            curso_id: true,
-            titulo: true,
-            url_externa: true,
-            plataforma: true,
-            tipo: true,
-            modulos: {
-              select: {
-                modulo_id: true,
-                lecciones: {
-                  where: {
-                    video_url: {
-                      not: null,
-                    },
-                  },
-                  take: 1,
-                  select: {
-                    leccion_id: true,
-                    video_url: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        curso_vinculado_id: true,
       },
     });
 
-    const bienestarAggPromise = dbClient.checkIns.aggregate({
+    const recentCheckinsPromise = dbClient.checkIns.findMany({
       where: {
         usuario_id: userId,
         creado_en: {
           gte: sevenDaysAgo,
         },
       },
-      _avg: {
-        nota_diaria: true,
-      },
-      _count: true,
-    });
-
-    const todayCheckinPromise = dbClient.checkIns.findFirst({
-      where: {
-        usuario_id: userId,
-        creado_en: {
-          gte: todayStart,
-          lt: todayEnd,
-        },
-      },
       orderBy: {
         creado_en: 'desc',
       },
+      take: 30,
       select: {
         checkin_id: true,
         emoji: true,
@@ -251,21 +368,12 @@ export async function GET(request: Request) {
       },
     });
 
-    const notificacionesNoLeidasPromise = dbClient.notificacionesRadar.count({
-      where: {
-        usuario_id: userId,
-        leida: false,
-      },
-    });
-
-    const perfilMovilidadPromise = dbClient.perfilMovilidad.findUnique({
+    const areasInteresPromise = dbClient.usuarioAreasInteres.findMany({
       where: {
         usuario_id: userId,
       },
       select: {
-        home_cluster: true,
-        income_cluster: true,
-        mobility_pattern: true,
+        area: true,
       },
     });
 
@@ -273,44 +381,39 @@ export async function GET(request: Request) {
       where: {
         usuario_id: userId,
       },
-      include: {
-        habilidad: {
-          select: {
-            habilidad_id: true,
-            nombre: true,
-            categoria: true,
-            area_principal: true,
-          },
-        },
+      select: {
+        estado: true,
       },
     });
-
+    const dbStartedAt = getServerNowMs();
+    
     const progressHistoryPromise = getProgressHistory({
       client: dbClient,
       usuarioId: userId,
       months: 4,
       includeEvents: false,
     });
+   
 
     const [
       orientacionResult,
       planAccionResult,
-      bienestarAggResult,
-      todayCheckinResult,
-      notificacionesNoLeidasResult,
-      perfilMovilidadResult,
+      recentCheckinsResult,
+      areasInteresResult,
       userSkillsResult,
       progressHistoryResult,
     ] = await Promise.allSettled([
-      orientacionPromise,
-      planAccionPromise,
-      bienestarAggPromise,
-      todayCheckinPromise,
-      notificacionesNoLeidasPromise,
-      perfilMovilidadPromise,
-      userSkillsPromise,
-      progressHistoryPromise,
+      trackDashboardPromise(timer, 'orientacion', orientacionPromise),
+      trackDashboardPromise(timer, 'planAccion', planAccionPromise),
+      trackDashboardPromise(timer, 'recentCheckins', recentCheckinsPromise),
+      trackDashboardPromise(timer, 'areasInteres', areasInteresPromise),
+      trackDashboardPromise(timer, 'userSkills', userSkillsPromise),
+      trackDashboardPromise(timer, 'progressHistory', progressHistoryPromise),  
     ] as const);
+
+    timer.mark('db_all_settled_done', {
+      durationMs: getServerNowMs() - dbStartedAt,
+    });
 
     const degradedSections: string[] = [];
 
@@ -334,41 +437,21 @@ export async function GET(request: Request) {
       });
     }
 
-    if (bienestarAggResult.status === 'rejected') {
-      degradedSections.push('bienestarAgg');
+    if (recentCheckinsResult.status === 'rejected') {
+      degradedSections.push('recentCheckins');
       logSettledError({
-        result: bienestarAggResult,
-        section: 'bienestarAgg',
+        result: recentCheckinsResult,
+        section: 'recentCheckins',
         requestId,
         userId,
       });
     }
 
-    if (todayCheckinResult.status === 'rejected') {
-      degradedSections.push('todayCheckin');
+    if (areasInteresResult.status === 'rejected') {
+      degradedSections.push('areasInteres');
       logSettledError({
-        result: todayCheckinResult,
-        section: 'todayCheckin',
-        requestId,
-        userId,
-      });
-    }
-
-    if (notificacionesNoLeidasResult.status === 'rejected') {
-      degradedSections.push('notificacionesNoLeidas');
-      logSettledError({
-        result: notificacionesNoLeidasResult,
-        section: 'notificacionesNoLeidas',
-        requestId,
-        userId,
-      });
-    }
-
-    if (perfilMovilidadResult.status === 'rejected') {
-      degradedSections.push('perfilMovilidad');
-      logSettledError({
-        result: perfilMovilidadResult,
-        section: 'perfilMovilidad',
+        result: areasInteresResult,
+        section: 'areasInteres',
         requestId,
         userId,
       });
@@ -400,52 +483,148 @@ export async function GET(request: Request) {
     const planAccion =
       planAccionResult.status === 'fulfilled' ? planAccionResult.value : [];
 
-    const bienestarAgg =
-      bienestarAggResult.status === 'fulfilled'
-        ? bienestarAggResult.value
-        : {
-            _avg: {
-              nota_diaria: null,
-            },
-            _count: 0,
-          };
+    const recentCheckins =
+      recentCheckinsResult.status === 'fulfilled'
+        ? recentCheckinsResult.value
+        : [];
 
-    const todayCheckin =
-      todayCheckinResult.status === 'fulfilled'
-        ? todayCheckinResult.value
-        : null;
-
-    const notificacionesNoLeidas =
-      notificacionesNoLeidasResult.status === 'fulfilled'
-        ? notificacionesNoLeidasResult.value
-        : 0;
-
-    const perfilMovilidad =
-      perfilMovilidadResult.status === 'fulfilled'
-        ? perfilMovilidadResult.value
-        : null;
+    const areasInteres =
+      areasInteresResult.status === 'fulfilled'
+        ? areasInteresResult.value.map((item) => item.area)
+        : [];
 
     const userSkills =
       userSkillsResult.status === 'fulfilled' ? userSkillsResult.value : [];
 
     const progressHistory =
-      progressHistoryResult.status === 'fulfilled'
-        ? progressHistoryResult.value
-        : null;
+  progressHistoryResult.status === 'fulfilled'
+    ? progressHistoryResult.value
+    : null;
 
-    const areasInteres = Array.from(
-      new Set(
-        userSkills
-          .map((skill) => skill.habilidad.area_principal)
-          .filter((area): area is NonNullable<typeof area> => Boolean(area)),
-      ),
-    );
+const todayCheckin =
+  recentCheckins.find(
+    (checkin) =>
+      checkin.creado_en >= todayStart && checkin.creado_en < todayEnd,
+  ) ?? null;
+
+const notaPromedio =
+  recentCheckins.length > 0
+    ? recentCheckins.reduce(
+        (sum, checkin) => sum + Number(checkin.nota_diaria),
+        0,
+      ) / recentCheckins.length
+    : 0;
+
+    const orientacionConfianza =
+      orientacion?.confianza != null ? Number(orientacion.confianza) : null;
+
+    const aiRecommendationsStatus: AiRecommendationsStatus = !orientacion
+      ? 'generating'
+      : orientacionConfianza != null && orientacionConfianza >= 0.8
+        ? 'ready'
+        : 'fallback';
+
+    const shouldExposePlanAccion = aiRecommendationsStatus !== 'generating';
+
+    const linkedCursoIds = shouldExposePlanAccion
+      ? getUniqueNonEmptyValues(
+          planAccion.map((item) => item.curso_vinculado_id),
+        )
+      : [];
+
+    const linkedCursosById = new Map<
+      string,
+      {
+        curso_id: string;
+        titulo: string;
+        url_externa: string | null;
+        plataforma: string | null;
+        tipo: string;
+        hasInternalContent: boolean;
+      }
+    >();
+
+    if (linkedCursoIds.length > 0) {
+      try {
+        const linkedCursos = await timer.measure('linked_cursos', () =>
+          dbClient.cursos.findMany({
+            where: {
+              curso_id: {
+                in: linkedCursoIds,
+              },
+            },
+            select: {
+              curso_id: true,
+              titulo: true,
+              url_externa: true,
+              plataforma: true,
+              tipo: true,
+              modulos: {
+                where: {
+                  lecciones: {
+                    some: {
+                      video_url: {
+                        not: null,
+                      },
+                    },
+                  },
+                },
+                take: 1,
+                select: {
+                  modulo_id: true,
+                },
+              },
+            },
+          }),
+        );
+
+        for (const curso of linkedCursos) {
+          linkedCursosById.set(curso.curso_id, {
+            curso_id: curso.curso_id,
+            titulo: curso.titulo,
+            url_externa: curso.url_externa,
+            plataforma: curso.plataforma,
+            tipo: String(curso.tipo),
+            hasInternalContent: curso.modulos.length > 0,
+          });
+        }
+
+        timer.mark('linked_cursos_ready', {
+          requestedCursoIds: linkedCursoIds.length,
+          loadedCursos: linkedCursos.length,
+        });
+      } catch (error) {
+        degradedSections.push('linkedCursos');
+
+        logApiError({
+          route: 'GET /api/dashboard',
+          requestId,
+          error,
+          context: {
+            section: 'linkedCursos',
+            userId,
+            degraded: true,
+            linkedCursoIds,
+          },
+        });
+
+        timer.mark('linked_cursos_error', {
+          linkedCursoIds,
+          error: getErrorSummary(error),
+        });
+      }
+    } else {
+      timer.mark('linked_cursos_skipped', {
+        reason: shouldExposePlanAccion
+          ? 'no_linked_course_ids'
+          : 'ai_generating',
+        planItems: planAccion.length,
+      });
+    }
 
     const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
 
-    const ubicacionCompleted = Boolean(
-      usuario.home_cluster || perfilMovilidad?.home_cluster,
-    );
+    const ubicacionCompleted = Boolean(usuario.home_cluster);
 
     const whatsappCompleted = Boolean(
       usuario.whatsapp_codigo && usuario.whatsapp_numero,
@@ -454,7 +633,6 @@ export async function GET(request: Request) {
     let perfilCompletado = 0;
 
     if (onboardingCompleted) perfilCompletado += 50;
-    if (perfilMovilidad) perfilCompletado += 20;
     if (usuario.avatar_url) perfilCompletado += 10;
     if (ubicacionCompleted) perfilCompletado += 10;
     if (whatsappCompleted) perfilCompletado += 10;
@@ -471,30 +649,44 @@ export async function GET(request: Request) {
           ? clampPercent(Number(orientacion.gap_porcentual))
           : null;
 
-    const fallbackGapItems = userSkills
-      .filter((skill) => skill.estado === 'Faltante')
-      .map((skill) => ({
-        habilidad_id: skill.habilidad.habilidad_id,
-        nombre: skill.habilidad.nombre,
-        categoria: skill.habilidad.categoria,
-        area_principal: skill.habilidad.area_principal,
-        estado: skill.estado,
-      }));
+    const fallbackGapItems: unknown[] = [];
 
     const matchPerfil =
       gapPorcentual != null
         ? clampPercent(100 - gapPorcentual)
         : clampPercent(Number(usuario.confianza ?? 0));
 
+    const notificacionesNoLeidas = 0;
+    const perfilMovilidad = null;
+
+    timer.mark('response_ready', {
+      degradedSections,
+      planItems: shouldExposePlanAccion ? planAccion.length : 0,
+      storedPlanItems: planAccion.length,
+      linkedCursoIds: linkedCursoIds.length,
+      areasInteres: areasInteres.length,
+      userSkills: userSkills.length,
+      recentCheckins: recentCheckins.length,
+      hasOrientacion: Boolean(orientacion),
+      hasTodayCheckin: Boolean(todayCheckin),
+      perfilCompletado,
+      matchPerfil,
+      aiRecommendationsStatus,
+      aiRecommendationsReady: aiRecommendationsStatus === 'ready',
+      orientacionConfianza,
+    });
+
     return NextResponse.json({
       success: true,
       requestId,
       degradedSections,
+      aiRecommendationsReady: aiRecommendationsStatus === 'ready',
+      aiRecommendationsStatus,
       perfil_completado: perfilCompletado,
       match_perfil: matchPerfil,
       perfil_breakdown: {
         onboarding: onboardingCompleted,
-        movilidad: !!perfilMovilidad,
+        movilidad: false,
         avatar: !!usuario.avatar_url,
         ubicacion: ubicacionCompleted,
         whatsapp: whatsappCompleted,
@@ -529,7 +721,13 @@ export async function GET(request: Request) {
                 : [],
             }
           : null,
-      planAccion: planAccion.map((item) => ({
+      planAccion: shouldExposePlanAccion
+  ? planAccion.map((item) => {
+      const linkedCurso = item.curso_vinculado_id
+        ? linkedCursosById.get(item.curso_vinculado_id)
+        : null;
+
+      return {
         plan_item_id: item.plan_item_id,
         titulo: item.titulo,
         descripcion: item.descripcion,
@@ -537,25 +735,22 @@ export async function GET(request: Request) {
         completado: item.completado,
         orden: item.orden,
         accion_label: item.accion_label,
-        curso: item.curso
+        curso: linkedCurso
           ? {
-              curso_id: item.curso.curso_id,
-              titulo: item.curso.titulo,
-              url_externa: item.curso.url_externa,
-              plataforma: item.curso.plataforma,
-              tipo: item.curso.tipo,
-              hasInternalContent: item.curso.modulos.some((modulo) =>
-                modulo.lecciones.some((leccion) => Boolean(leccion.video_url)),
-              ),
+              curso_id: linkedCurso.curso_id,
+              titulo: linkedCurso.titulo,
+              url_externa: linkedCurso.url_externa,
+              plataforma: linkedCurso.plataforma,
+              tipo: linkedCurso.tipo,
+              hasInternalContent: linkedCurso.hasInternalContent,
             }
           : null,
-      })),
+      };
+    })
+  : [],
       bienestar: {
-        notaPromedio:
-          bienestarAgg._avg.nota_diaria != null
-            ? Number(bienestarAgg._avg.nota_diaria)
-            : 0,
-        totalCheckins: bienestarAgg._count,
+        notaPromedio,
+        totalCheckins: recentCheckins.length,
         hasCheckinToday: Boolean(todayCheckin),
         todayCheckin: todayCheckin
           ? {
@@ -570,6 +765,11 @@ export async function GET(request: Request) {
       perfilMovilidad,
     });
   } catch (error) {
+    timer.mark('request_error', {
+      userId: debugUserId,
+      error: getErrorSummary(error),
+    });
+
     logApiError({
       route: 'GET /api/dashboard',
       requestId,

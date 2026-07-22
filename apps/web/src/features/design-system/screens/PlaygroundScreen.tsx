@@ -329,11 +329,11 @@ export default function PlaygroundScreen() {
         {/* DASHBOARD CARDS */}
         {/* ====================================================== */}
 
-        <section className="space-y-4">
+        <section className='space-y-4'>
           <H2>Dashboard Cards</H2>
 
-          <div className="space-y-4">
-            <HeroBanner />
+          <div className='space-y-4'>
+            {/* <HeroBanner /> */}
             <RadarBanner />
             <ActionPlanCard />
             <WellbeingCard
@@ -353,11 +353,13 @@ export default function PlaygroundScreen() {
               onOpenChange={setSkillsModalOpen}
             />
 
-            <AppButton onClick={() => {
-              setCheckinMood('');
-              setCheckinStartStep(1);
-              setCheckinModalOpen(true);
-            }}>
+            <AppButton
+              onClick={() => {
+                setCheckinMood('');
+                setCheckinStartStep(1);
+                setCheckinModalOpen(true);
+              }}
+            >
               Abrir CheckinModal
             </AppButton>
             <CheckinModal
