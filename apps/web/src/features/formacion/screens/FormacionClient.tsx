@@ -8,6 +8,7 @@ import { AppShell } from '@/src/components/layout/AppShell';
 import { AppButton } from '@/src/components/app/AppButton';
 import { InclusionDigitalBanner } from '../components/InclusionDigitalBanner';
 import { CurrentModuleCard } from '../components/CurrentModuleCard';
+import { LearningActionPlan } from '../components/LearningActionPlan';
 import { ModulesGrid } from '../components/ModulesGrid';
 import { ModuleCardItem } from '../components/ModuleCardItem';
 import { PaidCoursesSection } from '../components/PaidCoursesSection';
@@ -107,6 +108,16 @@ export default function FormacionClient({ data }: Props) {
     }
 
     router.push(`/formacion/${course.id}`);
+  }
+
+  function openActionPlanCourse(courseId: string) {
+    const course = [
+      data.currentCourse,
+      ...data.recommendedCourses,
+      ...data.paidCourses,
+    ].find((item) => item?.id === courseId);
+
+    if (course) openCourse(course);
   }
 
   function getPrimaryActionLabel(course: FormacionCourseCard) {
@@ -219,6 +230,11 @@ export default function FormacionClient({ data }: Props) {
             </p>
           </section>
         )}
+
+        <LearningActionPlan
+          items={data.actionPlan}
+          onOpenCourse={openActionPlanCourse}
+        />
 
         {data.recommendedCourses.length > 0 && (
           <ModulesGrid ruta={data.rutaLabel}>

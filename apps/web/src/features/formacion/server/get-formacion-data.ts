@@ -246,6 +246,7 @@ export async function getFormacionData(params: {
         select: {
           plan_item_id: true,
           titulo: true,
+          descripcion: true,
           prioridad: true,
           completado: true,
           orden: true,
@@ -280,6 +281,7 @@ export async function getFormacionData(params: {
       rutaLabel: locale === 'pt' ? 'Rota inicial' : 'Ruta inicial',
       showInclusionBanner: false,
       currentCourse: null,
+      actionPlan: [],
       recommendedCourses: [],
       paidCourses: [],
       offlineItems: [],
@@ -344,6 +346,16 @@ export async function getFormacionData(params: {
     fallbackCourseCards[0] ??
     null;
 
+  const actionPlan = usuario.plan_accion.map((item) => ({
+    id: item.plan_item_id,
+    title: item.titulo,
+    description: item.descripcion,
+    priority: item.prioridad,
+    completed: item.completado,
+    actionLabel: item.accion_label,
+    courseId: item.curso?.curso_id ?? null,
+  }));
+
   const recommendedCourses = uniqueCourses([
     ...planCourses.filter((course) => course.id !== currentCourse?.id),
     ...fallbackCourseCards.filter(
@@ -407,6 +419,7 @@ export async function getFormacionData(params: {
     }),
     showInclusionBanner,
     currentCourse,
+    actionPlan,
     recommendedCourses,
     paidCourses,
     offlineItems: toDownloadItems(

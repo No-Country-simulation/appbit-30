@@ -25,6 +25,16 @@ export interface FormacionCourseCard {
   hasInternalContent: boolean;
 }
 
+export interface FormacionActionPlanItem {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: 'Alta_prioridad' | 'Media_prioridad' | 'Baja_prioridad';
+  completed: boolean;
+  actionLabel: string | null;
+  courseId: string | null;
+}
+
 export interface FormacionData {
   user: {
     name?: string;
@@ -41,6 +51,7 @@ export interface FormacionData {
   rutaLabel: string;
   showInclusionBanner: boolean;
   currentCourse: FormacionCourseCard | null;
+  actionPlan: FormacionActionPlanItem[];
   recommendedCourses: FormacionCourseCard[];
   paidCourses: FormacionCourseCard[];
   offlineItems: FormacionDownloadItem[];
