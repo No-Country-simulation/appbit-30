@@ -624,6 +624,12 @@
   },
   "Formacion": {
     "title": "Tu Ruta de Aprendizaje",
+    "actualizarPlan": "Actualizar recomendaciones",
+    "actualizandoPlan": "Actualizando plan...",
+    "actualizarPlanError": "No pudimos actualizar tus recomendaciones. Intentá nuevamente.",
+    "marcarCursoCompletado": "Marcar curso como completado",
+    "cursoCompletado": "Curso completado",
+    "matchActualizado": "Tu match pasó de {anterior}% a {nuevo}%.",
     "inclusionDigitalTitle": "Sugerencia de Inclusión Digital",
     "inclusionDigitalDesc": "Detectamos inestabilidad en tu conexión. Descargá los módulos para estudiar sin conexión.",
     "moduloActual": "Módulo actual",
@@ -683,6 +689,10 @@
   },
   "Empleabilidad": {
     "title": "Oportunidades Laborales",
+    "matchNoDisponible": "N/A Match",
+    "skillEnProgreso": "En progreso · {porcentaje}%",
+    "enviandoPostulacion": "Enviando postulación...",
+    "postulacionError": "No pudimos enviar tu postulación. Intentá nuevamente.",
     "recomendados": "Recomendados",
     "misAplicaciones": "Mis Aplicaciones",
     "verYAplicar": "Ver y Aplicar",

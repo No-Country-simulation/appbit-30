@@ -148,6 +148,10 @@ function toCourseCard(params: {
     modulo.lecciones.some((leccion) => Boolean(leccion.video_url)),
   );
 
+  const progress = clampPercent(
+    progressByCourseId.get(curso.curso_id) ?? 0,
+  );
+
   return {
     id: curso.curso_id,
     title: curso.titulo,
@@ -160,7 +164,8 @@ function toCourseCard(params: {
     externalUrl: curso.url_externa,
     durationDays: curso.duracion_estimada_dias,
     skillName: curso.habilidad?.nombre ?? null,
-    progress: clampPercent(progressByCourseId.get(curso.curso_id) ?? 0),
+    progress,
+    isCompleted: progress === 100,
     planTitle,
     actionLabel,
     priority,

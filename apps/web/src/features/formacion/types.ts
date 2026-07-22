@@ -18,6 +18,7 @@ export interface FormacionCourseCard {
   durationDays: number | null;
   skillName: string | null;
   progress: number;
+  isCompleted: boolean;
   planTitle?: string | null;
   actionLabel?: string | null;
   priority?: string | null;

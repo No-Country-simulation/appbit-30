@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { RefreshCw } from 'lucide-react';
 import { AppShell } from '@/src/components/layout/AppShell';
+import { AppButton } from '@/src/components/app/AppButton';
 import { InclusionDigitalBanner } from '../components/InclusionDigitalBanner';
 import { CurrentModuleCard } from '../components/CurrentModuleCard';
 import { ModulesGrid } from '../components/ModulesGrid';
@@ -23,6 +25,75 @@ export default function FormacionClient({ data }: Props) {
   const router = useRouter();
   const [certModalOpen, setCertModalOpen] = useState(false);
   const [offlineModalOpen, setOfflineModalOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerationError, setRegenerationError] = useState(false);
+  const [completingCourseId, setCompletingCourseId] = useState<string | null>(
+    null,
+  );
+  const [completionError, setCompletionError] = useState(false);
+  const [matchChange, setMatchChange] = useState<{
+    before: number;
+    after: number;
+  } | null>(null);
+
+  async function regeneratePlan() {
+    if (isRegenerating) return;
+
+    setIsRegenerating(true);
+    setRegenerationError(false);
+
+    try {
+      const response = await fetch('/api/formacion/plan/regenerar', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Learning path regeneration failed');
+      }
+
+      router.refresh();
+    } catch (error) {
+      console.error('Error regenerating learning path:', error);
+      setRegenerationError(true);
+    } finally {
+      setIsRegenerating(false);
+    }
+  }
+
+  async function completeCourse(course: FormacionCourseCard) {
+    if (completingCourseId || course.isCompleted) return;
+
+    setCompletingCourseId(course.id);
+    setCompletionError(false);
+    setMatchChange(null);
+
+    try {
+      const response = await fetch(
+        `/api/formacion/cursos/${encodeURIComponent(course.id)}/completar`,
+        { method: 'PATCH' },
+      );
+
+      if (!response.ok) {
+        throw new Error('Course completion failed');
+      }
+
+      const result = (await response.json()) as {
+        matchBefore: number;
+        matchAfter: number;
+      };
+
+      setMatchChange({
+        before: result.matchBefore,
+        after: result.matchAfter,
+      });
+      router.refresh();
+    } catch (error) {
+      console.error('Error completing external course:', error);
+      setCompletionError(true);
+    } finally {
+      setCompletingCourseId(null);
+    }
+  }
 
   function openCourse(course: FormacionCourseCard) {
     if (course.hasInternalContent) {
@@ -67,11 +138,53 @@ export default function FormacionClient({ data }: Props) {
       perfilBreakdown={data.user.perfilBreakdown}
     >
       <div className='min-w-0 space-y-6'>
-        <div className='min-w-0'>
+        <div className='flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <h1 className='break-words text-2xl font-bold leading-tight text-[var(--color-text)] sm:text-3xl'>
             {t('title')}
           </h1>
+
+          <AppButton
+            variant='outline'
+            className='w-full sm:w-auto'
+            onClick={() => void regeneratePlan()}
+            disabled={isRegenerating}
+          >
+            <RefreshCw
+              className={`size-4 shrink-0 ${isRegenerating ? 'animate-spin' : ''}`}
+            />
+            {isRegenerating ? t('actualizandoPlan') : t('actualizarPlan')}
+          </AppButton>
         </div>
+
+        {regenerationError && (
+          <p
+            role='alert'
+            className='rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm text-[var(--color-danger-text)]'
+          >
+            {t('actualizarPlanError')}
+          </p>
+        )}
+
+        {completionError && (
+          <p
+            role='alert'
+            className='rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm text-[var(--color-danger-text)]'
+          >
+            {t('progresoError')}
+          </p>
+        )}
+
+        {matchChange && (
+          <p
+            role='status'
+            className='rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800'
+          >
+            {t('matchActualizado', {
+              anterior: matchChange.before,
+              nuevo: matchChange.after,
+            })}
+          </p>
+        )}
 
         {data.showInclusionBanner && <InclusionDigitalBanner />}
 
@@ -88,6 +201,13 @@ export default function FormacionClient({ data }: Props) {
               data.currentCourse.hasInternalContent ? 'play' : 'external'
             }
             showProgress={data.currentCourse.hasInternalContent}
+            onMarcarCompletado={
+              data.currentCourse.hasInternalContent
+                ? undefined
+                : () => void completeCourse(data.currentCourse!)
+            }
+            isCompleting={completingCourseId === data.currentCourse.id}
+            isCompleted={data.currentCourse.isCompleted}
           />
         ) : (
           <section className='rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5'>
@@ -121,6 +241,13 @@ export default function FormacionClient({ data }: Props) {
                 primaryIcon={course.hasInternalContent ? 'play' : 'external'}
                 onOpen={() => openCourse(course)}
                 onValidarExterno={() => setCertModalOpen(true)}
+                onComplete={
+                  course.hasInternalContent
+                    ? undefined
+                    : () => void completeCourse(course)
+                }
+                isCompleting={completingCourseId === course.id}
+                isCompleted={course.isCompleted}
               />
             ))}
           </ModulesGrid>

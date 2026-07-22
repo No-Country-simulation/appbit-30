@@ -21,6 +21,10 @@ export function ModulePlayerPage({ data }: Props) {
   const router = useRouter();
   const [completingLessonId, setCompletingLessonId] = useState<string | null>(null);
   const [progressError, setProgressError] = useState<string | null>(null);
+  const [matchChange, setMatchChange] = useState<{
+    before: number;
+    after: number;
+  } | null>(null);
 
   const externalUrl = data.externalUrl ?? undefined;
 
@@ -29,6 +33,7 @@ export function ModulePlayerPage({ data }: Props) {
 
     setCompletingLessonId(lesson.id);
     setProgressError(null);
+    setMatchChange(null);
 
     try {
       const response = await fetch(
@@ -39,6 +44,16 @@ export function ModulePlayerPage({ data }: Props) {
       if (!response.ok) {
         throw new Error('Learning progress request failed');
       }
+
+      const result = (await response.json()) as {
+        matchBefore: number;
+        matchAfter: number;
+      };
+
+      setMatchChange({
+        before: result.matchBefore,
+        after: result.matchAfter,
+      });
 
       router.refresh();
     } catch (error) {
@@ -103,6 +118,18 @@ export function ModulePlayerPage({ data }: Props) {
                 className='rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm text-[var(--color-danger-text)]'
               >
                 {progressError}
+              </p>
+            )}
+
+            {matchChange && (
+              <p
+                role='status'
+                className='rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800'
+              >
+                {t('matchActualizado', {
+                  anterior: matchChange.before,
+                  nuevo: matchChange.after,
+                })}
               </p>
             )}
 

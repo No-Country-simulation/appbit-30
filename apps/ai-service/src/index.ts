@@ -88,13 +88,33 @@ function buildFallbackPlanItems(params: {
   fallbackGapItems: { habilidad: string }[];
   cursosDisponibles: {
     titulo: string;
-    habilidad_principal?: string | null;
-    curso_habilidades?: { habilidad_id: string }[];
+    habilidad?: { nombre: string } | null;
+    curso_habilidades?: {
+      habilidad_id: string;
+      habilidad: { nombre: string };
+    }[];
   }[];
   locale?: string;
 }): SafePlanItem[] {
   const { fallbackGapItems, cursosDisponibles, locale } = params;
-  const defaultCourse = cursosDisponibles[0]?.titulo ?? null;
+
+  const courseBySkillName = new Map<string, string>();
+
+  for (const course of cursosDisponibles) {
+    const skillNames = [
+      ...(course.habilidad?.nombre ? [course.habilidad.nombre] : []),
+      ...(course.curso_habilidades?.map(
+        (mapping) => mapping.habilidad.nombre,
+      ) ?? []),
+    ];
+
+    for (const skillName of skillNames) {
+      const key = skillName.trim().toLowerCase();
+      if (!courseBySkillName.has(key)) {
+        courseBySkillName.set(key, course.titulo);
+      }
+    }
+  }
 
   const itemsFromGap = fallbackGapItems.slice(0, 3).map((item, index) => ({
     titulo:
@@ -102,7 +122,8 @@ function buildFallbackPlanItems(params: {
         ? `Reforçar fundamentos de ${item.habilidad}`
         : `Reforzar fundamentos de ${item.habilidad}`,
     prioridad: index === 0 ? 'Alta_prioridad' : 'Media_prioridad',
-    curso_sugerido: defaultCourse,
+    curso_sugerido:
+      courseBySkillName.get(item.habilidad.trim().toLowerCase()) ?? null,
     skill_objetivo: item.habilidad,
     accion_label: locale === 'pt' ? 'Começar agora' : 'Empezar ahora',
   }));
@@ -118,7 +139,7 @@ function buildFallbackPlanItems(params: {
           ? 'Completar o primeiro curso recomendado'
           : 'Completar el primer curso recomendado',
       prioridad: 'Alta_prioridad',
-      curso_sugerido: defaultCourse,
+      curso_sugerido: cursosDisponibles[0]?.titulo ?? null,
       skill_objetivo: null,
       accion_label: locale === 'pt' ? 'Ver curso' : 'Ver curso',
     },
@@ -561,9 +582,19 @@ app.post('/api/onboarding', async (c) => {
             curso_id: true,
             titulo: true,
             area: true,
+            nivel_recomendado: true,
+            tipo_contenido: true,
             habilidad_principal: true,
+            habilidad: {
+              select: { nombre: true },
+            },
             curso_habilidades: {
-              select: { habilidad_id: true },
+              select: {
+                habilidad_id: true,
+                habilidad: {
+                  select: { nombre: true },
+                },
+              },
             },
           },
         }),
@@ -587,21 +618,24 @@ app.post('/api/onboarding', async (c) => {
 
     const totalUserSkills = existingUserSkills.length;
 
-    const faltantes = existingUserSkills.filter(
-      (skill) => skill.estado === EstadoHabilidadEnum.Faltante,
-    ).length;
-
     const dbGapPorcentual =
       totalUserSkills > 0
-        ? clampPercent((faltantes / totalUserSkills) * 100)
+        ? clampPercent(
+            100 -
+              existingUserSkills.reduce(
+                (total, skill) => total + skill.progreso_porcentaje,
+                0,
+              ) /
+                totalUserSkills,
+          )
         : null;
 
     const fallbackGapItems = existingUserSkills
-      .filter((skill) => skill.estado === EstadoHabilidadEnum.Faltante)
+      .filter((skill) => skill.estado !== EstadoHabilidadEnum.Adquirida)
       .map((skill) => ({
         habilidad: skill.habilidad.nombre,
         nivel_requerido: 'Mercado',
-        nivel_actual: 'Pendiente',
+        nivel_actual: `${skill.progreso_porcentaje}%`,
       }));
 
     const fallbackPlanAccion = buildFallbackPlanItems({
@@ -660,7 +694,20 @@ ${existingUserSkills
   .join('\n')}
 
 CURSOS DISPONIBLES:
-${cursosDisponibles.map((c) => `- ${c.titulo} (${c.area})`).join('\n')}
+${cursosDisponibles
+  .map((course) => {
+    const skills = Array.from(
+      new Set([
+        ...(course.habilidad?.nombre ? [course.habilidad.nombre] : []),
+        ...course.curso_habilidades.map(
+          (mapping) => mapping.habilidad.nombre,
+        ),
+      ]),
+    );
+
+    return `- ${course.titulo} | área: ${course.area} | nivel: ${course.nivel_recomendado ?? 'No especificado'} | habilidades: ${skills.join(', ') || 'Sin asociación'} | tipo: ${course.tipo_contenido}`;
+  })
+  .join('\n')}
 
 Instrucciones:
 1. No borres ni contradigas las habilidades registradas por el onboarding web.
@@ -775,11 +822,17 @@ Respuesta JSON estricta, sin markdown:
         skill,
       ]),
     );
+    const pendingSkillNames = new Set(
+      fallbackGapItems.map((item) => item.habilidad.trim().toLowerCase()),
+    );
 
     const planRows = safePlanAccion.map((item, index) => {
       const cursoKey = item.curso_sugerido?.trim().toLowerCase();
       const skillKey = item.skill_objetivo?.trim().toLowerCase();
-      const skill = skillKey ? (skillByExactName.get(skillKey) ?? null) : null;
+      const skill =
+        skillKey && pendingSkillNames.has(skillKey)
+          ? (skillByExactName.get(skillKey) ?? null)
+          : null;
       const suggestedCourse = cursoKey
         ? (courseByExactTitle.get(cursoKey) ?? null)
         : null;
@@ -806,7 +859,7 @@ Respuesta JSON estricta, sin markdown:
         suggestedCourse &&
         (!skill || suggestedCourseSkillIds?.has(skill.habilidad_id))
           ? suggestedCourse
-          : (courseForSkill ?? suggestedCourse);
+          : courseForSkill;
 
       return {
         usuario_id: userId,
@@ -827,6 +880,7 @@ Respuesta JSON estricta, sin markdown:
         await tx.planAccion.deleteMany({
           where: {
             usuario_id: userId,
+            completado: false,
           },
         });
 
