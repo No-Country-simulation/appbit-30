@@ -53,6 +53,8 @@ export type LessonStatus =
   | 'bloqueada';
 
 export interface ModulePlayerLesson {
+  id: string;
+  canComplete: boolean;
   numero: number;
   titulo: string;
   duracion: string;

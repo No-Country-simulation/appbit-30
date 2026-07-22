@@ -137,6 +137,8 @@ export async function getModulePlayerData(params: {
     const progreso = item.leccion.progreso[0];
 
     return {
+      id: item.leccion.leccion_id,
+      canComplete: true,
       numero: index + 1,
       titulo: item.leccion.titulo,
       duracion: formatDuration(item.leccion.duracion_minutos),
@@ -148,6 +150,8 @@ export async function getModulePlayerData(params: {
   if (lessons.length === 0) {
     lessons = [
       {
+        id: curso.curso_id,
+        canComplete: false,
         numero: 1,
         titulo: curso.subtitulo ?? curso.titulo,
         duracion: curso.duracion_estimada_dias

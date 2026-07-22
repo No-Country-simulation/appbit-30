@@ -661,7 +661,9 @@
     "sinCursosTitulo": "Todavía no encontramos cursos para tu ruta",
     "sinCursosDesc": "Completá el onboarding o volvé a intentar cuando se generen tus recomendaciones.",
     "abrirCurso": "Abrir curso",
-    "verFormacion": "Ver formación"
+    "verFormacion": "Ver formación",
+    "marcarCompletada": "Marcar lección como completada",
+    "progresoError": "No pudimos guardar tu progreso. Intentá de nuevo."
   },
   "Empleabilidad": {
     "title": "Oportunidades Laborales",

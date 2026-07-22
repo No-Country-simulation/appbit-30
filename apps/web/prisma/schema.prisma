@@ -188,6 +188,13 @@ enum TipoContenidoCursoEnum {
   Guia
 }
 
+enum TipoEventoProgresoEnum {
+  Onboarding
+  Leccion
+  Modulo
+  Curso
+}
+
 // ============================================
 // TABLAS
 // ============================================
@@ -235,6 +242,7 @@ model Usuarios {
   progreso_leccion      ProgresoLeccion[]
   descargas_offline     DescargasOffline[]
   plan_accion           PlanAccion[]
+  historial_progreso    HistorialProgreso[]
   perfil_movilidad      PerfilMovilidad?
   alertas_offline       AlertasOffline[]
   notificaciones_radar  NotificacionesRadar[]
@@ -753,6 +761,24 @@ model PlanAccion {
   @@index([usuario_id], map: "idx_plan_usuario")
   @@index([skill_objetivo_id], map: "idx_plan_skill_objetivo")
   @@map("plan_accion")
+}
+
+model HistorialProgreso {
+  historial_id  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String                   @db.Uuid
+  tipo_evento   TipoEventoProgresoEnum
+  entidad_id    String                   @db.Uuid
+  titulo        String                   @db.VarChar(255)
+  match_anterior Int                     @db.SmallInt
+  match_nuevo   Int                      @db.SmallInt
+  metadatos     Json                     @default("{}") @db.JsonB
+  creado_en     DateTime                 @default(now()) @db.Timestamptz
+
+  usuario       Usuarios                 @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, tipo_evento, entidad_id])
+  @@index([usuario_id, creado_en], map: "idx_historial_progreso_usuario_fecha")
+  @@map("historial_progreso")
 }
 
 model PerfilMovilidad {
