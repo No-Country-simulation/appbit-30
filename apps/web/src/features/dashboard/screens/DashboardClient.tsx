@@ -6,13 +6,17 @@ import { useTranslations } from 'next-intl';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { OnboardingModal } from '@/src/features/onboarding/screens/OnboardingModal';
 import { HeroBanner } from '../components/HeroBanner';
-import { RadarBanner } from '../components/RadarBanner';
 import { SkillsGapCard } from '../components/SkillsGapCard';
 import { ActionPlanCard } from '../components/ActionPlanCard';
 import { WellbeingCard } from '../components/WellbeingCard';
 import { SkillsGapModal } from '../components/SkillsGapModal';
 import { CheckinModal } from '../components/CheckinModal';
-import type { DashboardResponse, SkillsResponse } from '@appbit/shared-schemas';
+import { ProgressHistoryModal } from '../components/ProgressHistoryModal';
+import type {
+  DashboardResponse,
+  ProgressHistoryResponse,
+  SkillsResponse,
+} from '@appbit/shared-schemas';
 import type { ActionItem } from '../components/ActionPlanCard';
 import type { SkillRow } from '../components/SkillsGapModal';
 
@@ -101,6 +105,10 @@ export default function DashboardClient({
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [progressHistory, setProgressHistory] =
+    useState<ProgressHistoryResponse | null>(null);
+  const [isLoadingProgressHistory, setIsLoadingProgressHistory] = useState(false);
+  const [progressHistoryError, setProgressHistoryError] = useState(false);
 
   const [onboardingCompletedClient, setOnboardingCompletedClient] =
     useState(false);
@@ -115,6 +123,7 @@ export default function DashboardClient({
   const [dashboardError, setDashboardError] = useState(false);
 
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [progressHistoryModalOpen, setProgressHistoryModalOpen] = useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
   const [checkinMood, setCheckinMood] = useState('');
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
@@ -136,6 +145,25 @@ export default function DashboardClient({
       setIsLoadingSkills(false);
     }
   }, [skillsData, isLoadingSkills]);
+
+  const loadProgressHistory = useCallback(async () => {
+    if (progressHistory || isLoadingProgressHistory) return;
+
+    setIsLoadingProgressHistory(true);
+    setProgressHistoryError(false);
+
+    try {
+      const history = await fetchJson<ProgressHistoryResponse>(
+        '/api/dashboard/progress-history?months=4',
+      );
+      setProgressHistory(history);
+    } catch (error) {
+      console.error('Error fetching progress history:', error);
+      setProgressHistoryError(true);
+    } finally {
+      setIsLoadingProgressHistory(false);
+    }
+  }, [isLoadingProgressHistory, progressHistory]);
 
   const loadDashboard = useCallback(
     async (
@@ -424,6 +452,11 @@ export default function DashboardClient({
                 setSkillsModalOpen(true);
                 void loadSkills();
               }}
+              historySummary={data?.progressHistorySummary}
+              onVerHistorial={() => {
+                setProgressHistoryModalOpen(true);
+                void loadProgressHistory();
+              }}
             />
           </div>
 
@@ -498,6 +531,20 @@ export default function DashboardClient({
             force: true,
           })
         }
+      />
+
+      <ProgressHistoryModal
+        open={progressHistoryModalOpen}
+        onOpenChange={(nextOpen) => {
+          setProgressHistoryModalOpen(nextOpen);
+
+          if (nextOpen) {
+            void loadProgressHistory();
+          }
+        }}
+        data={progressHistory}
+        isLoading={isLoadingProgressHistory}
+        hasError={progressHistoryError}
       />
     </AppShell>
   );

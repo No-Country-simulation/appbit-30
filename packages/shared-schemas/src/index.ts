@@ -361,6 +361,19 @@ export const dashboardResponseSchema = z.object({
     home_cluster: z.string().nullable(),
   }),
   areasInteres: z.array(z.string()).optional(),
+  progressHistorySummary: z
+    .object({
+      initialMatch: z.number(),
+      currentMatch: z.number(),
+      variation: z.number(),
+      series: z.array(
+        z.object({
+          period: z.string(),
+          match: z.number(),
+        }),
+      ),
+    })
+    .optional(),
   orientacion: z
     .object({
       gap_porcentual: z.number(),
@@ -417,6 +430,36 @@ export const dashboardResponseSchema = z.object({
 });
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+
+export const progressHistoryResponseSchema = z.object({
+  success: z.boolean(),
+  requestId: z.string().optional(),
+  initialMatch: z.number(),
+  currentMatch: z.number(),
+  variation: z.number(),
+  series: z.array(
+    z.object({
+      period: z.string(),
+      match: z.number(),
+    }),
+  ),
+  events: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(['Onboarding', 'Leccion', 'Modulo', 'Curso']),
+      entityId: z.string(),
+      title: z.string(),
+      matchBefore: z.number(),
+      matchAfter: z.number(),
+      metadata: z.unknown(),
+      occurredAt: z.string(),
+    }),
+  ),
+});
+
+export type ProgressHistoryResponse = z.infer<
+  typeof progressHistoryResponseSchema
+>;
 
 // --- SCHEMAS PARA SKILLS (FE-003) ---
 export const skillsResponseSchema = z.object({
