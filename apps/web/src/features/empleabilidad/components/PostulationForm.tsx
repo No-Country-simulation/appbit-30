@@ -9,23 +9,28 @@ interface Props {
   onSubmit: (data: {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
-  }) => void;
+  }) => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
-export function PostulationForm({ onSubmit }: Props) {
+export function PostulationForm({
+  onSubmit,
+  isSubmitting = false,
+  submitError,
+}: Props) {
   const t = useTranslations('Empleabilidad');
   const [mensaje, setMensaje] = useState('');
   const [usarCvGuardado, setUsarCvGuardado] = useState(true);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    onSubmit({
+    await onSubmit({
       mensaje_motivacion: mensaje,
       usar_cv_guardado: usarCvGuardado,
     });
 
-    setMensaje('');
   }
 
   return (
@@ -67,10 +72,17 @@ export function PostulationForm({ onSubmit }: Props) {
         type='submit'
         variant='primary'
         className='inline-flex w-full items-center justify-center gap-2 !whitespace-nowrap'
+        disabled={isSubmitting}
       >
         <Send className='size-4 shrink-0' />
-        {t('enviarPostulacion')}
+        {isSubmitting ? t('enviandoPostulacion') : t('enviarPostulacion')}
       </AppButton>
+
+      {submitError && (
+        <p role='alert' className='text-sm text-[var(--color-danger)]'>
+          {submitError}
+        </p>
+      )}
     </form>
   );
 }

@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { Dialog, DialogContent } from '@/src/components/ui/dialog';
 import { SkillCompatibilityList } from './SkillCompatibilityList';
@@ -16,7 +16,9 @@ interface Props {
   onPostular: (data: {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
-  }) => void;
+  }) => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 export function JobDetailModal({
@@ -24,8 +26,17 @@ export function JobDetailModal({
   onOpenChange,
   vacante,
   onPostular,
+  isSubmitting,
+  submitError,
 }: Props) {
   const t = useTranslations('Empleabilidad');
+  const format = useFormatter();
+  const publicationDate = format.dateTime(new Date(vacante.fechaPublicacion), {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,7 +78,7 @@ export function JobDetailModal({
                 <div className='flex shrink-0 items-center gap-1.5 text-xs text-white/70'>
                   <Calendar className='size-3.5 shrink-0' />
                   <span className='break-words'>
-                    {t('publicado', { fecha: vacante.fechaPublicacion })}
+                    {t('publicado', { fecha: publicationDate })}
                   </span>
                 </div>
               )}
@@ -87,7 +98,9 @@ export function JobDetailModal({
 
                   <span className='inline-flex max-w-full items-center rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold leading-snug text-green-700'>
                     <span className='min-w-0 break-words'>
-                      {vacante.matchPorcentaje}% {t('match')}
+                      {vacante.matchPorcentaje === null
+                        ? t('matchNoDisponible')
+                        : `${vacante.matchPorcentaje}% ${t('match')}`}
                     </span>
                   </span>
                 </div>
@@ -165,7 +178,11 @@ export function JobDetailModal({
                   {t('postulateAhora')}
                 </h4>
 
-                <PostulationForm onSubmit={onPostular} />
+                <PostulationForm
+                  onSubmit={onPostular}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                />
               </section>
             </div>
           </div>

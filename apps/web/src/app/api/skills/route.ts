@@ -3,6 +3,7 @@ import { dbClient } from '@/src/server/clients/db.client';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import { findLinkedUsuario } from '@/src/server/auth/find-linked-usuario';
 import { AreaInteresEnum } from '@/src/server/generated/prisma';
+import { calculateSkillsMatch } from '@/src/server/progress/skill-progress';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,10 +91,10 @@ export async function GET(request: Request) {
 
     const totalUserSkills = userSkills.length;
 
+    const currentMatch =
+      totalUserSkills > 0 ? calculateSkillsMatch(userSkills) : null;
     const computedGapPorcentual =
-      totalUserSkills > 0
-        ? clampPercent((faltantes / totalUserSkills) * 100)
-        : null;
+      currentMatch === null ? null : clampPercent(100 - currentMatch);
 
     const fallbackGaps = userSkills
       .filter((skill) => skill.estado === 'Faltante')
@@ -112,6 +113,7 @@ export async function GET(request: Request) {
         categoria: us.habilidad.categoria,
         area_principal: us.habilidad.area_principal,
         estado: us.estado === 'En_progreso' ? 'En progreso' : us.estado,
+        progreso_porcentaje: us.progreso_porcentaje,
       })),
       gaps: orientacion?.gap_items ?? fallbackGaps,
       mercadoHabilidades,
@@ -120,6 +122,7 @@ export async function GET(request: Request) {
         faltantes,
         enProgreso,
         totalMercado: mercadoHabilidades.length,
+        matchActual: currentMatch,
       },
       orientacion: orientacion
         ? {

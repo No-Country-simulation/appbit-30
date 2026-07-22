@@ -19,6 +19,30 @@ export function calculateSkillsMatch(
   return clampPercent(accumulated / skills.length);
 }
 
+export function calculateWeightedVacancyMatch(
+  requirements: ReadonlyArray<{ skillId: string; priority: number }>,
+  skillProgress: ReadonlyMap<string, number>,
+) {
+  if (requirements.length === 0) return null;
+
+  const priorityWeight = (priority: number) => {
+    if (priority === 1) return 3;
+    if (priority === 2) return 2;
+    return 1;
+  };
+  const totalWeight = requirements.reduce(
+    (total, requirement) => total + priorityWeight(requirement.priority),
+    0,
+  );
+  const completedWeight = requirements.reduce((total, requirement) => {
+    const progress = clampPercent(skillProgress.get(requirement.skillId) ?? 0);
+
+    return total + priorityWeight(requirement.priority) * (progress / 100);
+  }, 0);
+
+  return clampPercent((completedWeight / totalWeight) * 100);
+}
+
 export function calculateLearningProgressBySkill(params: {
   lessonMappings: ReadonlyArray<{
     lessonId: string;

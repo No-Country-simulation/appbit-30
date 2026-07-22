@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   calculateLearningProgressBySkill,
   calculateSkillsMatch,
+  calculateWeightedVacancyMatch,
   skillStatusFromProgress,
 } from './skill-progress';
 
@@ -39,4 +40,27 @@ test('maps progress boundaries to the persisted skill status', () => {
   assert.equal(skillStatusFromProgress(1), 'En_progreso');
   assert.equal(skillStatusFromProgress(99), 'En_progreso');
   assert.equal(skillStatusFromProgress(100), 'Adquirida');
+});
+
+test('weights vacancy requirements and proportional skill progress', () => {
+  const requirements = [
+    { skillId: 'critical', priority: 1 },
+    { skillId: 'optional', priority: 3 },
+  ];
+
+  assert.equal(
+    calculateWeightedVacancyMatch(
+      requirements,
+      new Map([
+        ['critical', 50],
+        ['optional', 100],
+      ]),
+    ),
+    63,
+  );
+  assert.equal(
+    calculateWeightedVacancyMatch(requirements, new Map()),
+    0,
+  );
+  assert.equal(calculateWeightedVacancyMatch([], new Map()), null);
 });

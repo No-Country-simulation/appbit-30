@@ -25,12 +25,14 @@ export default function EmployabilityClient({ data }: Props) {
   );
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [postulaciones, setPostulaciones] = useState<PostulacionItem[]>(
     data.postulaciones,
   );
 
   const appliedVacanteIds = new Set(
-    postulaciones.map((item) => item.id.replace(/^local-/, '')).filter(Boolean),
+    postulaciones.map((item) => item.vacanteId),
   );
 
   function handleAplicar(vacante: VacanteItem) {
@@ -42,22 +44,54 @@ export default function EmployabilityClient({ data }: Props) {
     }
 
     setSelectedVacante(vacante);
+    setSubmitError(null);
     setModalOpen(true);
   }
 
-  function handlePostular(input: {
+  async function handlePostular(input: {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
   }) {
-    if (!selectedVacante) return;
+    if (!selectedVacante || isSubmitting) return;
 
     const alreadyApplied = postulaciones.some(
-      (item) => item.id === `local-${selectedVacante.id}`,
+      (item) => item.vacanteId === selectedVacante.id,
     );
 
-    if (!alreadyApplied) {
+    if (alreadyApplied) {
+      setModalOpen(false);
+      setActiveTab('aplicaciones');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch('/api/postulaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vacante_id: selectedVacante.id, ...input }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        postulacionId?: string;
+        error?: string;
+      } | null;
+
+      if (response.status === 409) {
+        setModalOpen(false);
+        setActiveTab('aplicaciones');
+        router.refresh();
+        return;
+      }
+
+      if (!response.ok || !payload?.postulacionId) {
+        throw new Error(payload?.error || t('postulacionError'));
+      }
+
       const newPostulacion: PostulacionItem = {
-        id: `local-${selectedVacante.id}`,
+        id: payload.postulacionId,
+        vacanteId: selectedVacante.id,
         titulo: selectedVacante.titulo,
         empresa: selectedVacante.empresa,
         logoUrl: selectedVacante.logoUrl,
@@ -70,15 +104,18 @@ export default function EmployabilityClient({ data }: Props) {
       };
 
       setPostulaciones((current) => [newPostulacion, ...current]);
+      setModalOpen(false);
+      setSuccessMessage(t('postulacionExitosa'));
+      setActiveTab('aplicaciones');
+      router.refresh();
+      window.setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : t('postulacionError'),
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setModalOpen(false);
-    setSuccessMessage(t('postulacionExitosa'));
-    setActiveTab('aplicaciones');
-
-    window.setTimeout(() => {
-      setSuccessMessage(null);
-    }, 3000);
   }
 
   return (
@@ -189,6 +226,8 @@ export default function EmployabilityClient({ data }: Props) {
           onOpenChange={setModalOpen}
           vacante={selectedVacante}
           onPostular={handlePostular}
+          isSubmitting={isSubmitting}
+          submitError={submitError}
         />
       )}
     </AppShell>

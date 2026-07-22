@@ -461,6 +461,21 @@ export type ProgressHistoryResponse = z.infer<
   typeof progressHistoryResponseSchema
 >;
 
+export const createPostulacionSchema = z.object({
+  vacante_id: z.uuid(),
+  mensaje_motivacion: z
+    .string()
+    .trim()
+    .max(2000)
+    .optional()
+    .transform((value) => value || undefined),
+  usar_cv_guardado: z.boolean(),
+});
+
+export type CreatePostulacionRequest = z.infer<
+  typeof createPostulacionSchema
+>;
+
 // --- SCHEMAS PARA SKILLS (FE-003) ---
 export const skillsResponseSchema = z.object({
   habilidades: z.array(
@@ -470,6 +485,7 @@ export const skillsResponseSchema = z.object({
       categoria: z.string().nullable(),
       area_principal: z.string().nullable(),
       estado: z.string(),
+      progreso_porcentaje: z.number(),
     }),
   ),
   gaps: z.array(z.any()),
@@ -486,6 +502,7 @@ export const skillsResponseSchema = z.object({
     faltantes: z.number(),
     enProgreso: z.number(),
     totalMercado: z.number(),
+    matchActual: z.number().nullable(),
   }),
   orientacion: z
     .object({
