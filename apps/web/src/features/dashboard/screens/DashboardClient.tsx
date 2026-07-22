@@ -468,7 +468,7 @@ export default function DashboardClient({
 
     aiRefreshScheduledRef.current = true;
 
-    const refreshDelaysMs = [4000, 9000, 14000];
+    const refreshDelaysMs = [4000, 9000, 15000, 23000, 35000, 50000, 65000];
 
     aiRefreshTimeoutsRef.current = refreshDelaysMs.map((delayMs) =>
       window.setTimeout(() => {
