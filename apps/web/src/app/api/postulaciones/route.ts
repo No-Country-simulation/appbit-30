@@ -1,6 +1,8 @@
 import { createPostulacionSchema } from '@appbit/shared-schemas';
 import { NextResponse } from 'next/server';
-import { calculateVacanteMatch } from '@/src/features/empleabilidad/server/employability.service';
+import {
+  calculateVacanteMatch,
+} from '@/src/features/empleabilidad/server/employability.service';
 import { listPostulaciones } from '@/src/features/empleabilidad/server/postulaciones.service';
 import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 import { dbClient } from '@/src/server/clients/db.client';

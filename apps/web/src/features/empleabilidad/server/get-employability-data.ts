@@ -66,7 +66,6 @@ export async function getEmployabilityData(params: {
   }
 
   const profile = buildProfilePercent(usuario);
-
   return {
     user: {
       name: usuario.nombre_completo,

@@ -758,6 +758,8 @@
     "curriculumVitae": "Currículo",
     "usarCvGuardado": "Usar meu CV salvo no BiT",
     "enviarPostulacion": "Enviar candidatura",
+    "enviandoPostulacion": "Enviando candidatura...",
+    "postulacionError": "Não foi possível enviar a candidatura. Tente novamente.",
     "estadoEnviada": "Enviada",
     "estadoVista": "Vista",
     "estadoEnRevision": "Em revisão",
@@ -777,6 +779,7 @@
     "sinAplicaciones": "Você ainda não tem candidaturas. Quando se candidatar a uma oportunidade, ela aparecerá aqui.",
     "hoy": "hoje",
     "match": "Match",
+    "matchNoDisponible": "Match: N/A",
     "decision": "Decisão",
     "candidaturaEnviada": "Candidatura enviada",
     "verCandidatura": "Ver candidatura"

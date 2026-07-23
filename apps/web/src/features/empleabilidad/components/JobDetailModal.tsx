@@ -31,19 +31,22 @@ export function JobDetailModal({
 }: Props) {
   const t = useTranslations('Empleabilidad');
   const format = useFormatter();
-  const publicationDate = format.dateTime(new Date(vacante.fechaPublicacion), {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  const publicationDate = format.dateTime(
+    new Date(vacante.fechaPublicacion),
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    },
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='safe-modal-content w-[min(calc(100vw-1rem),44rem)] p-0'>
         <div className='flex max-h-[90dvh] min-w-0 flex-col overflow-hidden'>
           <div className='min-w-0 bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] px-4 py-5 text-white sm:px-6'>
-            <div className='flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+            <div className='flex min-w-0 flex-col gap-3'>
               <div className='flex min-w-0 items-start gap-4'>
                 <div className='flex size-14 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl font-bold backdrop-blur-sm sm:size-16'>
                   {vacante.logoUrl ? (
@@ -62,7 +65,7 @@ export function JobDetailModal({
                     {t('quienOfrece')}
                   </p>
 
-                  <h2 className='break-words text-xl font-bold leading-tight sm:text-2xl'>
+                  <h2 className='break-words pr-6 text-xl font-bold leading-tight sm:text-2xl'>
                     {vacante.empresa}
                   </h2>
 
@@ -75,7 +78,7 @@ export function JobDetailModal({
               </div>
 
               {vacante.fechaPublicacion && (
-                <div className='flex shrink-0 items-center gap-1.5 text-xs text-white/70'>
+                <div className='flex min-w-0 items-center gap-1.5 pl-[4.5rem] text-xs text-white/70 sm:pl-20'>
                   <Calendar className='size-3.5 shrink-0' />
                   <span className='break-words'>
                     {t('publicado', { fecha: publicationDate })}

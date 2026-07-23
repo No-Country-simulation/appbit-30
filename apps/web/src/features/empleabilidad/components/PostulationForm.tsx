@@ -49,7 +49,8 @@ export function PostulationForm({
         />
       </div>
 
-      <div className='min-w-0'>
+      {/* NOTE: comentado hasta implementar carga de CV */}
+      {/* <div className='min-w-0'>
         <label className='mb-2 block break-words text-sm font-semibold text-[var(--color-text)]'>
           {t('curriculumVitae')}
         </label>
@@ -66,7 +67,7 @@ export function PostulationForm({
           <Cloud className='size-4 shrink-0' />
           <span className='break-words'>{t('usarCvGuardado')}</span>
         </button>
-      </div>
+      </div> */}
 
       <AppButton
         type='submit'

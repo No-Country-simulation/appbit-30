@@ -89,11 +89,11 @@ export function HeroBanner({
                 {title}
               </h1>
 
-              {isRefreshing && (
-                <span className='mt-1 shrink-0 rounded-full bg-white/10 px-2 py-1 text-xs font-semibold text-white/75'>
-                  {refreshingLabel}
-                </span>
-              )}
+              {isRefreshing && refreshingLabel && (
+              <span className='mt-1 shrink-0 rounded-full bg-white/10 px-2 py-1 text-xs font-semibold text-white/75'>
+                {refreshingLabel}
+              </span>
+               )}
             </div>
 
             <p className='mt-3 max-w-xl break-words text-sm leading-relaxed text-white/80 sm:text-base'>

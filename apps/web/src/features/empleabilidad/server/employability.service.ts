@@ -194,6 +194,9 @@ export async function listVacantes(
         vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
     )
     .sort((a, b) => {
+      if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
+      if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
+
       const matchDifference =
         (b.matchPorcentaje ?? 0) - (a.matchPorcentaje ?? 0);
 

@@ -760,7 +760,7 @@ export default function DashboardClient({
         primaryLabelKey: 'heroCtaLearning',
         primaryHref: '/formacion',
         secondaryLabelKey: 'heroCtaPlan',
-        secondaryHref: '/dashboard',
+        secondaryHref: '/formacion',
       };
     }
 
@@ -778,7 +778,7 @@ export default function DashboardClient({
       primaryLabelKey: 'heroCtaLearning',
       primaryHref: '/formacion',
       secondaryLabelKey: 'heroCtaPlan',
-      secondaryHref: '/dashboard',
+      secondaryHref: '/formacion',
     };
   }, [
     data?.match_perfil,
