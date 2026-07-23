@@ -1,3 +1,5 @@
+import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
+
 export type MoodTone = 'positive' | 'neutral' | 'negative' | 'empty';
 
 export interface BienestarCalendarDay {
@@ -18,13 +20,7 @@ export interface BienestarData {
     name?: string;
     avatarUrl?: string | null;
     profilePercent?: number;
-    perfilBreakdown?: {
-      onboarding: boolean;
-      movilidad: boolean;
-      avatar: boolean;
-      ubicacion: boolean;
-      whatsapp: boolean;
-    };
+    perfilBreakdown?: PerfilBreakdown;
   };
   latestResponse: {
     mensaje: string;

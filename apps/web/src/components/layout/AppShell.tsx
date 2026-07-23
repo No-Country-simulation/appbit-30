@@ -4,14 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
-
-interface PerfilBreakdown {
-  onboarding: boolean;
-  movilidad: boolean;
-  avatar: boolean;
-  ubicacion: boolean;
-  whatsapp: boolean;
-}
+import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
 
 interface Props {
   children: React.ReactNode;
