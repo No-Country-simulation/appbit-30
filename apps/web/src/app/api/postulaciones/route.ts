@@ -41,6 +41,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 422 });
     }
 
+    if (
+      rawBody &&
+      typeof rawBody === 'object' &&
+      'vacante_id' in rawBody &&
+      typeof rawBody.vacante_id === 'string' &&
+      rawBody.vacante_id.startsWith('b2b:')
+    ) {
+      return NextResponse.json(
+        { error: 'External B2B vacancies do not support applications' },
+        { status: 422 },
+      );
+    }
+
     const parsed = createPostulacionSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
