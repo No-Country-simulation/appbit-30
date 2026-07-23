@@ -746,6 +746,9 @@
     "matchNoDisponible": "Match: N/A",
     "decision": "Decisión",
     "candidaturaEnviada": "Postulación enviada",
-    "verCandidatura": "Ver postulación"
+    "verCandidatura": "Ver postulación",
+    "oportunidadB2B": "Oportunidad B2B",
+    "verOportunidad": "Ver oportunidad",
+    "postulacionB2BInformativa": "Esta oportunidad proviene de la plataforma B2B y por ahora es informativa. La postulación desde AppBiT no está habilitada."
   }
 }

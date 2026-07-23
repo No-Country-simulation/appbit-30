@@ -9,6 +9,7 @@ import { AppButton } from '@/src/components/app/AppButton';
 import { cn } from '@/lib/utils';
 
 interface Props {
+  source: 'local' | 'b2b';
   titulo: string;
   empresa: string;
   logoUrl: string | null;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function JobCard({
+  source,
   titulo,
   empresa,
   logoUrl,
@@ -73,6 +75,12 @@ export function JobCard({
       </button>
 
       <div className='flex min-w-0 flex-wrap items-center gap-2'>
+        {source === 'b2b' && (
+          <span className='inline-flex max-w-full items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700'>
+            {t('oportunidadB2B')}
+          </span>
+        )}
+
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
@@ -123,7 +131,11 @@ export function JobCard({
             onAplicar();
           }}
         >
-          {isApplied ? t('verCandidatura') : t('verYAplicar')}
+          {source === 'b2b'
+            ? t('verOportunidad')
+            : isApplied
+              ? t('verCandidatura')
+              : t('verYAplicar')}
         </AppButton>
       </div>
     </AppCard>
