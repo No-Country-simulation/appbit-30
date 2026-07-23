@@ -46,27 +46,17 @@ export function AppHeader({
         {
           key: 'onboarding' as const,
           label: t('perfilBreakdownOnboarding'),
-          points: 50,
-        },
-        {
-          key: 'movilidad' as const,
-          label: t('perfilBreakdownMovilidad'),
-          points: 20,
+          points: 60,
         },
         {
           key: 'avatar' as const,
           label: t('perfilBreakdownAvatar'),
-          points: 10,
+          points: 20,
         },
         {
           key: 'ubicacion' as const,
           label: t('perfilBreakdownUbicacion'),
-          points: 10,
-        },
-        {
-          key: 'whatsapp' as const,
-          label: t('perfilBreakdownWhatsapp'),
-          points: 10,
+          points: 20,
         },
       ]
     : [];
