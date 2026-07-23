@@ -5,6 +5,10 @@ import type {
   Prisma,
 } from '@/src/server/generated/prisma';
 import type { VacanteItem } from '../types';
+import {
+  listB2BJobs,
+  normalizeSkillName,
+} from './b2b-jobs.client';
 
 export const AREA_VALUES = [
   'Data_Analytics',
@@ -93,16 +97,24 @@ export function calculateMatch(
   return Math.round((matchedWeight / totalWeight) * 100);
 }
 
-async function getUserSkillIds(usuarioId: string) {
+async function getUserSkills(usuarioId: string) {
   const skills = await dbClient.usuarioHabilidades.findMany({
     where: {
       usuario_id: usuarioId,
       estado: { in: ['Adquirida', 'En_progreso'] },
     },
-    select: { habilidad_id: true },
+    select: {
+      habilidad_id: true,
+      habilidad: { select: { nombre: true } },
+    },
   });
 
-  return new Set(skills.map((item) => item.habilidad_id));
+  return {
+    ids: new Set(skills.map((item) => item.habilidad_id)),
+    names: new Set(
+      skills.map((item) => normalizeSkillName(item.habilidad.nombre)),
+    ),
+  };
 }
 
 async function getUserInterestAreas(usuarioId: string) {
@@ -126,6 +138,7 @@ function mapVacante(
 ): VacanteItem {
   return {
     id: vacante.vacante_id,
+    source: 'local',
     titulo: vacante.titulo,
     empresa: vacante.empresa.nombre,
     empresaDescripcion: vacante.empresa.descripcion,
@@ -159,10 +172,11 @@ export async function listVacantes(
   filters: VacanteFilters,
 ) {
   const search = filters.search?.trim();
-  const [userSkillIds, userInterestAreas] = await Promise.all([
-    getUserSkillIds(usuarioId),
+  const [userSkills, userInterestAreas] = await Promise.all([
+    getUserSkills(usuarioId),
     getUserInterestAreas(usuarioId),
   ]);
+  const userSkillIds = userSkills.ids;
   const allowedAreas = filters.area
     ? userInterestAreas.has(filters.area)
       ? [filters.area]
@@ -187,18 +201,39 @@ export async function listVacantes(
       : {}),
   };
 
-  const vacantes = await dbClient.vacantes.findMany({
-    where,
-    include: VACANTE_INCLUDE,
-    orderBy: { fecha_publicacion: 'desc' },
+  const [vacantes, b2bVacantes] = await Promise.all([
+    dbClient.vacantes.findMany({
+      where,
+      include: VACANTE_INCLUDE,
+      orderBy: { fecha_publicacion: 'desc' },
+    }),
+    listB2BJobs(userSkills.names),
+  ]);
+
+  const localVacantes = vacantes.map((vacante) =>
+    mapVacante(vacante, userSkillIds),
+  );
+  const normalizedSearch = search?.toLocaleLowerCase();
+  const filteredB2BVacantes = b2bVacantes.filter((vacante) => {
+    if (
+      filters.modalidad &&
+      vacante.modalidad !== MODALIDAD_LABELS[filters.modalidad]
+    ) {
+      return false;
+    }
+
+    return normalizedSearch
+      ? `${vacante.titulo} ${vacante.empresa} ${vacante.descripcion ?? ''}`
+          .toLocaleLowerCase()
+          .includes(normalizedSearch)
+      : true;
   });
 
-  const mapped = vacantes
-    .map((vacante) => mapVacante(vacante, userSkillIds))
-    .filter(
-      (vacante) =>
-        vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
-    )
+  const recommendedLocalVacantes = localVacantes.filter(
+    (vacante) =>
+      vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
+  );
+  const mapped = [...recommendedLocalVacantes, ...filteredB2BVacantes]
     .sort((a, b) => {
       if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
       if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
@@ -230,7 +265,7 @@ export async function getVacanteById(usuarioId: string, vacanteId: string) {
       where: { vacante_id: vacanteId, activa: true },
       include: VACANTE_INCLUDE,
     }),
-    getUserSkillIds(usuarioId),
+    getUserSkills(usuarioId).then((skills) => skills.ids),
   ]);
 
   return vacante ? mapVacante(vacante, userSkillIds) : null;
@@ -248,7 +283,7 @@ export async function calculateVacanteMatch(
         requisitos: { select: { habilidad_id: true, prioridad: true } },
       },
     }),
-    getUserSkillIds(usuarioId),
+    getUserSkills(usuarioId).then((skills) => skills.ids),
   ]);
 
   return vacante

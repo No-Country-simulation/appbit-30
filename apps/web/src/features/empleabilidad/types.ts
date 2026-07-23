@@ -13,6 +13,7 @@ export interface VacanteSkill {
 
 export interface VacanteItem {
   id: string;
+  source: 'local' | 'b2b';
   titulo: string;
   empresa: string;
   empresaDescripcion: string | null;
