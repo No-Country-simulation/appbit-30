@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { Dialog, DialogContent } from '@/src/components/ui/dialog';
 import { SkillCompatibilityList } from './SkillCompatibilityList';
@@ -16,7 +16,9 @@ interface Props {
   onPostular: (data: {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
-  }) => void;
+  }) => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 export function JobDetailModal({
@@ -24,15 +26,27 @@ export function JobDetailModal({
   onOpenChange,
   vacante,
   onPostular,
+  isSubmitting,
+  submitError,
 }: Props) {
   const t = useTranslations('Empleabilidad');
+  const format = useFormatter();
+  const publicationDate = format.dateTime(
+    new Date(vacante.fechaPublicacion),
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    },
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='safe-modal-content w-[min(calc(100vw-1rem),44rem)] p-0'>
         <div className='flex max-h-[90dvh] min-w-0 flex-col overflow-hidden'>
           <div className='min-w-0 bg-gradient-to-r from-[#1a1a3e] to-[#2d1b69] px-4 py-5 text-white sm:px-6'>
-            <div className='flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+            <div className='flex min-w-0 flex-col gap-3'>
               <div className='flex min-w-0 items-start gap-4'>
                 <div className='flex size-14 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl font-bold backdrop-blur-sm sm:size-16'>
                   {vacante.logoUrl ? (
@@ -51,7 +65,7 @@ export function JobDetailModal({
                     {t('quienOfrece')}
                   </p>
 
-                  <h2 className='break-words text-xl font-bold leading-tight sm:text-2xl'>
+                  <h2 className='break-words pr-6 text-xl font-bold leading-tight sm:text-2xl'>
                     {vacante.empresa}
                   </h2>
 
@@ -64,10 +78,10 @@ export function JobDetailModal({
               </div>
 
               {vacante.fechaPublicacion && (
-                <div className='flex shrink-0 items-center gap-1.5 text-xs text-white/70'>
+                <div className='flex min-w-0 items-center gap-1.5 pl-[4.5rem] text-xs text-white/70 sm:pl-20'>
                   <Calendar className='size-3.5 shrink-0' />
                   <span className='break-words'>
-                    {t('publicado', { fecha: vacante.fechaPublicacion })}
+                    {t('publicado', { fecha: publicationDate })}
                   </span>
                 </div>
               )}
@@ -87,7 +101,9 @@ export function JobDetailModal({
 
                   <span className='inline-flex max-w-full items-center rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold leading-snug text-green-700'>
                     <span className='min-w-0 break-words'>
-                      {vacante.matchPorcentaje}% {t('match')}
+                      {vacante.matchPorcentaje === null
+                        ? t('matchNoDisponible')
+                        : `${vacante.matchPorcentaje}% ${t('match')}`}
                     </span>
                   </span>
                 </div>
@@ -165,7 +181,11 @@ export function JobDetailModal({
                   {t('postulateAhora')}
                 </h4>
 
-                <PostulationForm onSubmit={onPostular} />
+                <PostulationForm
+                  onSubmit={onPostular}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                />
               </section>
             </div>
           </div>
