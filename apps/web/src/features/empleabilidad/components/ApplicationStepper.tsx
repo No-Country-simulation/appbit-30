@@ -3,18 +3,16 @@
 import { useTranslations } from 'next-intl';
 import type { PostulacionEstado } from '../types';
 
-const STEPS = ['Enviada', 'Vista', 'En_revision'] as const;
-
 const STEP_TRANSLATION_KEYS: Record<string, string> = {
   Enviada: 'estadoEnviada',
   Vista: 'estadoVista',
-  En_revision: 'estadoEnRevision',
+  En_proceso: 'estadoEnRevision',
 };
 
 function getStepIndex(estado: PostulacionEstado): number {
   if (estado === 'Enviada') return 0;
   if (estado === 'Vista') return 1;
-  if (estado === 'En_revision') return 2;
+  if (estado === 'En_proceso') return 2;
   return 3;
 }
 
@@ -28,7 +26,6 @@ export function ApplicationStepper({ estadoActual }: Props) {
   const currentIndex = getStepIndex(estadoActual);
   const isRejected = estadoActual === 'Rechazada';
   const isAccepted = estadoActual === 'Aceptada';
-  const isClosed = estadoActual === 'Cerrado';
 
   const items = [
     {
@@ -44,8 +41,8 @@ export function ApplicationStepper({ estadoActual }: Props) {
       symbol: '2',
     },
     {
-      id: 'En_revision',
-      label: t(STEP_TRANSLATION_KEYS.En_revision),
+      id: 'En_proceso',
+      label: t(STEP_TRANSLATION_KEYS.En_proceso),
       state: getVisualState(2, currentIndex, estadoActual),
       symbol: '3',
     },
@@ -55,9 +52,7 @@ export function ApplicationStepper({ estadoActual }: Props) {
         ? t('noSeleccionado')
         : isAccepted
           ? t('estadoAceptada')
-          : isClosed
-            ? t('estadoCerrado')
-            : t('decision'),
+          : t('decision'),
       state: getDecisionState(estadoActual),
       symbol: isAccepted ? '✓' : isRejected ? '✕' : '?',
     },
@@ -115,7 +110,7 @@ function getVisualState(
   currentIndex: number,
   estado: PostulacionEstado,
 ): VisualState {
-  if (estado === 'Rechazada' || estado === 'Aceptada' || estado === 'Cerrado') {
+  if (estado === 'Rechazada' || estado === 'Aceptada') {
     return 'completed';
   }
 
@@ -128,7 +123,6 @@ function getVisualState(
 function getDecisionState(estado: PostulacionEstado): VisualState {
   if (estado === 'Aceptada') return 'accepted';
   if (estado === 'Rechazada') return 'rejected';
-  if (estado === 'Cerrado') return 'closed';
 
   return 'pending';
 }
@@ -138,7 +132,7 @@ function isConnectorActive(
   currentIndex: number,
   estado: PostulacionEstado,
 ) {
-  if (estado === 'Aceptada' || estado === 'Rechazada' || estado === 'Cerrado') {
+  if (estado === 'Aceptada' || estado === 'Rechazada') {
     return true;
   }
 

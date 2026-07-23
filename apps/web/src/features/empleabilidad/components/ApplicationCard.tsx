@@ -32,10 +32,9 @@ const ESTADO_CONFIG: Record<
 > = {
   Enviada: { label: 'estadoEnviada', variant: 'primary' },
   Vista: { label: 'estadoVista', variant: 'primary' },
-  En_revision: { label: 'estadoEnRevision', variant: 'warning' },
+  En_proceso: { label: 'estadoEnRevision', variant: 'warning' },
   Rechazada: { label: 'noSeleccionado', variant: 'danger' },
   Aceptada: { label: 'estadoAceptada', variant: 'success' },
-  Cerrado: { label: 'estadoCerrado', variant: 'warning' },
 };
 
 export function ApplicationCard({
@@ -52,7 +51,7 @@ export function ApplicationCard({
 }: Props) {
   const t = useTranslations('Empleabilidad');
   const config = ESTADO_CONFIG[estado];
-  const isActive = !['Rechazada', 'Cerrado'].includes(estado);
+  const isActive = estado !== 'Rechazada';
 
   return (
     <AppCard className='min-w-0 space-y-4 overflow-hidden'>
