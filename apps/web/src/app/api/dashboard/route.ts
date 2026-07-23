@@ -250,6 +250,9 @@ const dashboardUsuarioSelect = {
   avatar_url: true,
   confianza: true,
   home_cluster: true,
+  pais: true,
+  provincia_estado: true,
+  ciudad: true,
   whatsapp_codigo: true,
   whatsapp_numero: true,
   onboarding_status: true,
@@ -597,7 +600,7 @@ export async function GET(request: Request) {
 
     const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
 
-    const ubicacionCompleted = Boolean(usuario.home_cluster);
+    const ubicacionCompleted = Boolean(usuario.pais && usuario.ciudad);
 
     const whatsappCompleted = Boolean(
       usuario.whatsapp_codigo && usuario.whatsapp_numero,
@@ -605,10 +608,9 @@ export async function GET(request: Request) {
 
     let perfilCompletado = 0;
 
-    if (onboardingCompleted) perfilCompletado += 50;
-    if (usuario.avatar_url) perfilCompletado += 10;
-    if (ubicacionCompleted) perfilCompletado += 10;
-    if (whatsappCompleted) perfilCompletado += 10;
+    if (onboardingCompleted) perfilCompletado += 60;
+    if (usuario.avatar_url) perfilCompletado += 20;
+    if (ubicacionCompleted) perfilCompletado += 20;
 
     const totalUserSkills = userSkills.length;
 
@@ -662,10 +664,8 @@ export async function GET(request: Request) {
       match_perfil: matchPerfil,
       perfil_breakdown: {
         onboarding: onboardingCompleted,
-        movilidad: false,
         avatar: !!usuario.avatar_url,
         ubicacion: ubicacionCompleted,
-        whatsapp: whatsappCompleted,
       },
       usuario: {
         nombre_completo: usuario.nombre_completo,
