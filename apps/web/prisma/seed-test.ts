@@ -5,9 +5,11 @@ import {
   AreaInteresEnum,
   EstadoHabilidadEnum,
   IdiomaAppEnum,
+  OnboardingStatusEnum,
   PrioridadPlanEnum,
   type Prisma,
 } from '../src/server/generated/prisma';
+import { MARKET_SKILLS_BY_AREA } from '../src/features/onboarding/data/market-skills';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -30,6 +32,11 @@ const prisma = new PrismaClient({ adapter });
 
 const TEST_USER_ID = '003f7b4f-364b-4fa0-b921-2452393769d6';
 const TEST_ORIENTACION_ID = '00000000-0000-4000-8000-000000000001';
+const DEMO_DATA_SKILLS = [
+  MARKET_SKILLS_BY_AREA.Data_Analytics.hardSkills.Junior[0].value,
+  MARKET_SKILLS_BY_AREA.Data_Analytics.hardSkills.Junior[2].value,
+  MARKET_SKILLS_BY_AREA.Data_Analytics.hardSkills.Junior[3].value,
+] as const;
 
 async function main() {
   console.log('🌱 Poblando datos de prueba para dashboard...');
@@ -138,6 +145,11 @@ async function main() {
       categoria: 'Metodologías',
       area_principal: AreaInteresEnum.Product_Management,
     },
+    ...DEMO_DATA_SKILLS.map((nombre) => ({
+      nombre,
+      categoria: 'Data & Analytics',
+      area_principal: AreaInteresEnum.Data_Analytics,
+    })),
   ];
 
   const { count: skillsCreadas } = await prisma.habilidadesMercado.createMany({
@@ -152,6 +164,35 @@ async function main() {
   const habilidadesMap = new Map(
     todasHabilidades.map((h) => [h.nombre, h.habilidad_id]),
   );
+
+  const { count: demoUsersUpdated } = await prisma.usuarios.updateMany({
+    where: { usuario_id: TEST_USER_ID },
+    data: {
+      onboarding_status: OnboardingStatusEnum.COMPLETED,
+      avatar_url: '/demo-avatar.svg',
+      pais: 'Argentina',
+      ciudad: 'Buenos Aires',
+      idioma_app: IdiomaAppEnum.es,
+    },
+  });
+
+  if (demoUsersUpdated === 0) {
+    throw new Error(`No existe el usuario demo ${TEST_USER_ID}.`);
+  }
+
+  await prisma.usuarioAreasInteres.upsert({
+    where: {
+      usuario_id_area: {
+        usuario_id: TEST_USER_ID,
+        area: AreaInteresEnum.Data_Analytics,
+      },
+    },
+    update: {},
+    create: {
+      usuario_id: TEST_USER_ID,
+      area: AreaInteresEnum.Data_Analytics,
+    },
+  });
 
   // --- 2. ORIENTACIONES ---
   console.log('📝 Insertando orientación...');
@@ -275,22 +316,42 @@ async function main() {
     {
       nombre: 'JavaScript',
       estado: EstadoHabilidadEnum.Adquirida,
+      progresoPorcentaje: 100,
     },
     {
       nombre: 'Python',
       estado: EstadoHabilidadEnum.En_progreso,
+      progresoPorcentaje: 50,
     },
     {
       nombre: 'SQL',
       estado: EstadoHabilidadEnum.Faltante,
+      progresoPorcentaje: 0,
     },
     {
       nombre: 'Power BI',
       estado: EstadoHabilidadEnum.Faltante,
+      progresoPorcentaje: 0,
     },
     {
       nombre: 'Machine Learning',
       estado: EstadoHabilidadEnum.En_progreso,
+      progresoPorcentaje: 50,
+    },
+    {
+      nombre: DEMO_DATA_SKILLS[0],
+      estado: EstadoHabilidadEnum.Adquirida,
+      progresoPorcentaje: 100,
+    },
+    {
+      nombre: DEMO_DATA_SKILLS[1],
+      estado: EstadoHabilidadEnum.Adquirida,
+      progresoPorcentaje: 100,
+    },
+    {
+      nombre: DEMO_DATA_SKILLS[2],
+      estado: EstadoHabilidadEnum.Faltante,
+      progresoPorcentaje: 0,
     },
   ];
 
@@ -309,9 +370,11 @@ async function main() {
           usuario_id: TEST_USER_ID,
           habilidad_id: habilidadId,
           estado: us.estado,
+          progreso_porcentaje: us.progresoPorcentaje,
         },
         update: {
           estado: us.estado,
+          progreso_porcentaje: us.progresoPorcentaje,
         },
       });
     }
@@ -337,9 +400,11 @@ async function main() {
         usuario_id: TEST_USER_ID,
         habilidad_id: powerBi.habilidad_id,
         estado: EstadoHabilidadEnum.Faltante,
+        progreso_porcentaje: 0,
       },
       update: {
         estado: EstadoHabilidadEnum.Faltante,
+        progreso_porcentaje: 0,
       },
     });
   }

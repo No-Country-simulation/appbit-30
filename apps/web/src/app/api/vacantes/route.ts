@@ -9,6 +9,7 @@ import type {
   AreaInteresEnum,
   ModalidadVacanteEnum,
 } from '@/src/server/generated/prisma';
+import type { EmployabilityLocale } from '@/src/features/empleabilidad/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const area = params.get('area');
     const modalidad = params.get('modalidad');
+    const rawLocale = params.get('locale');
     const search = params.get('search')?.trim();
     const page = positiveInteger(params.get('page'), 1);
     const limit = positiveInteger(params.get('limit'), 20);
@@ -38,6 +40,7 @@ export async function GET(request: Request) {
       (area && !AREA_VALUES.includes(area as AreaInteresEnum)) ||
       (modalidad &&
         !MODALIDAD_VALUES.includes(modalidad as ModalidadVacanteEnum)) ||
+      (rawLocale !== null && rawLocale !== 'es' && rawLocale !== 'pt') ||
       page === null ||
       limit === null ||
       limit > MAX_LIMIT ||
@@ -52,6 +55,7 @@ export async function GET(request: Request) {
     const result = await listVacantes(auth.usuarioId, {
       area: area as AreaInteresEnum | undefined,
       modalidad: modalidad as ModalidadVacanteEnum | undefined,
+      locale: (rawLocale ?? 'es') as EmployabilityLocale,
       search,
       page,
       limit,

@@ -1,5 +1,7 @@
 import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
 
+export type EmployabilityLocale = 'es' | 'pt';
+
 export interface VacanteSkill {
   nombre: string;
   laTienes: boolean;
@@ -8,6 +10,7 @@ export interface VacanteSkill {
 
 export interface VacanteItem {
   id: string;
+  source: 'local' | 'b2b';
   titulo: string;
   empresa: string;
   empresaDescripcion: string | null;

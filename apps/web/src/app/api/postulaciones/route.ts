@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   calculateVacanteMatch,
 } from '@/src/features/empleabilidad/server/employability.service';
+import { isB2BVacancyId } from '@/src/features/empleabilidad/server/match-policy';
 import { listPostulaciones } from '@/src/features/empleabilidad/server/postulaciones.service';
 import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 import { dbClient } from '@/src/server/clients/db.client';
@@ -39,6 +40,18 @@ export async function POST(request: Request) {
       rawBody = await request.json();
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 422 });
+    }
+
+    if (
+      rawBody &&
+      typeof rawBody === 'object' &&
+      'vacante_id' in rawBody &&
+      isB2BVacancyId(rawBody.vacante_id)
+    ) {
+      return NextResponse.json(
+        { error: 'External B2B vacancies do not support applications' },
+        { status: 422 },
+      );
     }
 
     const parsed = createPostulacionSchema.safeParse(rawBody);

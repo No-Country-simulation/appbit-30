@@ -31,15 +31,14 @@ export function JobDetailModal({
 }: Props) {
   const t = useTranslations('Empleabilidad');
   const format = useFormatter();
-  const publicationDate = format.dateTime(
-    new Date(vacante.fechaPublicacion),
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  );
+  const publicationDate = vacante.fechaPublicacion
+    ? format.dateTime(new Date(vacante.fechaPublicacion), {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +76,7 @@ export function JobDetailModal({
                 </div>
               </div>
 
-              {vacante.fechaPublicacion && (
+              {publicationDate && (
                 <div className='flex min-w-0 items-center gap-1.5 pl-[4.5rem] text-xs text-white/70 sm:pl-20'>
                   <Calendar className='size-3.5 shrink-0' />
                   <span className='break-words'>
@@ -176,17 +175,24 @@ export function JobDetailModal({
                 <SkillCompatibilityList skills={vacante.skills} />
               </section>
 
-              <section className='min-w-0 border-t border-[var(--color-border)] pt-5'>
-                <h4 className='mb-4 break-words text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
-                  {t('postulateAhora')}
-                </h4>
+              {vacante.source === 'local' ? (
+                <section className='min-w-0 border-t border-[var(--color-border)] pt-5'>
+                  <h4 className='mb-4 break-words text-sm font-bold uppercase tracking-wide text-[var(--color-text)]'>
+                    {t('postulateAhora')}
+                  </h4>
 
-                <PostulationForm
-                  onSubmit={onPostular}
-                  isSubmitting={isSubmitting}
-                  submitError={submitError}
-                />
-              </section>
+                  <PostulationForm
+                    onSubmit={onPostular}
+                    isSubmitting={isSubmitting}
+                    submitError={submitError}
+                  />
+                </section>
+              ) : (
+                <section className='min-w-0 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-relaxed text-blue-800'>
+                  <p className='font-semibold'>{t('oportunidadB2B')}</p>
+                  <p className='mt-1'>{t('postulacionB2BInformativa')}</p>
+                </section>
+              )}
             </div>
           </div>
         </div>

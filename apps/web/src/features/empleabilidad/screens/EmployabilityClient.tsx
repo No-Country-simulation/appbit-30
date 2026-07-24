@@ -36,6 +36,13 @@ export default function EmployabilityClient({ data }: Props) {
   );
 
   function handleAplicar(vacante: VacanteItem) {
+    if (vacante.source === 'b2b') {
+      setSelectedVacante(vacante);
+      setSubmitError(null);
+      setModalOpen(true);
+      return;
+    }
+
     const alreadyApplied = appliedVacanteIds.has(vacante.id);
 
     if (alreadyApplied) {
@@ -52,7 +59,13 @@ export default function EmployabilityClient({ data }: Props) {
     mensaje_motivacion: string;
     usar_cv_guardado: boolean;
   }) {
-    if (!selectedVacante || isSubmitting) return;
+    if (
+      !selectedVacante ||
+      selectedVacante.source === 'b2b' ||
+      isSubmitting
+    ) {
+      return;
+    }
 
     const alreadyApplied = postulaciones.some(
       (item) => item.vacanteId === selectedVacante.id,
@@ -169,6 +182,7 @@ export default function EmployabilityClient({ data }: Props) {
                 {data.vacantes.map((vacante) => (
                   <JobCard
                     key={vacante.id}
+                    source={vacante.source}
                     titulo={vacante.titulo}
                     empresa={vacante.empresa}
                     logoUrl={vacante.logoUrl}
