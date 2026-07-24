@@ -30,8 +30,9 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-const TEST_USER_ID = '003f7b4f-364b-4fa0-b921-2452393769d6';
 const TEST_ORIENTACION_ID = '00000000-0000-4000-8000-000000000001';
+const DEMO_HOME_CLUSTER = 'CBD_BEIRAMAR';
+const DEMO_JOB_CLUSTER = 'CENTRO_HISTORICO';
 const DEMO_DATA_SKILLS = [
   MARKET_SKILLS_BY_AREA.Data_Analytics.hardSkills.Junior[0].value,
   MARKET_SKILLS_BY_AREA.Data_Analytics.hardSkills.Junior[2].value,
@@ -40,6 +41,27 @@ const DEMO_DATA_SKILLS = [
 
 async function main() {
   console.log('🌱 Poblando datos de prueba para dashboard...');
+
+  const demoEmail = process.env.DATASET_DEMO_EMAIL?.trim();
+
+  if (!demoEmail) {
+    throw new Error(
+      'DATASET_DEMO_EMAIL es requerida para preparar la cuenta demo.',
+    );
+  }
+
+  const demoUser = await prisma.usuarios.findUnique({
+    where: { email: demoEmail },
+    select: { usuario_id: true },
+  });
+
+  if (!demoUser) {
+    throw new Error(
+      `No existe un usuario de AppBiT con el correo ${demoEmail}.`,
+    );
+  }
+
+  const testUserId = demoUser.usuario_id;
 
   // --- 1. HABILIDADES DE MERCADO ---
   console.log('📝 Insertando habilidades de mercado...');
@@ -166,30 +188,82 @@ async function main() {
   );
 
   const { count: demoUsersUpdated } = await prisma.usuarios.updateMany({
-    where: { usuario_id: TEST_USER_ID },
+    where: { usuario_id: testUserId },
     data: {
       onboarding_status: OnboardingStatusEnum.COMPLETED,
       avatar_url: '/demo-avatar.svg',
-      pais: 'Argentina',
-      ciudad: 'Buenos Aires',
+      pais: 'Brasil',
+      provincia_estado: 'Santa Catarina',
+      ciudad: 'Florianópolis',
+      home_cluster: DEMO_HOME_CLUSTER,
       idioma_app: IdiomaAppEnum.es,
     },
   });
 
   if (demoUsersUpdated === 0) {
-    throw new Error(`No existe el usuario demo ${TEST_USER_ID}.`);
+    throw new Error(`No existe el usuario demo ${testUserId}.`);
   }
+
+  const demoMobilityProfile = await prisma.perfilMovilidad.findFirst({
+    where: {
+      home_cluster: DEMO_HOME_CLUSTER,
+      OR: [{ usuario_id: testUserId }, { usuario_id: null }],
+    },
+    select: { id: true, assinante_hash: true },
+    orderBy: { assinante_hash: 'asc' },
+  });
+
+  if (!demoMobilityProfile) {
+    throw new Error(
+      `No existe un perfil de movilidad disponible en ${DEMO_HOME_CLUSTER}.`,
+    );
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.perfilMovilidad.updateMany({
+      where: {
+        usuario_id: testUserId,
+        id: { not: demoMobilityProfile.id },
+      },
+      data: { usuario_id: null },
+    });
+    await transaction.perfilMovilidad.update({
+      where: { id: demoMobilityProfile.id },
+      data: { usuario_id: testUserId },
+    });
+  });
+
+  console.log(
+    `  → Perfil real ${demoMobilityProfile.assinante_hash} vinculado en ${DEMO_HOME_CLUSTER}`,
+  );
+
+  const demoCompany = await prisma.empresas.update({
+    where: { nombre: 'DataMind' },
+    data: { cluster: DEMO_JOB_CLUSTER },
+    select: { empresa_id: true },
+  });
+  await prisma.vacantes.updateMany({
+    where: {
+      empresa_id: demoCompany.empresa_id,
+      area: AreaInteresEnum.Data_Analytics,
+    },
+    data: {
+      pais: 'Brasil',
+      ciudad: 'Florianópolis',
+      detalle_modalidad: 'Oficina en Centro Histórico',
+    },
+  });
 
   await prisma.usuarioAreasInteres.upsert({
     where: {
       usuario_id_area: {
-        usuario_id: TEST_USER_ID,
+        usuario_id: testUserId,
         area: AreaInteresEnum.Data_Analytics,
       },
     },
     update: {},
     create: {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
       area: AreaInteresEnum.Data_Analytics,
     },
   });
@@ -198,7 +272,7 @@ async function main() {
   console.log('📝 Insertando orientación...');
 
   const orientacionData = {
-    usuario_id: TEST_USER_ID,
+    usuario_id: testUserId,
     gap_porcentual: 40,
     gap_items: [
       {
@@ -266,28 +340,28 @@ async function main() {
 
   const planData: Prisma.PlanAccionUncheckedCreateInput[] = [
     {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
       titulo: 'Aprender Python Avanzado',
       prioridad: PrioridadPlanEnum.Alta_prioridad,
       orden: 1,
       accion_label: 'Iniciar curso',
     },
     {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
       titulo: 'SQL para Data Analytics',
       prioridad: PrioridadPlanEnum.Alta_prioridad,
       orden: 2,
       accion_label: 'Iniciar Módulo',
     },
     {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
       titulo: 'Power BI / Dashboards',
       prioridad: PrioridadPlanEnum.Media_prioridad,
       orden: 3,
       accion_label: 'Ver temario',
     },
     {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
       titulo: 'Estadística Aplicada',
       prioridad: PrioridadPlanEnum.Baja_prioridad,
       orden: 4,
@@ -297,7 +371,7 @@ async function main() {
 
   await prisma.planAccion.deleteMany({
     where: {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
     },
   });
 
@@ -320,8 +394,8 @@ async function main() {
     },
     {
       nombre: 'Python',
-      estado: EstadoHabilidadEnum.En_progreso,
-      progresoPorcentaje: 50,
+      estado: EstadoHabilidadEnum.Adquirida,
+      progresoPorcentaje: 100,
     },
     {
       nombre: 'SQL',
@@ -362,12 +436,12 @@ async function main() {
       await prisma.usuarioHabilidades.upsert({
         where: {
           usuario_id_habilidad_id: {
-            usuario_id: TEST_USER_ID,
+            usuario_id: testUserId,
             habilidad_id: habilidadId,
           },
         },
         create: {
-          usuario_id: TEST_USER_ID,
+          usuario_id: testUserId,
           habilidad_id: habilidadId,
           estado: us.estado,
           progreso_porcentaje: us.progresoPorcentaje,
@@ -392,12 +466,12 @@ async function main() {
     await prisma.usuarioHabilidades.upsert({
       where: {
         usuario_id_habilidad_id: {
-          usuario_id: TEST_USER_ID,
+          usuario_id: testUserId,
           habilidad_id: powerBi.habilidad_id,
         },
       },
       create: {
-        usuario_id: TEST_USER_ID,
+        usuario_id: testUserId,
         habilidad_id: powerBi.habilidad_id,
         estado: EstadoHabilidadEnum.Faltante,
         progreso_porcentaje: 0,
@@ -411,7 +485,7 @@ async function main() {
 
   const totalSkills = await prisma.usuarioHabilidades.count({
     where: {
-      usuario_id: TEST_USER_ID,
+      usuario_id: testUserId,
     },
   });
 
