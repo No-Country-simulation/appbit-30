@@ -1,7 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Download, ExternalLink, Play } from 'lucide-react';
+import {
+  CheckCircle,
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  Play,
+} from 'lucide-react';
 import { AppButton } from '@/src/components/app/AppButton';
 import { ProgressBar } from '@/src/components/app/ProgressBar';
 import { StreakBadge } from '@/src/components/app/StreakBadge';
@@ -16,6 +22,9 @@ interface Props {
   onGuardarOffline: () => void;
   showProgress?: boolean;
   primaryIcon?: 'play' | 'external';
+  onMarcarCompletado?: () => void;
+  isCompleting?: boolean;
+  isCompleted?: boolean;
 }
 
 export function CurrentModuleCard({
@@ -28,6 +37,9 @@ export function CurrentModuleCard({
   onGuardarOffline,
   primaryIcon,
   showProgress,
+  onMarcarCompletado,
+  isCompleting = false,
+  isCompleted = false,
 }: Props) {
   const t = useTranslations('Formacion');
 
@@ -75,6 +87,22 @@ export function CurrentModuleCard({
           <PrimaryIcon className='size-4 shrink-0' />
           {primaryLabel ?? t('continuar')}
         </AppButton>
+
+        {onMarcarCompletado && (
+          <AppButton
+            variant='outline'
+            className='inline-flex w-full items-center gap-2 border-white/30 text-white hover:bg-white/10 sm:w-auto'
+            onClick={onMarcarCompletado}
+            disabled={isCompleting || isCompleted}
+          >
+            {isCompleting ? (
+              <LoaderCircle className='size-4 shrink-0 animate-spin' />
+            ) : (
+              <CheckCircle className='size-4 shrink-0' />
+            )}
+            {isCompleted ? t('cursoCompletado') : t('marcarCursoCompletado')}
+          </AppButton>
+        )}
 
         {canSaveOffline && (
           <AppButton

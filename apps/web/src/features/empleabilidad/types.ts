@@ -1,14 +1,9 @@
-export interface PerfilBreakdown {
-  onboarding: boolean;
-  movilidad: boolean;
-  avatar: boolean;
-  ubicacion: boolean;
-  whatsapp: boolean;
-}
+import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
 
 export interface VacanteSkill {
   nombre: string;
   laTienes: boolean;
+  progresoPorcentaje: number;
 }
 
 export interface VacanteItem {

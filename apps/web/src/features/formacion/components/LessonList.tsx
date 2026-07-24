@@ -7,6 +7,8 @@ import { LessonItem } from './LessonItem';
 import type { ReactNode } from 'react';
 
 interface Lesson {
+  id: string;
+  canComplete: boolean;
   numero: number;
   titulo: string;
   duracion: string;
@@ -16,11 +18,20 @@ interface Lesson {
 interface Props {
   lecciones: Lesson[];
   onSelectLeccion?: (leccion: Lesson) => void;
+  onCompleteLeccion?: (leccion: Lesson) => void;
+  completingLessonId?: string | null;
   recursos?: ReactNode;
   notas?: ReactNode;
 }
 
-export function LessonList({ lecciones, onSelectLeccion, recursos, notas }: Props) {
+export function LessonList({
+  lecciones,
+  onSelectLeccion,
+  onCompleteLeccion,
+  completingLessonId,
+  recursos,
+  notas,
+}: Props) {
   const t = useTranslations('Formacion');
   const [tab, setTab] = useState('lecciones');
 
@@ -41,6 +52,8 @@ export function LessonList({ lecciones, onSelectLeccion, recursos, notas }: Prop
               key={leccion.numero}
               {...leccion}
               onClick={() => onSelectLeccion?.(leccion)}
+              onComplete={() => onCompleteLeccion?.(leccion)}
+              isCompleting={completingLessonId === leccion.id}
             />
           ))}
         </div>

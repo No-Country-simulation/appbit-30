@@ -11,14 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/src/components/ui/dialog';
-
-interface PerfilBreakdown {
-  onboarding: boolean;
-  movilidad: boolean;
-  avatar: boolean;
-  ubicacion: boolean;
-  whatsapp: boolean;
-}
+import {
+  PROFILE_COMPLETION_RULES,
+  type PerfilBreakdown,
+} from '@/src/features/profile/profile-completion';
 
 interface Props {
   onMenuClick?: () => void;
@@ -41,24 +37,17 @@ export function AppHeader({
     ? Math.max(0, Math.min(100, profilePercent))
     : 0;
 
+  const perfilBreakdownLabels = {
+    onboarding: t('perfilBreakdownOnboarding'),
+    avatar: t('perfilBreakdownAvatar'),
+    ubicacion: t('perfilBreakdownUbicacion'),
+  } satisfies Record<keyof PerfilBreakdown, string>;
+
   const items = perfilBreakdown
-    ? [
-        {
-          key: 'onboarding' as const,
-          label: t('perfilBreakdownOnboarding'),
-          points: 60,
-        },
-        {
-          key: 'avatar' as const,
-          label: t('perfilBreakdownAvatar'),
-          points: 20,
-        },
-        {
-          key: 'ubicacion' as const,
-          label: t('perfilBreakdownUbicacion'),
-          points: 20,
-        },
-      ]
+    ? PROFILE_COMPLETION_RULES.map((rule) => ({
+        ...rule,
+        label: perfilBreakdownLabels[rule.key],
+      }))
     : [];
 
   return (

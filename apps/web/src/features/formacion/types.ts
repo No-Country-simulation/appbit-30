@@ -1,3 +1,6 @@
+import type { ActionPlanPriority } from '@appbit/shared-schemas';
+import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
+
 export interface FormacionDownloadItem {
   titulo: string;
   tamanioMb: number;
@@ -18,10 +21,21 @@ export interface FormacionCourseCard {
   durationDays: number | null;
   skillName: string | null;
   progress: number;
+  isCompleted: boolean;
   planTitle?: string | null;
   actionLabel?: string | null;
   priority?: string | null;
   hasInternalContent: boolean;
+}
+
+export interface FormacionActionPlanItem {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: ActionPlanPriority;
+  completed: boolean;
+  actionLabel: string | null;
+  courseId: string | null;
 }
 
 export interface FormacionData {
@@ -29,17 +43,12 @@ export interface FormacionData {
     name?: string;
     avatarUrl?: string | null;
     profilePercent?: number;
-    perfilBreakdown?: {
-      onboarding: boolean;
-      movilidad: boolean;
-      avatar: boolean;
-      ubicacion: boolean;
-      whatsapp: boolean;
-    };
+    perfilBreakdown?: PerfilBreakdown;
   };
   rutaLabel: string;
   showInclusionBanner: boolean;
   currentCourse: FormacionCourseCard | null;
+  actionPlan: FormacionActionPlanItem[];
   recommendedCourses: FormacionCourseCard[];
   paidCourses: FormacionCourseCard[];
   offlineItems: FormacionDownloadItem[];
@@ -53,6 +62,8 @@ export type LessonStatus =
   | 'bloqueada';
 
 export interface ModulePlayerLesson {
+  id: string;
+  canComplete: boolean;
   numero: number;
   titulo: string;
   duracion: string;

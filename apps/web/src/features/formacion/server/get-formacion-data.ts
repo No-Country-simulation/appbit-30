@@ -5,6 +5,7 @@ import type {
   FormacionData,
   FormacionDownloadItem,
 } from '../types';
+import { buildProfileCompletion } from '@/src/features/profile/profile-completion';
 
 const cursoSelect = {
   curso_id: true,
@@ -148,6 +149,10 @@ function toCourseCard(params: {
     modulo.lecciones.some((leccion) => Boolean(leccion.video_url)),
   );
 
+  const progress = clampPercent(
+    progressByCourseId.get(curso.curso_id) ?? 0,
+  );
+
   return {
     id: curso.curso_id,
     title: curso.titulo,
@@ -160,7 +165,8 @@ function toCourseCard(params: {
     externalUrl: curso.url_externa,
     durationDays: curso.duracion_estimada_dias,
     skillName: curso.habilidad?.nombre ?? null,
-    progress: clampPercent(progressByCourseId.get(curso.curso_id) ?? 0),
+    progress,
+    isCompleted: progress === 100,
     planTitle,
     actionLabel,
     priority,
@@ -206,6 +212,8 @@ export async function getFormacionData(params: {
       nombre_completo: true,
       avatar_url: true,
       onboarding_status: true,
+      pais: true,
+      ciudad: true,
       home_cluster: true,
       whatsapp_codigo: true,
       whatsapp_numero: true,
@@ -241,6 +249,7 @@ export async function getFormacionData(params: {
         select: {
           plan_item_id: true,
           titulo: true,
+          descripcion: true,
           prioridad: true,
           completado: true,
           orden: true,
@@ -275,6 +284,7 @@ export async function getFormacionData(params: {
       rutaLabel: locale === 'pt' ? 'Rota inicial' : 'Ruta inicial',
       showInclusionBanner: false,
       currentCourse: null,
+      actionPlan: [],
       recommendedCourses: [],
       paidCourses: [],
       offlineItems: [],
@@ -339,6 +349,16 @@ export async function getFormacionData(params: {
     fallbackCourseCards[0] ??
     null;
 
+  const actionPlan = usuario.plan_accion.map((item) => ({
+    id: item.plan_item_id,
+    title: item.titulo,
+    description: item.descripcion,
+    priority: item.prioridad,
+    completed: item.completado,
+    actionLabel: item.accion_label,
+    courseId: item.curso?.curso_id ?? null,
+  }));
+
   const recommendedCourses = uniqueCourses([
     ...planCourses.filter((course) => course.id !== currentCourse?.id),
     ...fallbackCourseCards.filter(
@@ -364,36 +384,14 @@ export async function getFormacionData(params: {
 
   const rawTrayectoria = usuario.orientaciones[0]?.trayectoria_sugerida ?? [];
 
-  const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
-
-  const ubicacionCompleted = Boolean(
-    usuario.home_cluster || usuario.perfil_movilidad?.home_cluster,
-  );
-
-  const whatsappCompleted = Boolean(
-    usuario.whatsapp_codigo && usuario.whatsapp_numero,
-  );
-
-  let profilePercent = 0;
-
-  if (onboardingCompleted) profilePercent += 50;
-  if (usuario.perfil_movilidad) profilePercent += 20;
-  if (usuario.avatar_url) profilePercent += 10;
-  if (ubicacionCompleted) profilePercent += 10;
-  if (whatsappCompleted) profilePercent += 10;
+  const profileCompletion = buildProfileCompletion(usuario);
 
   return {
     user: {
       name: usuario.nombre_completo,
       avatarUrl: usuario.avatar_url,
-      profilePercent,
-      perfilBreakdown: {
-        onboarding: onboardingCompleted,
-        movilidad: Boolean(usuario.perfil_movilidad),
-        avatar: Boolean(usuario.avatar_url),
-        ubicacion: ubicacionCompleted,
-        whatsapp: whatsappCompleted,
-      },
+      profilePercent: profileCompletion.profilePercent,
+      perfilBreakdown: profileCompletion.perfilBreakdown,
     },
     rutaLabel: getRutaLabel({
       locale,
@@ -402,6 +400,7 @@ export async function getFormacionData(params: {
     }),
     showInclusionBanner,
     currentCourse,
+    actionPlan,
     recommendedCourses,
     paidCourses,
     offlineItems: toDownloadItems(

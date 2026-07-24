@@ -3,12 +3,22 @@
 import { useTranslations } from 'next-intl';
 import { AppButton } from '@/src/components/app/AppButton';
 import { AppCard } from '@/src/components/app/AppCard';
+import { MatchEvolutionChart } from './MatchEvolutionChart';
+
+interface HistorySummary {
+  initialMatch: number;
+  currentMatch: number;
+  variation: number;
+  series: { period: string; match: number }[];
+}
 
 interface Props {
   porcentaje?: number;
   puesto?: string;
   isLoading?: boolean;
   onVerDetalles?: () => void;
+  onVerHistorial?: () => void;
+  historySummary?: HistorySummary;
 }
 
 function CircularProgress({ value }: { value: number }) {
@@ -54,6 +64,8 @@ export function SkillsGapCard({
   puesto,
   isLoading = false,
   onVerDetalles,
+  onVerHistorial,
+  historySummary,
 }: Props) {
   const t = useTranslations('Dashboard');
 
@@ -82,12 +94,31 @@ export function SkillsGapCard({
             })}
           </p>
 
+          {historySummary && historySummary.series.length > 0 && (
+            <div className='w-full rounded-xl bg-[var(--color-body)] p-3 text-left'>
+              <MatchEvolutionChart series={historySummary.series} compact />
+              <p className='mt-3 text-xs font-semibold text-[var(--color-success)]'>
+                {t('historyVariationSinceStart', {
+                  variation: `${historySummary.variation > 0 ? '+' : ''}${historySummary.variation}`,
+                })}
+              </p>
+            </div>
+          )}
+
           <AppButton
             variant='outline'
             className='w-full'
             onClick={onVerDetalles}
           >
             {t('skillsGapButton')}
+          </AppButton>
+
+          <AppButton
+            variant='outline'
+            className='w-full'
+            onClick={onVerHistorial}
+          >
+            {t('viewProgressHistory')}
           </AppButton>
         </>
       ) : (
