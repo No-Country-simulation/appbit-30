@@ -1,5 +1,7 @@
 import type { PerfilBreakdown } from '@/src/features/profile/profile-completion';
 
+export type EmployabilityLocale = 'es' | 'pt';
+
 export interface VacanteSkill {
   nombre: string;
   laTienes: boolean;

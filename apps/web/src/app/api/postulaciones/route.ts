@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   calculateVacanteMatch,
 } from '@/src/features/empleabilidad/server/employability.service';
+import { isB2BVacancyId } from '@/src/features/empleabilidad/server/match-policy';
 import { listPostulaciones } from '@/src/features/empleabilidad/server/postulaciones.service';
 import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 import { dbClient } from '@/src/server/clients/db.client';
@@ -45,8 +46,7 @@ export async function POST(request: Request) {
       rawBody &&
       typeof rawBody === 'object' &&
       'vacante_id' in rawBody &&
-      typeof rawBody.vacante_id === 'string' &&
-      rawBody.vacante_id.startsWith('b2b:')
+      isB2BVacancyId(rawBody.vacante_id)
     ) {
       return NextResponse.json(
         { error: 'External B2B vacancies do not support applications' },

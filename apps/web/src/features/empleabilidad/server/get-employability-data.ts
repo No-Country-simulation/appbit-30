@@ -1,5 +1,8 @@
 import { dbClient } from '@/src/server/clients/db.client';
-import type { EmployabilityData } from '../types';
+import type {
+  EmployabilityData,
+  EmployabilityLocale,
+} from '../types';
 import { listVacantes } from './employability.service';
 import { listPostulaciones } from './postulaciones.service';
 import { buildProfileCompletion } from '@/src/features/profile/profile-completion';
@@ -9,6 +12,7 @@ export async function getEmployabilityData(params: {
   locale: string;
 }): Promise<EmployabilityData> {
   const { usuarioId } = params;
+  const locale: EmployabilityLocale = params.locale === 'pt' ? 'pt' : 'es';
 
   const [usuario, vacanciesResult, postulaciones] = await Promise.all([
     dbClient.usuarios.findUnique({
@@ -25,7 +29,7 @@ export async function getEmployabilityData(params: {
         perfil_movilidad: { select: { id: true, home_cluster: true } },
       },
     }),
-    listVacantes(usuarioId, { page: 1, limit: 100 }),
+    listVacantes(usuarioId, { locale, page: 1, limit: 100 }),
     listPostulaciones(usuarioId),
   ]);
 
