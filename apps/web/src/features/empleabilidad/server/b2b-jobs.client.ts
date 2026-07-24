@@ -8,6 +8,7 @@ import type {
   EmployabilityLocale,
   VacanteItem,
 } from '../types';
+import { createPendingMobility } from './mobility';
 
 const B2B_REQUEST_TIMEOUT_MS = 5_000;
 
@@ -19,6 +20,7 @@ export interface B2BJob {
   modality: string;
   area: AreaInteresValue;
   skills: string[];
+  destinationCluster?: string;
 }
 
 interface B2BJobFixture extends Omit<B2BJob, 'title'> {
@@ -87,10 +89,11 @@ export const MOCK_B2B_JOB_FIXTURES: readonly B2BJobFixture[] = [
       pt: 'Desenvolvedor Front-end Júnior',
     },
     company: 'Tech Inclusiva',
-    location: 'Buenos Aires',
+    location: 'Florianópolis, SC',
     modality: 'Hybrid',
     area: 'Desarrollo_Web',
     skills: juniorSkillValues('Desarrollo_Web'),
+    destinationCluster: 'CENTRO_HISTORICO',
   },
   {
     id: 'cyber-junior',
@@ -111,10 +114,11 @@ export const MOCK_B2B_JOB_FIXTURES: readonly B2BJobFixture[] = [
       pt: 'Analista de Marketing Digital Júnior',
     },
     company: 'Impulso Digital',
-    location: 'Montevideo',
+    location: 'São José, SC',
     modality: 'Hybrid',
     area: 'Marketing_Digital',
     skills: juniorSkillValues('Marketing_Digital'),
+    destinationCluster: 'SAO_JOSE_KOBRASOL',
   },
   {
     id: 'data-junior',
@@ -135,10 +139,11 @@ export const MOCK_B2B_JOB_FIXTURES: readonly B2BJobFixture[] = [
       pt: 'Designer UX/UI Júnior',
     },
     company: 'Diseño Abierto',
-    location: 'Córdoba',
+    location: 'Florianópolis, SC',
     modality: 'Hybrid',
     area: 'UX_UI_Design',
     skills: juniorSkillValues('UX_UI_Design'),
+    destinationCluster: 'UFSC',
   },
   {
     id: 'ai-junior',
@@ -159,10 +164,11 @@ export const MOCK_B2B_JOB_FIXTURES: readonly B2BJobFixture[] = [
       pt: 'Analista de Produto Júnior',
     },
     company: 'Producto Cercano',
-    location: 'São Paulo',
+    location: 'Palhoça, SC',
     modality: 'Hybrid',
     area: 'Product_Management',
     skills: juniorSkillValues('Product_Management'),
+    destinationCluster: 'PALHOCA_PEDRA_BRANCA',
   },
   {
     id: 'cloud-devops-junior',
@@ -194,6 +200,8 @@ function isB2BJob(value: unknown): value is B2BJob {
     isNonEmptyString(job.modality) &&
     typeof job.area === 'string' &&
     isAreaInteresValue(job.area) &&
+    (job.destinationCluster === undefined ||
+      isNonEmptyString(job.destinationCluster)) &&
     Array.isArray(job.skills) &&
     job.skills.length > 0 &&
     job.skills.every(isNonEmptyString)
@@ -248,6 +256,9 @@ export function mapB2BJob(
   userSkillProgress: ReadonlyMap<string, number>,
   locale: EmployabilityLocale = 'es',
 ): VacanteItem {
+  const normalizedModality = normalizeSkillName(job.modality);
+  const isRemote =
+    normalizedModality === 'remote' || normalizedModality === 'remoto';
   const skills = job.skills.map((skill) => {
     const progresoPorcentaje = Math.max(
       0,
@@ -280,6 +291,10 @@ export function mapB2BJob(
     modalidadDetallada: null,
     ubicacion: job.location.trim(),
     distancia: null,
+    movilidad: createPendingMobility({
+      isRemote,
+      destinationCluster: job.destinationCluster,
+    }),
     matchPorcentaje: calculateSkillsMatch(
       skills.map((skill) => ({
         progreso_porcentaje: skill.progresoPorcentaje,

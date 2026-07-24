@@ -785,6 +785,12 @@
     "verCandidatura": "Ver postulación",
     "oportunidadB2B": "Oportunidad B2B",
     "verOportunidad": "Ver oportunidad",
-    "postulacionB2BInformativa": "Esta oportunidad proviene de la plataforma B2B y por ahora es informativa. La postulación desde AppBiT no está habilitada."
+    "postulacionB2BInformativa": "Esta oportunidad proviene de la plataforma B2B y por ahora es informativa. La postulación desde AppBiT no está habilitada.",
+    "movilidadRemota": "Oportunidad remota recomendada",
+    "movilidadCompatible": "Compatible con tu movilidad · {distancia} km",
+    "movilidadModerada": "Distancia moderada · {distancia} km",
+    "movilidadDistante": "Distancia estimada · {distancia} km",
+    "movilidadZonaDestino": "Zona laboral: {destino}",
+    "movilidadFuenteDataset": "Estimación basada en tu zona habitual {origen} y en datos de movilidad de Florianópolis."
   }
 }

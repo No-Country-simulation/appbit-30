@@ -191,6 +191,7 @@ export default function EmployabilityClient({ data }: Props) {
                     matchPorcentaje={vacante.matchPorcentaje}
                     skills={vacante.skills.map((skill) => skill.nombre)}
                     distancia={vacante.distancia}
+                    movilidad={vacante.movilidad}
                     isApplied={appliedVacanteIds.has(vacante.id)}
                     onClick={() => handleAplicar(vacante)}
                     onAplicar={() => handleAplicar(vacante)}
