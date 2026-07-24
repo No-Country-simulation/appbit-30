@@ -1,15 +1,23 @@
 import { dbClient } from '@/src/server/clients/db.client';
 import type {
   AreaInteresEnum,
+  EstadoHabilidadEnum,
   ModalidadVacanteEnum,
   Prisma,
 } from '@/src/server/generated/prisma';
-import type { VacanteItem } from '../types';
+import {
+  calculateWeightedVacancyMatch,
+  clampPercent,
+} from '@/src/server/progress/skill-progress';
+import type {
+  EmployabilityLocale,
+  VacanteItem,
+} from '../types';
 import {
   listB2BJobs,
   normalizeSkillName,
 } from './b2b-jobs.client';
-import { calculateWeightedVacancyMatch } from '@/src/server/progress/skill-progress';
+import { meetsRecommendedMatch } from './match-policy';
 
 export const AREA_VALUES = [
   'Data_Analytics',
@@ -67,6 +75,7 @@ export interface VacanteFilters {
   area?: AreaInteresEnum;
   modalidad?: ModalidadVacanteEnum;
   search?: string;
+  locale?: EmployabilityLocale;
   page: number;
   limit: number;
 }
@@ -84,33 +93,43 @@ export function calculateMatch(
   );
 }
 
-async function getUserSkills(usuarioId: string) {
+function getSkillProgress(
+  estado: EstadoHabilidadEnum,
+  progresoPorcentaje: number,
+) {
+  if (estado === 'Adquirida') return 100;
+  if (estado === 'Faltante') return 0;
+  return clampPercent(progresoPorcentaje);
+}
+
+async function getUserSkillContext(usuarioId: string) {
   const skills = await dbClient.usuarioHabilidades.findMany({
-    where: {
-      usuario_id: usuarioId,
-      estado: { in: ['Adquirida', 'En_progreso'] },
-    },
+    where: { usuario_id: usuarioId },
     select: {
       habilidad_id: true,
+      estado: true,
+      progreso_porcentaje: true,
       habilidad: { select: { nombre: true } },
     },
   });
 
-  return {
-    ids: new Set(skills.map((item) => item.habilidad_id)),
-    names: new Set(
-      skills.map((item) => normalizeSkillName(item.habilidad.nombre)),
-    ),
-  };
-async function getUserSkillProgress(usuarioId: string) {
-  const skills = await dbClient.usuarioHabilidades.findMany({
-    where: { usuario_id: usuarioId },
-    select: { habilidad_id: true, progreso_porcentaje: true },
-  });
+  const byId = new Map<string, number>();
+  const byName = new Map<string, number>();
 
-  return new Map(
-    skills.map((item) => [item.habilidad_id, item.progreso_porcentaje]),
-  );
+  for (const skill of skills) {
+    const progress = getSkillProgress(
+      skill.estado,
+      skill.progreso_porcentaje,
+    );
+
+    byId.set(skill.habilidad_id, progress);
+    byName.set(normalizeSkillName(skill.habilidad.nombre), progress);
+  }
+
+  return {
+    byId,
+    byName,
+  };
 }
 
 async function getUserInterestAreas(usuarioId: string) {
@@ -176,13 +195,12 @@ export async function listVacantes(
   filters: VacanteFilters,
 ) {
   const search = filters.search?.trim();
-  const [userSkills, userInterestAreas] = await Promise.all([
-    getUserSkills(usuarioId),
-  const [userSkillProgress, userInterestAreas] = await Promise.all([
-    getUserSkillProgress(usuarioId),
+  const locale = filters.locale ?? 'es';
+  const [userSkillContext, userInterestAreas] = await Promise.all([
+    getUserSkillContext(usuarioId),
     getUserInterestAreas(usuarioId),
   ]);
-  const userSkillIds = userSkills.ids;
+
   const allowedAreas = filters.area
     ? userInterestAreas.has(filters.area)
       ? [filters.area]
@@ -213,13 +231,16 @@ export async function listVacantes(
       include: VACANTE_INCLUDE,
       orderBy: { fecha_publicacion: 'desc' },
     }),
-    listB2BJobs(userSkills.names),
+    listB2BJobs(userSkillContext.byName, {
+      locale,
+      allowedAreas: new Set(allowedAreas),
+    }),
   ]);
 
   const localVacantes = vacantes.map((vacante) =>
-    mapVacante(vacante, userSkillIds),
+    mapVacante(vacante, userSkillContext.byId),
   );
-  const normalizedSearch = search?.toLocaleLowerCase();
+  const normalizedSearch = search ? normalizeSkillName(search) : undefined;
   const filteredB2BVacantes = b2bVacantes.filter((vacante) => {
     if (
       filters.modalidad &&
@@ -229,30 +250,34 @@ export async function listVacantes(
     }
 
     return normalizedSearch
-      ? `${vacante.titulo} ${vacante.empresa} ${vacante.descripcion ?? ''}`
-          .toLocaleLowerCase()
-          .includes(normalizedSearch)
+      ? normalizeSkillName(
+          `${vacante.titulo} ${vacante.empresa} ${vacante.descripcion ?? ''}`,
+        ).includes(normalizedSearch)
       : true;
   });
 
-const recommendedLocalVacantes = localVacantes.filter(
-  (vacante) =>
-    vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
-);
+  const recommendedLocalVacantes = localVacantes.filter((vacante) =>
+    meetsRecommendedMatch(vacante.matchPorcentaje),
+  );
+  const recommendedB2BVacantes = filteredB2BVacantes.filter((vacante) =>
+    meetsRecommendedMatch(vacante.matchPorcentaje),
+  );
 
-const mapped = [...recommendedLocalVacantes, ...filteredB2BVacantes]
-    .sort((a, b) => {
-      if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
-      if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
+  const mapped = [
+    ...recommendedLocalVacantes,
+    ...recommendedB2BVacantes,
+  ].sort((a, b) => {
+    if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
+    if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
 
-      const matchDifference =
-        (b.matchPorcentaje ?? 0) - (a.matchPorcentaje ?? 0);
+    const matchDifference =
+      (b.matchPorcentaje ?? 0) - (a.matchPorcentaje ?? 0);
 
-      return (
-        matchDifference ||
-        b.fechaPublicacion.localeCompare(a.fechaPublicacion)
-      );
-    });
+    return (
+      matchDifference ||
+      b.fechaPublicacion.localeCompare(a.fechaPublicacion)
+    );
+  });
   const start = (filters.page - 1) * filters.limit;
 
   return {
@@ -267,22 +292,22 @@ const mapped = [...recommendedLocalVacantes, ...filteredB2BVacantes]
 }
 
 export async function getVacanteById(usuarioId: string, vacanteId: string) {
-  const [vacante, userSkillProgress] = await Promise.all([
+  const [vacante, userSkillContext] = await Promise.all([
     dbClient.vacantes.findFirst({
       where: { vacante_id: vacanteId, activa: true },
       include: VACANTE_INCLUDE,
     }),
-    getUserSkillProgress(usuarioId),
+    getUserSkillContext(usuarioId),
   ]);
 
-  return vacante ? mapVacante(vacante, userSkillProgress) : null;
+  return vacante ? mapVacante(vacante, userSkillContext.byId) : null;
 }
 
 export async function calculateVacanteMatch(
   usuarioId: string,
   vacanteId: string,
 ) {
-  const [vacante, userSkillProgress] = await Promise.all([
+  const [vacante, userSkillContext] = await Promise.all([
     dbClient.vacantes.findFirst({
       where: { vacante_id: vacanteId, activa: true },
       select: {
@@ -290,10 +315,10 @@ export async function calculateVacanteMatch(
         requisitos: { select: { habilidad_id: true, prioridad: true } },
       },
     }),
-    getUserSkillProgress(usuarioId),
+    getUserSkillContext(usuarioId),
   ]);
 
   return vacante
-    ? { match: calculateMatch(vacante.requisitos, userSkillProgress) }
+    ? { match: calculateMatch(vacante.requisitos, userSkillContext.byId) }
     : null;
 }

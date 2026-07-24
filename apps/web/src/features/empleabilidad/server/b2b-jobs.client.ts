@@ -1,4 +1,13 @@
-import type { VacanteItem } from '../types';
+import {
+  MARKET_SKILLS_BY_AREA,
+  isAreaInteresValue,
+  type AreaInteresValue,
+} from '@/src/features/onboarding/data/market-skills';
+import { calculateSkillsMatch } from '@/src/server/progress/skill-progress';
+import type {
+  EmployabilityLocale,
+  VacanteItem,
+} from '../types';
 
 const B2B_REQUEST_TIMEOUT_MS = 5_000;
 
@@ -8,25 +17,164 @@ export interface B2BJob {
   company: string;
   location: string;
   modality: string;
+  area: AreaInteresValue;
   skills: string[];
 }
 
-const MOCK_B2B_JOBS: B2BJob[] = [
-  {
-    id: 1,
-    title: 'Analista de Datos Junior',
-    company: 'Empresa Demo',
-    location: 'Remoto',
-    modality: 'Remote',
-    skills: ['Python', 'SQL', 'Power BI'],
+interface B2BJobFixture extends Omit<B2BJob, 'title'> {
+  title: Record<EmployabilityLocale, string>;
+}
+
+interface ListB2BJobsOptions {
+  locale?: EmployabilityLocale;
+  allowedAreas?: ReadonlySet<AreaInteresValue>;
+}
+
+const B2B_COPY = {
+  es: {
+    unspecifiedLevel: 'No especificado',
+    description:
+      'Oportunidad compartida por la plataforma B2B para conectar talentos con empresas.',
+    areaLabels: {
+      Data_Analytics: 'Data & Analytics',
+      Desarrollo_Web: 'Desarrollo Web',
+      UX_UI_Design: 'UX / UI Design',
+      Ciberseguridad: 'Ciberseguridad',
+      Cloud_DevOps: 'Cloud & DevOps',
+      Inteligencia_Artificial: 'Inteligencia Artificial',
+      Marketing_Digital: 'Marketing Digital',
+      Product_Management: 'Product Management',
+    },
   },
+  pt: {
+    unspecifiedLevel: 'Não especificado',
+    description:
+      'Oportunidade compartilhada pela plataforma B2B para conectar talentos a empresas.',
+    areaLabels: {
+      Data_Analytics: 'Dados e Analytics',
+      Desarrollo_Web: 'Desenvolvimento Web',
+      UX_UI_Design: 'UX / UI Design',
+      Ciberseguridad: 'Cibersegurança',
+      Cloud_DevOps: 'Cloud e DevOps',
+      Inteligencia_Artificial: 'Inteligência Artificial',
+      Marketing_Digital: 'Marketing Digital',
+      Product_Management: 'Gestão de Produto',
+    },
+  },
+} as const satisfies Record<
+  EmployabilityLocale,
   {
-    id: 2,
-    title: 'Desarrollador Backend Junior',
+    unspecifiedLevel: string;
+    description: string;
+    areaLabels: Record<AreaInteresValue, string>;
+  }
+>;
+
+function juniorSkillValues(
+  area: AreaInteresValue,
+  indexes: readonly number[] = [0, 1, 2],
+) {
+  const skills = MARKET_SKILLS_BY_AREA[area].hardSkills.Junior;
+
+  return indexes.map((index) => skills[index]?.value).filter(Boolean) as string[];
+}
+
+export const MOCK_B2B_JOB_FIXTURES: readonly B2BJobFixture[] = [
+  {
+    id: 'web-junior',
+    title: {
+      es: 'Desarrollador Frontend Junior',
+      pt: 'Desenvolvedor Front-end Júnior',
+    },
     company: 'Tech Inclusiva',
     location: 'Buenos Aires',
     modality: 'Hybrid',
-    skills: ['Node.js', 'PostgreSQL', 'REST API'],
+    area: 'Desarrollo_Web',
+    skills: juniorSkillValues('Desarrollo_Web'),
+  },
+  {
+    id: 'cyber-junior',
+    title: {
+      es: 'Analista de Ciberseguridad Junior',
+      pt: 'Analista de Cibersegurança Júnior',
+    },
+    company: 'Secure Path',
+    location: 'Remoto',
+    modality: 'Remote',
+    area: 'Ciberseguridad',
+    skills: juniorSkillValues('Ciberseguridad'),
+  },
+  {
+    id: 'marketing-junior',
+    title: {
+      es: 'Analista de Marketing Digital Junior',
+      pt: 'Analista de Marketing Digital Júnior',
+    },
+    company: 'Impulso Digital',
+    location: 'Montevideo',
+    modality: 'Hybrid',
+    area: 'Marketing_Digital',
+    skills: juniorSkillValues('Marketing_Digital'),
+  },
+  {
+    id: 'data-junior',
+    title: {
+      es: 'Analista de Datos Junior',
+      pt: 'Analista de Dados Júnior',
+    },
+    company: 'Empresa Demo',
+    location: 'Remoto',
+    modality: 'Remote',
+    area: 'Data_Analytics',
+    skills: juniorSkillValues('Data_Analytics', [0, 2, 3]),
+  },
+  {
+    id: 'ux-ui-junior',
+    title: {
+      es: 'Diseñador UX/UI Junior',
+      pt: 'Designer UX/UI Júnior',
+    },
+    company: 'Diseño Abierto',
+    location: 'Córdoba',
+    modality: 'Hybrid',
+    area: 'UX_UI_Design',
+    skills: juniorSkillValues('UX_UI_Design'),
+  },
+  {
+    id: 'ai-junior',
+    title: {
+      es: 'Especialista en IA Junior',
+      pt: 'Especialista em IA Júnior',
+    },
+    company: 'AI para Todos',
+    location: 'Remoto',
+    modality: 'Remote',
+    area: 'Inteligencia_Artificial',
+    skills: juniorSkillValues('Inteligencia_Artificial'),
+  },
+  {
+    id: 'product-junior',
+    title: {
+      es: 'Analista de Producto Junior',
+      pt: 'Analista de Produto Júnior',
+    },
+    company: 'Producto Cercano',
+    location: 'São Paulo',
+    modality: 'Hybrid',
+    area: 'Product_Management',
+    skills: juniorSkillValues('Product_Management'),
+  },
+  {
+    id: 'cloud-devops-junior',
+    title: {
+      es: 'Analista Cloud y DevOps Junior',
+      pt: 'Analista de Cloud e DevOps Júnior',
+    },
+    company: 'Nube Regional',
+    location: 'Remoto',
+    modality: 'Remote',
+    area: 'Cloud_DevOps',
+    skills: juniorSkillValues('Cloud_DevOps'),
   },
 ];
 
@@ -44,7 +192,10 @@ function isB2BJob(value: unknown): value is B2BJob {
     isNonEmptyString(job.company) &&
     isNonEmptyString(job.location) &&
     isNonEmptyString(job.modality) &&
+    typeof job.area === 'string' &&
+    isAreaInteresValue(job.area) &&
     Array.isArray(job.skills) &&
+    job.skills.length > 0 &&
     job.skills.every(isNonEmptyString)
   );
 }
@@ -62,28 +213,59 @@ export function normalizeSkillName(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
+    .replace(/\s+/g, ' ')
     .toLocaleLowerCase();
 }
 
-function modalityLabel(modality: string) {
+function modalityLabel(
+  modality: string,
+  locale: EmployabilityLocale,
+) {
   const normalized = normalizeSkillName(modality);
   if (normalized === 'remote' || normalized === 'remoto') return '100% Remoto';
   if (normalized === 'hybrid' || normalized === 'hibrido') return 'Híbrido';
   if (normalized === 'onsite' || normalized === 'presencial') {
     return 'Presencial';
   }
-  return modality.trim();
+
+  return locale === 'pt' && normalized === 'nao especificado'
+    ? 'Não especificado'
+    : modality.trim();
+}
+
+export function getMockB2BJobs(
+  locale: EmployabilityLocale = 'es',
+): B2BJob[] {
+  return MOCK_B2B_JOB_FIXTURES.map((job) => ({
+    ...job,
+    title: job.title[locale],
+    skills: [...job.skills],
+  }));
 }
 
 export function mapB2BJob(
   job: B2BJob,
-  userSkillNames: ReadonlySet<string>,
+  userSkillProgress: ReadonlyMap<string, number>,
+  locale: EmployabilityLocale = 'es',
 ): VacanteItem {
-  const skills = job.skills.map((skill) => ({
-    nombre: skill.trim(),
-    laTienes: userSkillNames.has(normalizeSkillName(skill)),
-  }));
-  const matchedSkills = skills.filter((skill) => skill.laTienes).length;
+  const skills = job.skills.map((skill) => {
+    const progresoPorcentaje = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          userSkillProgress.get(normalizeSkillName(skill)) ?? 0,
+        ),
+      ),
+    );
+
+    return {
+      nombre: skill.trim(),
+      laTienes: progresoPorcentaje === 100,
+      progresoPorcentaje,
+    };
+  });
+  const copy = B2B_COPY[locale];
 
   return {
     id: `b2b:${job.id}`,
@@ -92,19 +274,19 @@ export function mapB2BJob(
     empresa: job.company.trim(),
     empresaDescripcion: null,
     logoUrl: null,
-    area: 'B2B',
-    nivel: 'No especificado',
-    modalidad: modalityLabel(job.modality),
+    area: copy.areaLabels[job.area],
+    nivel: copy.unspecifiedLevel,
+    modalidad: modalityLabel(job.modality, locale),
     modalidadDetallada: null,
     ubicacion: job.location.trim(),
     distancia: null,
-    matchPorcentaje:
-      skills.length > 0
-        ? Math.round((matchedSkills / skills.length) * 100)
-        : null,
+    matchPorcentaje: calculateSkillsMatch(
+      skills.map((skill) => ({
+        progreso_porcentaje: skill.progresoPorcentaje,
+      })),
+    ),
     fechaPublicacion: '',
-    descripcion:
-      'Oportunidad compartida por la plataforma B2B para conectar talentos con empresas.',
+    descripcion: copy.description,
     educacionRequerida: [],
     experienciaSolicitada: [],
     idioma: [],
@@ -113,13 +295,26 @@ export function mapB2BJob(
   };
 }
 
+function filterByAllowedAreas(
+  jobs: B2BJob[],
+  allowedAreas?: ReadonlySet<AreaInteresValue>,
+) {
+  if (!allowedAreas) return jobs;
+  return jobs.filter((job) => allowedAreas.has(job.area));
+}
+
 export async function listB2BJobs(
-  userSkillNames: ReadonlySet<string>,
+  userSkillProgress: ReadonlyMap<string, number>,
+  options: ListB2BJobsOptions = {},
 ): Promise<VacanteItem[]> {
+  const locale = options.locale ?? 'es';
   const endpoint = process.env.B2B_JOBS_API_URL?.trim();
 
   if (!endpoint) {
-    return MOCK_B2B_JOBS.map((job) => mapB2BJob(job, userSkillNames));
+    return filterByAllowedAreas(
+      getMockB2BJobs(locale),
+      options.allowedAreas,
+    ).map((job) => mapB2BJob(job, userSkillProgress, locale));
   }
 
   try {
@@ -134,8 +329,11 @@ export async function listB2BJobs(
       throw new Error(`B2B jobs API responded with ${response.status}`);
     }
 
-    const jobs = parseB2BJobs(await response.json());
-    return jobs.map((job) => mapB2BJob(job, userSkillNames));
+    const jobs = filterByAllowedAreas(
+      parseB2BJobs(await response.json()),
+      options.allowedAreas,
+    );
+    return jobs.map((job) => mapB2BJob(job, userSkillProgress, locale));
   } catch (error) {
     console.error('Error fetching B2B vacancies:', error);
     return [];
