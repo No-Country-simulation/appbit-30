@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   calculateVacanteMatch,
 } from '@/src/features/empleabilidad/server/employability.service';
+import { isB2BVacancyId } from '@/src/features/empleabilidad/server/match-policy';
 import { listPostulaciones } from '@/src/features/empleabilidad/server/postulaciones.service';
 import { getAuthenticatedUsuarioId } from '@/src/server/auth/get-authenticated-usuario-id';
 import { dbClient } from '@/src/server/clients/db.client';
@@ -41,6 +42,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 422 });
     }
 
+    if (
+      rawBody &&
+      typeof rawBody === 'object' &&
+      'vacante_id' in rawBody &&
+      isB2BVacancyId(rawBody.vacante_id)
+    ) {
+      return NextResponse.json(
+        { error: 'External B2B vacancies do not support applications' },
+        { status: 422 },
+      );
+    }
+
     const parsed = createPostulacionSchema.safeParse(rawBody);
     if (!parsed.success) {
       return NextResponse.json(
@@ -49,11 +62,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const match = await calculateVacanteMatch(
+    const vacancy = await calculateVacanteMatch(
       auth.usuarioId,
       parsed.data.vacante_id,
     );
-    if (match === null) {
+    if (!vacancy) {
       return NextResponse.json({ error: 'Vacancy not found' }, { status: 404 });
     }
 
@@ -63,7 +76,7 @@ export async function POST(request: Request) {
         vacante_id: parsed.data.vacante_id,
         mensaje_motivacion: parsed.data.mensaje_motivacion ?? null,
         usar_cv_guardado: parsed.data.usar_cv_guardado,
-        match_porcentaje: match,
+        match_porcentaje: vacancy.match,
       },
       select: { postulacion_id: true },
     });

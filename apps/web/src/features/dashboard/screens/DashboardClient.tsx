@@ -11,7 +11,12 @@ import { ActionPlanCard } from '../components/ActionPlanCard';
 import { WellbeingCard } from '../components/WellbeingCard';
 import { SkillsGapModal } from '../components/SkillsGapModal';
 import { CheckinModal } from '../components/CheckinModal';
-import type { DashboardResponse, SkillsResponse } from '@appbit/shared-schemas';
+import { ProgressHistoryModal } from '../components/ProgressHistoryModal';
+import type {
+  DashboardResponse,
+  ProgressHistoryResponse,
+  SkillsResponse,
+} from '@appbit/shared-schemas';
 import type { ActionItem } from '../components/ActionPlanCard';
 import type { SkillRow } from '../components/SkillsGapModal';
 
@@ -66,7 +71,10 @@ function getAiRecommendationsStatus(
 }
 
 function hasResolvedRecommendations(dashboard: DashboardClientResponse) {
-  return getAiRecommendationsStatus(dashboard) !== 'generating';
+  return (
+    getAiRecommendationsStatus(dashboard) !== 'generating' ||
+    dashboard.planAccion.length > 0
+  );
 }
 
 const AREA_LABEL_KEYS = {
@@ -254,6 +262,11 @@ export default function DashboardClient({
   const [data, setData] = useState<DashboardClientResponse | null>(null);
   const [skillsData, setSkillsData] = useState<SkillsResponse | null>(null);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [progressHistory, setProgressHistory] =
+    useState<ProgressHistoryResponse | null>(null);
+  const [isLoadingProgressHistory, setIsLoadingProgressHistory] =
+    useState(false);
+  const [progressHistoryError, setProgressHistoryError] = useState(false);
 
   const [onboardingCompletedClient, setOnboardingCompletedClient] =
     useState(false);
@@ -270,6 +283,8 @@ export default function DashboardClient({
     !shouldShowOnboarding && !data && !dashboardError;
 
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [progressHistoryModalOpen, setProgressHistoryModalOpen] =
+    useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
   const [checkinMood, setCheckinMood] = useState('');
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
@@ -317,6 +332,27 @@ export default function DashboardClient({
     }
   }, [skillsData, isLoadingSkills]);
 
+  const loadProgressHistory = useCallback(
+    async (force = false) => {
+      if ((!force && progressHistory) || isLoadingProgressHistory) return;
+
+      setIsLoadingProgressHistory(true);
+      setProgressHistoryError(false);
+
+      try {
+        const history = await fetchJson<ProgressHistoryResponse>(
+          '/api/dashboard/progress-history?months=4',
+        );
+        setProgressHistory(history);
+      } catch (error) {
+        console.error('Error fetching progress history:', error);
+        setProgressHistoryError(true);
+      } finally {
+        setIsLoadingProgressHistory(false);
+      }
+    },
+    [isLoadingProgressHistory, progressHistory],
+  );
   const retryRecommendationsInBackground = useCallback(async () => {
     const maxAttempts = 4;
     const delayMs = 1500;
@@ -456,7 +492,7 @@ export default function DashboardClient({
   useEffect(() => {
     const status = getAiRecommendationsStatus(data);
 
-    if (status !== 'generating') {
+    if (!data || status !== 'generating' || data.planAccion.length > 0) {
       aiRefreshScheduledRef.current = false;
       clearAiRefreshTimeouts();
       return;
@@ -579,7 +615,9 @@ export default function DashboardClient({
           ? ('completado' as const)
           : item.prioridad === 'Alta_prioridad'
             ? ('alta' as const)
-            : ('media' as const),
+            : item.prioridad === 'Media_prioridad'
+              ? ('media' as const)
+              : ('baja' as const),
         actionLabel:
           item.accion_label ??
           (item.curso?.hasInternalContent
@@ -597,33 +635,27 @@ export default function DashboardClient({
       };
     }) ?? [];
 
+  const hasActionItems = actionItems.length > 0;
+
   const promedioSemanal = data?.bienestar?.notaPromedio ?? 0;
 
-  const skillsMatchFromUserSkills = (() => {
-    const resumen = skillsData?.resumen;
-
-    if (!resumen) {
-      return undefined;
-    }
-
-    const total = resumen.adquiridas + resumen.faltantes + resumen.enProgreso;
-
-    if (total === 0) {
-      return undefined;
-    }
-
-    return clampPercent((resumen.adquiridas / total) * 100);
-  })();
+  const skillsMatchFromUserSkills =
+    skillsData?.resumen.matchActual ?? undefined;
 
   const orientacionGapPorcentual =
     data?.orientacion?.gap_porcentual ??
     skillsData?.orientacion?.gap_porcentual ??
     null;
 
-  const skillsMatchPorcentaje =
-    orientacionGapPorcentual != null
-      ? clampPercent(100 - Number(orientacionGapPorcentual))
-      : skillsMatchFromUserSkills;
+  const skillsMatchPorcentaje = isInitialDashboardLoading
+    ? undefined
+    : data?.progressHistorySummary?.currentMatch != null
+      ? clampPercent(data.progressHistorySummary.currentMatch)
+      : skillsMatchFromUserSkills != null
+        ? clampPercent(skillsMatchFromUserSkills)
+        : orientacionGapPorcentual != null
+          ? clampPercent(100 - Number(orientacionGapPorcentual))
+          : undefined;
 
   const areaValuesFromDashboard = data?.areasInteres ?? [];
 
@@ -684,6 +716,9 @@ export default function DashboardClient({
   const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
   const todayCheckin = data?.bienestar?.todayCheckin ?? null;
   const aiRecommendationsStatus = getAiRecommendationsStatus(data);
+
+  const shouldShowPlanGenerating =
+    aiRecommendationsStatus === 'generating' && !hasActionItems;
 
   const dashboardHero = useMemo<DashboardHero>(() => {
     const firstName = getFirstName(nombre);
@@ -855,11 +890,16 @@ export default function DashboardClient({
                 setSkillsModalOpen(true);
                 void loadSkills();
               }}
+              historySummary={data?.progressHistorySummary}
+              onVerHistorial={() => {
+                setProgressHistoryModalOpen(true);
+                void loadProgressHistory(true);
+              }}
             />
           </div>
 
           <div className='xl:col-span-5'>
-            {aiRecommendationsStatus === 'generating' ? (
+            {shouldShowPlanGenerating ? (
               <PlanGeneratingCard
                 title={t('planGeneratingTitle')}
                 description={t('planGeneratingDescription')}
@@ -936,6 +976,20 @@ export default function DashboardClient({
             force: true,
           });
         }}
+      />
+
+      <ProgressHistoryModal
+        open={progressHistoryModalOpen}
+        onOpenChange={(nextOpen) => {
+          setProgressHistoryModalOpen(nextOpen);
+
+          if (nextOpen) {
+            void loadProgressHistory(true);
+          }
+        }}
+        data={progressHistory}
+        isLoading={isLoadingProgressHistory}
+        hasError={progressHistoryError}
       />
     </AppShell>
   );

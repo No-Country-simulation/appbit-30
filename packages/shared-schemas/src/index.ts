@@ -344,6 +344,14 @@ export const onboardingResponseSchema = z.object({
 });
 
 // --- SCHEMAS PARA DASHBOARD (FE-003) ---
+export const actionPlanPrioritySchema = z.enum([
+  'Alta_prioridad',
+  'Media_prioridad',
+  'Baja_prioridad',
+]);
+
+export type ActionPlanPriority = z.infer<typeof actionPlanPrioritySchema>;
+
 export const dashboardResponseSchema = z.object({
   perfil_completado: z.number(),
   match_perfil: z.number(),
@@ -361,6 +369,19 @@ export const dashboardResponseSchema = z.object({
     home_cluster: z.string().nullable(),
   }),
   areasInteres: z.array(z.string()).optional(),
+  progressHistorySummary: z
+    .object({
+      initialMatch: z.number(),
+      currentMatch: z.number(),
+      variation: z.number(),
+      series: z.array(
+        z.object({
+          period: z.string(),
+          match: z.number(),
+        }),
+      ),
+    })
+    .optional(),
   orientacion: z
     .object({
       gap_porcentual: z.number(),
@@ -373,7 +394,8 @@ export const dashboardResponseSchema = z.object({
     z.object({
       plan_item_id: z.string(),
       titulo: z.string(),
-      prioridad: z.string(),
+      descripcion: z.string().nullable(),
+      prioridad: actionPlanPrioritySchema,
       completado: z.boolean(),
       orden: z.number(),
       accion_label: z.string().nullable(),
@@ -418,6 +440,49 @@ export const dashboardResponseSchema = z.object({
 
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 
+export const progressHistoryResponseSchema = z.object({
+  success: z.boolean(),
+  requestId: z.string().optional(),
+  initialMatch: z.number(),
+  currentMatch: z.number(),
+  variation: z.number(),
+  series: z.array(
+    z.object({
+      period: z.string(),
+      match: z.number(),
+    }),
+  ),
+  events: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(['Onboarding', 'Leccion', 'Modulo', 'Curso']),
+      entityId: z.string(),
+      title: z.string(),
+      matchBefore: z.number(),
+      matchAfter: z.number(),
+      metadata: z.unknown(),
+      occurredAt: z.string(),
+    }),
+  ),
+});
+
+export type ProgressHistoryResponse = z.infer<
+  typeof progressHistoryResponseSchema
+>;
+
+export const createPostulacionSchema = z.object({
+  vacante_id: z.uuid(),
+  mensaje_motivacion: z
+    .string()
+    .trim()
+    .max(2000)
+    .optional()
+    .transform((value) => value || undefined),
+  usar_cv_guardado: z.boolean(),
+});
+
+export type CreatePostulacionRequest = z.infer<typeof createPostulacionSchema>;
+
 // --- SCHEMAS PARA SKILLS (FE-003) ---
 export const skillsResponseSchema = z.object({
   habilidades: z.array(
@@ -427,6 +492,7 @@ export const skillsResponseSchema = z.object({
       categoria: z.string().nullable(),
       area_principal: z.string().nullable(),
       estado: z.string(),
+      progreso_porcentaje: z.number(),
     }),
   ),
   gaps: z.array(z.any()),
@@ -443,6 +509,7 @@ export const skillsResponseSchema = z.object({
     faltantes: z.number(),
     enProgreso: z.number(),
     totalMercado: z.number(),
+    matchActual: z.number().nullable(),
   }),
   orientacion: z
     .object({
@@ -511,19 +578,3 @@ export const onboardingAIResponseSchema = z.object({
 
 export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
 export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
-
-// --- SCHEMAS PARA EMPLEABILIDAD ---
-export const createPostulacionSchema = z.object({
-  vacante_id: z.uuid(),
-  mensaje_motivacion: z
-    .string()
-    .trim()
-    .max(2000)
-    .optional()
-    .transform((value) => value || undefined),
-  usar_cv_guardado: z.boolean(),
-});
-
-export type CreatePostulacionRequest = z.infer<
-  typeof createPostulacionSchema
->;

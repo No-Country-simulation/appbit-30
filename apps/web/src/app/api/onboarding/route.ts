@@ -15,6 +15,7 @@ import {
   getRequestId,
   logApiError,
 } from '@/src/server/api/api-error';
+import { getUserSkillsMatch } from '@/src/server/progress/skill-progress';
 
 export const dynamic = 'force-dynamic';
 
@@ -778,24 +779,28 @@ export async function POST(request: Request) {
     }
 
     if (habilidadesCatalogo.length > 0) {
-      const selectedSkillNames = new Set<string>(data.habilidadesTecnicas);
+  const selectedSkillNames = new Set<string>(data.habilidadesTecnicas);
 
-      relationOps.push(
-        dbClient.usuarioHabilidades.createMany({
-          data: habilidadesCatalogo.map((habilidad) => ({
-            usuario_id: usuarioId,
-            habilidad_id: habilidad.habilidad_id,
-            estado:
-              data.nivelExperienciaTecnologia === 'Desde_cero'
-                ? EstadoHabilidadEnum.Faltante
-                : selectedSkillNames.has(habilidad.nombre)
-                  ? EstadoHabilidadEnum.Adquirida
-                  : EstadoHabilidadEnum.Faltante,
-          })),
-          skipDuplicates: true,
-        }),
-      );
-    }
+  relationOps.push(
+    dbClient.usuarioHabilidades.createMany({
+      data: habilidadesCatalogo.map((habilidad) => {
+        const acquired =
+          data.nivelExperienciaTecnologia !== 'Desde_cero' &&
+          selectedSkillNames.has(habilidad.nombre);
+
+        return {
+          usuario_id: usuarioId,
+          habilidad_id: habilidad.habilidad_id,
+          estado: acquired
+            ? EstadoHabilidadEnum.Adquirida
+            : EstadoHabilidadEnum.Faltante,
+          progreso_porcentaje: acquired ? 100 : 0,
+        };
+      }),
+      skipDuplicates: true,
+    }),
+  );
+}
 
     if (data.objetivos.length > 0) {
       relationOps.push(
@@ -933,10 +938,29 @@ export async function POST(request: Request) {
       }, 4000);
     }
 
-    timer.mark('response_ready', {
-      usuarioId,
-      fallbackPlanItems: fallbackPlanItems.length,
-    });
+    await dbClient.$transaction(async (tx) => {
+  const initialMatch = await getUserSkillsMatch(tx, usuarioId);
+
+  await tx.historialProgreso.createMany({
+    data: [
+      {
+        usuario_id: usuarioId,
+        tipo_evento: 'Onboarding',
+        entidad_id: usuarioId,
+        titulo: 'Onboarding completado',
+        match_anterior: initialMatch,
+        match_nuevo: initialMatch,
+        metadatos: {},
+      },
+    ],
+    skipDuplicates: true,
+  });
+});
+
+timer.mark('response_ready', {
+  usuarioId,
+  fallbackPlanItems: fallbackPlanItems.length,
+});
 
     return NextResponse.json({
       success: true,

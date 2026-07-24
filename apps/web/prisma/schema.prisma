@@ -181,6 +181,20 @@ enum OnboardingStatusEnum {
   COMPLETED
 }
 
+enum TipoContenidoCursoEnum {
+  Curso_externo
+  Roadmap_externo
+  Practica
+  Guia
+}
+
+enum TipoEventoProgresoEnum {
+  Onboarding
+  Leccion
+  Modulo
+  Curso
+}
+
 // ============================================
 // TABLAS
 // ============================================
@@ -228,6 +242,7 @@ model Usuarios {
   progreso_leccion      ProgresoLeccion[]
   descargas_offline     DescargasOffline[]
   plan_accion           PlanAccion[]
+  historial_progreso    HistorialProgreso[]
   perfil_movilidad      PerfilMovilidad?
   alertas_offline       AlertasOffline[]
   notificaciones_radar  NotificacionesRadar[]
@@ -368,6 +383,9 @@ model HabilidadesMercado {
   usuario_habilidades UsuarioHabilidades[]
   requisitos_vacante  RequisitosVacante[]
   cursos              Cursos[]          // cursos que tienen esta habilidad como principal
+  curso_habilidades   CursoHabilidades[]
+  leccion_habilidades LeccionHabilidades[]
+  plan_accion_objetivo PlanAccion[] @relation("PlanAccionSkillObjetivo")
 
   @@index([nombre], map: "idx_hab_nombre")
   @@index([area_principal], map: "idx_hab_area")
@@ -379,6 +397,7 @@ model UsuarioHabilidades {
   usuario_id      String               @db.Uuid
   habilidad_id    String               @db.Uuid
   estado          EstadoHabilidadEnum  @default(Faltante)
+  progreso_porcentaje Int              @default(0) @db.SmallInt
   actualizado_en  DateTime             @default(now()) @db.Timestamptz
 
   usuario         Usuarios             @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
@@ -564,6 +583,8 @@ model Cursos {
   descripcion           String?         @db.Text
   area                  AreaInteresEnum
   tipo                  TipoRecursoEnum @default(Gratuito)
+  tipo_contenido        TipoContenidoCursoEnum @default(Curso_externo)
+  nivel_recomendado     String?                @db.VarChar(50)
   plataforma            String?         @db.VarChar(255)
   url_externa           String?         @db.Text
   duracion_estimada_dias Int?
@@ -573,6 +594,7 @@ model Cursos {
   creado_en             DateTime        @default(now()) @db.Timestamptz
 
   habilidad             HabilidadesMercado? @relation(fields: [habilidad_principal], references: [habilidad_id])
+  curso_habilidades     CursoHabilidades[]
   modulos               Modulos[]
   inscripciones         InscripcionesCurso[]
   plan_accion           PlanAccion[]
@@ -582,6 +604,22 @@ model Cursos {
   @@index([area], map: "idx_curso_area")
   @@index([activo], map: "idx_curso_activo")
   @@map("cursos")
+}
+
+model CursoHabilidades {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  curso_id     String             @db.Uuid
+  habilidad_id String             @db.Uuid
+  peso         Int                @default(1) @db.SmallInt
+  creado_en    DateTime           @default(now()) @db.Timestamptz
+
+  curso        Cursos             @relation(fields: [curso_id], references: [curso_id], onDelete: Cascade)
+  habilidad    HabilidadesMercado @relation(fields: [habilidad_id], references: [habilidad_id])
+
+  @@unique([curso_id, habilidad_id])
+  @@index([curso_id], map: "idx_chab_curso")
+  @@index([habilidad_id], map: "idx_chab_habilidad")
+  @@map("curso_habilidades")
 }
 
 model Modulos {
@@ -611,9 +649,26 @@ model Lecciones {
 
   modulo           Modulos   @relation(fields: [modulo_id], references: [modulo_id], onDelete: Cascade)
   progreso         ProgresoLeccion[]
+  leccion_habilidades LeccionHabilidades[]
 
   @@index([modulo_id], map: "idx_lec_modulo")
   @@map("lecciones")
+}
+
+model LeccionHabilidades {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leccion_id   String             @db.Uuid
+  habilidad_id String             @db.Uuid
+  peso         Int                @default(1) @db.SmallInt
+  creado_en    DateTime           @default(now()) @db.Timestamptz
+
+  leccion      Lecciones          @relation(fields: [leccion_id], references: [leccion_id], onDelete: Cascade)
+  habilidad    HabilidadesMercado @relation(fields: [habilidad_id], references: [habilidad_id])
+
+  @@unique([leccion_id, habilidad_id])
+  @@index([leccion_id], map: "idx_lhab_leccion")
+  @@index([habilidad_id], map: "idx_lhab_habilidad")
+  @@map("leccion_habilidades")
 }
 
 model InscripcionesCurso {
@@ -689,6 +744,11 @@ model PlanAccion {
   prioridad         PrioridadPlanEnum
   curso_vinculado_id String?          @db.Uuid
   accion_label      String?           @db.VarChar(100)
+  tipo_item         String? @db.VarChar(50)
+  descripcion       String? @db.Text
+  estado            String? @default("pending") @db.VarChar(50)
+  skill_objetivo_id String? @db.Uuid
+  match_minimo      Int?    @db.SmallInt
   completado        Boolean           @default(false)
   orden             Int               @default(0) @db.SmallInt
   creado_en         DateTime          @default(now()) @db.Timestamptz
@@ -696,9 +756,29 @@ model PlanAccion {
 
   usuario           Usuarios          @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
   curso             Cursos?           @relation(fields: [curso_vinculado_id], references: [curso_id])
+  skill_objetivo     HabilidadesMercado? @relation("PlanAccionSkillObjetivo", fields: [skill_objetivo_id], references: [habilidad_id], onDelete: SetNull)
 
   @@index([usuario_id], map: "idx_plan_usuario")
+  @@index([skill_objetivo_id], map: "idx_plan_skill_objetivo")
   @@map("plan_accion")
+}
+
+model HistorialProgreso {
+  historial_id  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String                   @db.Uuid
+  tipo_evento   TipoEventoProgresoEnum
+  entidad_id    String                   @db.Uuid
+  titulo        String                   @db.VarChar(255)
+  match_anterior Int                     @db.SmallInt
+  match_nuevo   Int                      @db.SmallInt
+  metadatos     Json                     @default("{}") @db.JsonB
+  creado_en     DateTime                 @default(now()) @db.Timestamptz
+
+  usuario       Usuarios                 @relation(fields: [usuario_id], references: [usuario_id], onDelete: Cascade)
+
+  @@unique([usuario_id, tipo_evento, entidad_id])
+  @@index([usuario_id, creado_en], map: "idx_historial_progreso_usuario_fecha")
+  @@map("historial_progreso")
 }
 
 model PerfilMovilidad {

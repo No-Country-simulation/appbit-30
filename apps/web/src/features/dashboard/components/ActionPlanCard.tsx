@@ -13,7 +13,7 @@ import { AppButton } from '@/src/components/app/AppButton';
 export interface ActionItem {
   id?: string;
   title: string;
-  priority: 'alta' | 'media' | 'completado';
+  priority: 'alta' | 'media' | 'baja' | 'completado';
   actionLabel: string;
   actionIcon: 'play' | 'book' | 'external';
   completed?: boolean;
@@ -43,6 +43,7 @@ export function ActionPlanCard({
   const priorityStyles = {
     alta: { color: 'text-[var(--color-danger)]', label: t('altaPrioridad') },
     media: { color: 'text-[var(--color-warning)]', label: t('mediaPrioridad') },
+    baja: { color: 'text-[var(--color-primary)]', label: t('bajaPrioridad') },
     completado: {
       color: 'text-[var(--color-success)]',
       label: t('completado'),
