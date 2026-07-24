@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/src/i18n/navigation';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
@@ -18,8 +19,50 @@ interface Props {
 export function ModulePlayerPage({ data }: Props) {
   const t = useTranslations('Formacion');
   const router = useRouter();
+  const [completingLessonId, setCompletingLessonId] = useState<string | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [matchChange, setMatchChange] = useState<{
+    before: number;
+    after: number;
+  } | null>(null);
 
   const externalUrl = data.externalUrl ?? undefined;
+
+  async function handleCompleteLesson(lesson: ModulePlayerData['lecciones'][number]) {
+    if (!lesson.canComplete || completingLessonId) return;
+
+    setCompletingLessonId(lesson.id);
+    setProgressError(null);
+    setMatchChange(null);
+
+    try {
+      const response = await fetch(
+        `/api/formacion/lecciones/${encodeURIComponent(lesson.id)}/completar`,
+        { method: 'PATCH' },
+      );
+
+      if (!response.ok) {
+        throw new Error('Learning progress request failed');
+      }
+
+      const result = (await response.json()) as {
+        matchBefore: number;
+        matchAfter: number;
+      };
+
+      setMatchChange({
+        before: result.matchBefore,
+        after: result.matchAfter,
+      });
+
+      router.refresh();
+    } catch (error) {
+      console.error('Error completing lesson:', error);
+      setProgressError(t('progresoError'));
+    } finally {
+      setCompletingLessonId(null);
+    }
+  }
 
   return (
     <AppShell userName={data.user.name} avatarUrl={data.user.avatarUrl}>
@@ -69,7 +112,32 @@ export function ModulePlayerPage({ data }: Props) {
               videoUrl={data.videoUrl ?? undefined}
             />
 
-            <LessonList lecciones={data.lecciones} />
+            {progressError && (
+              <p
+                role='alert'
+                className='rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm text-[var(--color-danger-text)]'
+              >
+                {progressError}
+              </p>
+            )}
+
+            {matchChange && (
+              <p
+                role='status'
+                className='rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800'
+              >
+                {t('matchActualizado', {
+                  anterior: matchChange.before,
+                  nuevo: matchChange.after,
+                })}
+              </p>
+            )}
+
+            <LessonList
+              lecciones={data.lecciones}
+              completingLessonId={completingLessonId}
+              onCompleteLeccion={(lesson) => void handleCompleteLesson(lesson)}
+            />
           </div>
 
           <div className='min-w-0 space-y-5'>

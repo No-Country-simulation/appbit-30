@@ -3,6 +3,7 @@ import type { PerfilBreakdown } from '@/src/features/profile/profile-completion'
 export interface VacanteSkill {
   nombre: string;
   laTienes: boolean;
+  progresoPorcentaje: number;
 }
 
 export interface VacanteItem {

@@ -1674,6 +1674,102 @@ async function main() {
     }
   }
 
+  const courseSkillMappings = [
+    ['Desarrollo Web Full Stack con React', 'React', 3],
+    ['Desarrollo Web Full Stack con React', 'JavaScript', 2],
+    ['Desarrollo Web Full Stack con React', 'Node.js', 2],
+    ['Introducción a Data Analytics', 'Python', 3],
+    ['Introducción a Data Analytics', 'SQL', 3],
+    ['DevOps con AWS y Docker', 'AWS', 3],
+    ['DevOps con AWS y Docker', 'Docker', 3],
+    ['DevOps con AWS y Docker', 'Kubernetes', 2],
+    ['Diseño UX/UI Avanzado', 'Figma', 3],
+    ['Fundamentos de Ciberseguridad', 'Ciberseguridad', 3],
+  ] as const;
+
+  for (const [courseTitle, skillName, weight] of courseSkillMappings) {
+    const [course, skillId] = [
+      await prisma.cursos.findFirst({
+        where: { titulo: courseTitle },
+        select: { curso_id: true },
+      }),
+      habilidadesMap.get(skillName),
+    ];
+
+    if (!course || !skillId) continue;
+
+    await prisma.cursoHabilidades.upsert({
+      where: {
+        curso_id_habilidad_id: {
+          curso_id: course.curso_id,
+          habilidad_id: skillId,
+        },
+      },
+      create: {
+        curso_id: course.curso_id,
+        habilidad_id: skillId,
+        peso: weight,
+      },
+      update: { peso: weight },
+    });
+  }
+
+  const lessonSkillMappings = [
+    ['Intro a React', 'React', 1],
+    ['Componentes y Props', 'React', 2],
+    ['useState', 'React', 2],
+    ['Manejo de eventos', 'JavaScript', 2],
+    ['Introducción a Node', 'Node.js', 2],
+    ['API REST', 'Node.js', 3],
+    ['Variables y tipos', 'Python', 1],
+    ['Pandas y NumPy', 'Python', 3],
+    ['Consultas básicas', 'SQL', 2],
+    ['Joins y subconsultas', 'SQL', 3],
+    ['Matplotlib', 'Python', 2],
+    ['Seaborn', 'Python', 2],
+    ['EC2 y S3', 'AWS', 3],
+    ['IAM', 'AWS', 2],
+    ['Contenedores', 'Docker', 3],
+    ['Orquestación', 'Kubernetes', 3],
+    ['Jenkins', 'Docker', 1],
+    ['GitHub Actions', 'Docker', 1],
+    ['Investigación', 'Figma', 1],
+    ['Wireframing', 'Figma', 2],
+    ['Herramientas básicas', 'Figma', 2],
+    ['Prototipado', 'Figma', 3],
+    ['Tipos de amenazas', 'Ciberseguridad', 2],
+    ['Criptografía', 'Ciberseguridad', 3],
+    ['Firewalls', 'Ciberseguridad', 2],
+    ['VPN y acceso', 'Ciberseguridad', 2],
+  ] as const;
+
+  for (const [lessonTitle, skillName, weight] of lessonSkillMappings) {
+    const [lesson, skillId] = [
+      await prisma.lecciones.findFirst({
+        where: { titulo: lessonTitle },
+        select: { leccion_id: true },
+      }),
+      habilidadesMap.get(skillName),
+    ];
+
+    if (!lesson || !skillId) continue;
+
+    await prisma.leccionHabilidades.upsert({
+      where: {
+        leccion_id_habilidad_id: {
+          leccion_id: lesson.leccion_id,
+          habilidad_id: skillId,
+        },
+      },
+      create: {
+        leccion_id: lesson.leccion_id,
+        habilidad_id: skillId,
+        peso: weight,
+      },
+      update: { peso: weight },
+    });
+  }
+
   // ============================================
   // 18. RECURSOS DE DESCARGA
   // ============================================

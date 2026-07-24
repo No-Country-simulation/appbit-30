@@ -5,6 +5,7 @@ import type {
   Prisma,
 } from '@/src/server/generated/prisma';
 import type { VacanteItem } from '../types';
+import { calculateWeightedVacancyMatch } from '@/src/server/progress/skill-progress';
 
 export const AREA_VALUES = [
   'Data_Analytics',
@@ -68,41 +69,26 @@ export interface VacanteFilters {
 
 export function calculateMatch(
   requisitos: Array<{ habilidad_id: string; prioridad: number }>,
-  userSkillIds: ReadonlySet<string>,
+  userSkillProgress: ReadonlyMap<string, number>,
 ) {
-  if (requisitos.length === 0) return null;
-
-  const priorityWeight = (priority: number) => {
-    if (priority === 1) return 3;
-    if (priority === 2) return 2;
-    return 1;
-  };
-
-  const totalWeight = requisitos.reduce(
-    (total, item) => total + priorityWeight(item.prioridad),
-    0,
+  return calculateWeightedVacancyMatch(
+    requisitos.map((item) => ({
+      skillId: item.habilidad_id,
+      priority: item.prioridad,
+    })),
+    userSkillProgress,
   );
-  const matchedWeight = requisitos.reduce(
-    (total, item) =>
-      userSkillIds.has(item.habilidad_id)
-        ? total + priorityWeight(item.prioridad)
-        : total,
-    0,
-  );
-
-  return Math.round((matchedWeight / totalWeight) * 100);
 }
 
-async function getUserSkillIds(usuarioId: string) {
+async function getUserSkillProgress(usuarioId: string) {
   const skills = await dbClient.usuarioHabilidades.findMany({
-    where: {
-      usuario_id: usuarioId,
-      estado: { in: ['Adquirida', 'En_progreso'] },
-    },
-    select: { habilidad_id: true },
+    where: { usuario_id: usuarioId },
+    select: { habilidad_id: true, progreso_porcentaje: true },
   });
 
-  return new Set(skills.map((item) => item.habilidad_id));
+  return new Map(
+    skills.map((item) => [item.habilidad_id, item.progreso_porcentaje]),
+  );
 }
 
 async function getUserInterestAreas(usuarioId: string) {
@@ -122,7 +108,7 @@ function stringArray(value: unknown): string[] {
 
 function mapVacante(
   vacante: VacanteWithRelations,
-  userSkillIds: ReadonlySet<string>,
+  userSkillProgress: ReadonlyMap<string, number>,
 ): VacanteItem {
   return {
     id: vacante.vacante_id,
@@ -136,7 +122,7 @@ function mapVacante(
     modalidadDetallada: vacante.detalle_modalidad,
     ubicacion: [vacante.ciudad, vacante.pais].filter(Boolean).join(', '),
     distancia: vacante.distancia_zona,
-    matchPorcentaje: calculateMatch(vacante.requisitos, userSkillIds),
+    matchPorcentaje: calculateMatch(vacante.requisitos, userSkillProgress),
     fechaPublicacion: vacante.fecha_publicacion.toISOString(),
     descripcion: vacante.descripcion,
     educacionRequerida: vacante.educacion_requerida
@@ -147,10 +133,18 @@ function mapVacante(
       : [],
     idioma: stringArray(vacante.idiomas_requeridos),
     jornada: vacante.jornada ? [vacante.jornada.replaceAll('_', ' ')] : [],
-    skills: vacante.requisitos.map((item) => ({
-      nombre: item.habilidad.nombre,
-      laTienes: userSkillIds.has(item.habilidad_id),
-    })),
+    skills: vacante.requisitos.map((item) => {
+      const progress = Math.max(
+        0,
+        Math.min(100, userSkillProgress.get(item.habilidad_id) ?? 0),
+      );
+
+      return {
+        nombre: item.habilidad.nombre,
+        laTienes: progress === 100,
+        progresoPorcentaje: progress,
+      };
+    }),
   };
 }
 
@@ -159,8 +153,8 @@ export async function listVacantes(
   filters: VacanteFilters,
 ) {
   const search = filters.search?.trim();
-  const [userSkillIds, userInterestAreas] = await Promise.all([
-    getUserSkillIds(usuarioId),
+  const [userSkillProgress, userInterestAreas] = await Promise.all([
+    getUserSkillProgress(usuarioId),
     getUserInterestAreas(usuarioId),
   ]);
   const allowedAreas = filters.area
@@ -194,7 +188,7 @@ export async function listVacantes(
   });
 
   const mapped = vacantes
-    .map((vacante) => mapVacante(vacante, userSkillIds))
+    .map((vacante) => mapVacante(vacante, userSkillProgress))
     .filter(
       (vacante) =>
         vacante.matchPorcentaje !== null && vacante.matchPorcentaje >= 50,
@@ -225,22 +219,22 @@ export async function listVacantes(
 }
 
 export async function getVacanteById(usuarioId: string, vacanteId: string) {
-  const [vacante, userSkillIds] = await Promise.all([
+  const [vacante, userSkillProgress] = await Promise.all([
     dbClient.vacantes.findFirst({
       where: { vacante_id: vacanteId, activa: true },
       include: VACANTE_INCLUDE,
     }),
-    getUserSkillIds(usuarioId),
+    getUserSkillProgress(usuarioId),
   ]);
 
-  return vacante ? mapVacante(vacante, userSkillIds) : null;
+  return vacante ? mapVacante(vacante, userSkillProgress) : null;
 }
 
 export async function calculateVacanteMatch(
   usuarioId: string,
   vacanteId: string,
 ) {
-  const [vacante, userSkillIds] = await Promise.all([
+  const [vacante, userSkillProgress] = await Promise.all([
     dbClient.vacantes.findFirst({
       where: { vacante_id: vacanteId, activa: true },
       select: {
@@ -248,10 +242,10 @@ export async function calculateVacanteMatch(
         requisitos: { select: { habilidad_id: true, prioridad: true } },
       },
     }),
-    getUserSkillIds(usuarioId),
+    getUserSkillProgress(usuarioId),
   ]);
 
   return vacante
-    ? calculateMatch(vacante.requisitos, userSkillIds)
+    ? { match: calculateMatch(vacante.requisitos, userSkillProgress) }
     : null;
 }

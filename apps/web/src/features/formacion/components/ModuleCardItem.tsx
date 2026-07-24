@@ -1,7 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ExternalLink, Lock, Play } from 'lucide-react';
+import {
+  CheckCircle,
+  ExternalLink,
+  LoaderCircle,
+  Lock,
+  Play,
+} from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppBadge } from '@/src/components/app/AppBadge';
 import { AppButton } from '@/src/components/app/AppButton';
@@ -18,6 +24,9 @@ interface Props {
   primaryIcon?: 'play' | 'external';
   onOpen: () => void;
   onValidarExterno: () => void;
+  onComplete?: () => void;
+  isCompleting?: boolean;
+  isCompleted?: boolean;
 }
 
 export function ModuleCardItem({
@@ -31,6 +40,9 @@ export function ModuleCardItem({
   primaryIcon = 'external',
   onOpen,
   onValidarExterno,
+  onComplete,
+  isCompleting = false,
+  isCompleted = false,
 }: Props) {
   const t = useTranslations('Formacion');
   const PrimaryIcon = primaryIcon === 'play' ? Play : ExternalLink;
@@ -91,6 +103,24 @@ export function ModuleCardItem({
 
             <span className='min-w-0 break-words'>
               {t('validarCertExterno')}
+            </span>
+          </button>
+        )}
+
+        {desbloqueado && onComplete && (
+          <button
+            type='button'
+            onClick={onComplete}
+            disabled={isCompleting || isCompleted}
+            className='inline-flex min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2 text-center text-xs font-semibold leading-snug text-[var(--color-success)] hover:bg-emerald-50 disabled:cursor-default disabled:opacity-70'
+          >
+            {isCompleting ? (
+              <LoaderCircle className='size-3.5 shrink-0 animate-spin' />
+            ) : (
+              <CheckCircle className='size-3.5 shrink-0' />
+            )}
+            <span className='min-w-0 break-words'>
+              {isCompleted ? t('cursoCompletado') : t('marcarCursoCompletado')}
             </span>
           </button>
         )}

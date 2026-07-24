@@ -49,11 +49,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const match = await calculateVacanteMatch(
+    const vacancy = await calculateVacanteMatch(
       auth.usuarioId,
       parsed.data.vacante_id,
     );
-    if (match === null) {
+    if (!vacancy) {
       return NextResponse.json({ error: 'Vacancy not found' }, { status: 404 });
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         vacante_id: parsed.data.vacante_id,
         mensaje_motivacion: parsed.data.mensaje_motivacion ?? null,
         usar_cv_guardado: parsed.data.usar_cv_guardado,
-        match_porcentaje: match,
+        match_porcentaje: vacancy.match,
       },
       select: { postulacion_id: true },
     });

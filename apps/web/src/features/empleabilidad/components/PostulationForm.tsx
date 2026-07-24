@@ -30,6 +30,7 @@ export function PostulationForm({
       mensaje_motivacion: mensaje,
       usar_cv_guardado: usarCvGuardado,
     });
+
   }
 
   return (

@@ -13,6 +13,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:check-migration-status": "prisma migrate status",
+    "test:progress": "tsx --test src/server/progress/skill-progress.test.ts src/features/dashboard/server/progress-history.test.ts",
     "build": "pnpm --filter @appbit/shared-types build && pnpm --filter @appbit/shared-schemas build && prisma generate && next build"
   },
   "dependencies": {
