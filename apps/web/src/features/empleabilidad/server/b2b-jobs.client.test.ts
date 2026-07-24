@@ -39,6 +39,7 @@ test('calculates B2B match from the current progress of each skill', () => {
   assert.equal(vacancy.source, 'b2b');
   assert.equal(vacancy.id, 'b2b:1');
   assert.equal(vacancy.matchPorcentaje, 67);
+  assert.equal(vacancy.movilidad.category, 'remote');
   assert.deepEqual(
     vacancy.skills.map((skill) => skill.progresoPorcentaje),
     [100, 100, 0],
@@ -93,6 +94,20 @@ test('provides one canonical mock vacancy for every AppBiT area', () => {
 
     assert.ok(job.skills.every((skill) => canonicalSkills.has(skill)));
   }
+});
+
+test('assigns canonical Florianopolis clusters to controlled hybrid jobs', () => {
+  const jobs = getMockB2BJobs('es');
+  const hybridJobs = jobs.filter((job) => job.modality === 'Hybrid');
+
+  assert.ok(hybridJobs.length > 0);
+  assert.ok(
+    hybridJobs.every(
+      (job) =>
+        job.location.endsWith(', SC') &&
+        typeof job.destinationCluster === 'string',
+    ),
+  );
 });
 
 test('filters mock vacancies by the user interest areas', async () => {

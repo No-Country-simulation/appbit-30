@@ -8,6 +8,22 @@ export interface VacanteSkill {
   progresoPorcentaje: number;
 }
 
+export type MobilityCategory =
+  | 'remote'
+  | 'compatible'
+  | 'moderate'
+  | 'distant'
+  | 'unavailable';
+
+export interface MobilityInsight {
+  category: MobilityCategory;
+  distanceKm: number | null;
+  originCluster: string | null;
+  destinationCluster: string | null;
+  destinationMunicipality: string | null;
+  source: 'modality' | 'florianopolis_dataset' | 'unavailable';
+}
+
 export interface VacanteItem {
   id: string;
   source: 'local' | 'b2b';
@@ -21,6 +37,7 @@ export interface VacanteItem {
   modalidadDetallada: string | null;
   ubicacion: string;
   distancia: string | null;
+  movilidad: MobilityInsight;
   matchPorcentaje: number | null;
   fechaPublicacion: string;
   descripcion: string | null;

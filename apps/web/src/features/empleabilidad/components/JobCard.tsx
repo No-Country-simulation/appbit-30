@@ -7,6 +7,8 @@ import { CheckCircle, MapPin } from 'lucide-react';
 import { AppCard } from '@/src/components/app/AppCard';
 import { AppButton } from '@/src/components/app/AppButton';
 import { cn } from '@/lib/utils';
+import type { MobilityInsight } from '../types';
+import { MobilityInsightDisplay } from './MobilityInsightDisplay';
 
 interface Props {
   source: 'local' | 'b2b';
@@ -18,6 +20,7 @@ interface Props {
   matchPorcentaje: number | null;
   skills: string[];
   distancia?: string | null;
+  movilidad: MobilityInsight;
   isApplied?: boolean;
   onClick: () => void;
   onAplicar: () => void;
@@ -33,6 +36,7 @@ export function JobCard({
   matchPorcentaje,
   skills,
   distancia,
+  movilidad,
   isApplied = false,
   onClick,
   onAplicar,
@@ -101,12 +105,14 @@ export function JobCard({
           </span>
         )}
 
-        {distancia && (
+        {movilidad.category !== 'unavailable' ? (
+          <MobilityInsightDisplay mobility={movilidad} />
+        ) : distancia ? (
           <span className='inline-flex max-w-full items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700'>
             <MapPin className='size-3.5 shrink-0' />
             <span className='truncate'>{distancia}</span>
           </span>
-        )}
+        ) : null}
       </div>
 
       {skills.length > 0 && (
