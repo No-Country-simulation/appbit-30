@@ -5,6 +5,7 @@ import type {
   FormacionData,
   FormacionDownloadItem,
 } from '../types';
+import { buildProfileCompletion } from '@/src/features/profile/profile-completion';
 
 const cursoSelect = {
   curso_id: true,
@@ -211,6 +212,8 @@ export async function getFormacionData(params: {
       nombre_completo: true,
       avatar_url: true,
       onboarding_status: true,
+      pais: true,
+      ciudad: true,
       home_cluster: true,
       whatsapp_codigo: true,
       whatsapp_numero: true,
@@ -381,36 +384,14 @@ export async function getFormacionData(params: {
 
   const rawTrayectoria = usuario.orientaciones[0]?.trayectoria_sugerida ?? [];
 
-  const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
-
-  const ubicacionCompleted = Boolean(
-    usuario.home_cluster || usuario.perfil_movilidad?.home_cluster,
-  );
-
-  const whatsappCompleted = Boolean(
-    usuario.whatsapp_codigo && usuario.whatsapp_numero,
-  );
-
-  let profilePercent = 0;
-
-  if (onboardingCompleted) profilePercent += 50;
-  if (usuario.perfil_movilidad) profilePercent += 20;
-  if (usuario.avatar_url) profilePercent += 10;
-  if (ubicacionCompleted) profilePercent += 10;
-  if (whatsappCompleted) profilePercent += 10;
+  const profileCompletion = buildProfileCompletion(usuario);
 
   return {
     user: {
       name: usuario.nombre_completo,
       avatarUrl: usuario.avatar_url,
-      profilePercent,
-      perfilBreakdown: {
-        onboarding: onboardingCompleted,
-        movilidad: Boolean(usuario.perfil_movilidad),
-        avatar: Boolean(usuario.avatar_url),
-        ubicacion: ubicacionCompleted,
-        whatsapp: whatsappCompleted,
-      },
+      profilePercent: profileCompletion.profilePercent,
+      perfilBreakdown: profileCompletion.perfilBreakdown,
     },
     rutaLabel: getRutaLabel({
       locale,

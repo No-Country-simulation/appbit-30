@@ -9,6 +9,7 @@ import {
 } from '@/src/server/api/api-error';
 import { getProgressHistory } from '@/src/features/dashboard/server/progress-history';
 import { calculateSkillsMatch } from '@/src/server/progress/skill-progress';
+import { buildProfileCompletion } from '@/src/features/profile/profile-completion';
 
 export const dynamic = 'force-dynamic';
 
@@ -625,19 +626,8 @@ const notaPromedio =
       });
     }
 
-    const onboardingCompleted = usuario.onboarding_status === 'COMPLETED';
-
-    const ubicacionCompleted = Boolean(usuario.pais && usuario.ciudad);
-
-    const whatsappCompleted = Boolean(
-      usuario.whatsapp_codigo && usuario.whatsapp_numero,
-    );
-
-    let perfilCompletado = 0;
-
-    if (onboardingCompleted) perfilCompletado += 60;
-    if (usuario.avatar_url) perfilCompletado += 20;
-    if (ubicacionCompleted) perfilCompletado += 20;
+    const { profilePercent: perfilCompletado, perfilBreakdown } =
+      buildProfileCompletion(usuario);
 
     const totalUserSkills = userSkills.length;
 
@@ -686,11 +676,7 @@ const notaPromedio =
       aiRecommendationsStatus,
       perfil_completado: perfilCompletado,
       match_perfil: matchPerfil,
-      perfil_breakdown: {
-        onboarding: onboardingCompleted,
-        avatar: !!usuario.avatar_url,
-        ubicacion: ubicacionCompleted,
-      },
+      perfil_breakdown: perfilBreakdown,
       usuario: {
         nombre_completo: usuario.nombre_completo,
         avatar_url: usuario.avatar_url,
