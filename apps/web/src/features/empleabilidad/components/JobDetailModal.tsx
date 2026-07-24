@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from '@/src/components/ui/dialog';
 import { SkillCompatibilityList } from './SkillCompatibilityList';
 import { PostulationForm } from './PostulationForm';
 import type { VacanteItem } from '../types';
+import { MobilityInsightDisplay } from './MobilityInsightDisplay';
 
 interface Props {
   open: boolean;
@@ -156,14 +157,20 @@ export function JobDetailModal({
                     </span>
                   </span>
 
-                  {vacante.distancia && (
+                  {vacante.movilidad.category !== 'unavailable' ? (
+                    <MobilityInsightDisplay
+                      mobility={vacante.movilidad}
+                      showDatasetSource
+                      className='basis-full'
+                    />
+                  ) : vacante.distancia ? (
                     <span className='flex min-w-0 items-start gap-1.5'>
                       <Clock className='mt-0.5 size-4 shrink-0 text-[var(--color-text-muted)]' />
                       <span className='min-w-0 break-words'>
                         {vacante.distancia}
                       </span>
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </section>
 

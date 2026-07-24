@@ -18,6 +18,12 @@ import {
   normalizeSkillName,
 } from './b2b-jobs.client';
 import { meetsRecommendedMatch } from './match-policy';
+import {
+  compareRecommendedVacancies,
+  createMobilityDataset,
+  createPendingMobility,
+  resolveMobilityInsight,
+} from './mobility';
 
 export const AREA_VALUES = [
   'Data_Analytics',
@@ -141,6 +147,62 @@ async function getUserInterestAreas(usuarioId: string) {
   return new Set(areas.map((item) => item.area));
 }
 
+async function getUserMobilityOrigin(usuarioId: string) {
+  const usuario = await dbClient.usuarios.findUnique({
+    where: { usuario_id: usuarioId },
+    select: {
+      home_cluster: true,
+      perfil_movilidad: { select: { home_cluster: true } },
+    },
+  });
+
+  return (
+    usuario?.perfil_movilidad?.home_cluster?.trim() ||
+    usuario?.home_cluster?.trim() ||
+    null
+  );
+}
+
+async function loadMobilityDataset(originCluster: string | null) {
+  if (!originCluster) {
+    return createMobilityDataset({
+      originCluster: null,
+      clusterReferences: [],
+      distanceRecords: [],
+    });
+  }
+
+  const [clusterReferences, distanceRecords] = await Promise.all([
+    dbClient.antenas.findMany({
+      select: { cluster: true, municipio: true },
+      distinct: ['cluster'],
+      orderBy: { cluster: 'asc' },
+    }),
+    dbClient.distanciasCluster.findMany({
+      where: {
+        OR: [
+          { cluster_origem: originCluster },
+          { cluster_destino: originCluster },
+        ],
+      },
+      select: {
+        cluster_origem: true,
+        cluster_destino: true,
+        dist_media_km: true,
+      },
+    }),
+  ]);
+
+  return createMobilityDataset({
+    originCluster,
+    clusterReferences,
+    distanceRecords: distanceRecords.map((record) => ({
+      ...record,
+      dist_media_km: Number(record.dist_media_km),
+    })),
+  });
+}
+
 function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
@@ -164,6 +226,10 @@ function mapVacante(
     modalidadDetallada: vacante.detalle_modalidad,
     ubicacion: [vacante.ciudad, vacante.pais].filter(Boolean).join(', '),
     distancia: vacante.distancia_zona,
+    movilidad: createPendingMobility({
+      isRemote: vacante.modalidad === 'Remoto',
+      destinationCluster: vacante.empresa.cluster,
+    }),
     matchPorcentaje: calculateMatch(vacante.requisitos, userSkillProgress),
     fechaPublicacion: vacante.fecha_publicacion.toISOString(),
     descripcion: vacante.descripcion,
@@ -196,10 +262,12 @@ export async function listVacantes(
 ) {
   const search = filters.search?.trim();
   const locale = filters.locale ?? 'es';
-  const [userSkillContext, userInterestAreas] = await Promise.all([
-    getUserSkillContext(usuarioId),
-    getUserInterestAreas(usuarioId),
-  ]);
+  const [userSkillContext, userInterestAreas, userMobilityOrigin] =
+    await Promise.all([
+      getUserSkillContext(usuarioId),
+      getUserInterestAreas(usuarioId),
+      getUserMobilityOrigin(usuarioId),
+    ]);
 
   const allowedAreas = filters.area
     ? userInterestAreas.has(filters.area)
@@ -225,7 +293,7 @@ export async function listVacantes(
       : {}),
   };
 
-  const [vacantes, b2bVacantes] = await Promise.all([
+  const [vacantes, b2bVacantes, mobilityDataset] = await Promise.all([
     dbClient.vacantes.findMany({
       where,
       include: VACANTE_INCLUDE,
@@ -235,6 +303,7 @@ export async function listVacantes(
       locale,
       allowedAreas: new Set(allowedAreas),
     }),
+    loadMobilityDataset(userMobilityOrigin),
   ]);
 
   const localVacantes = vacantes.map((vacante) =>
@@ -266,18 +335,16 @@ export async function listVacantes(
   const mapped = [
     ...recommendedLocalVacantes,
     ...recommendedB2BVacantes,
-  ].sort((a, b) => {
-    if (a.matchPorcentaje === null && b.matchPorcentaje !== null) return 1;
-    if (a.matchPorcentaje !== null && b.matchPorcentaje === null) return -1;
-
-    const matchDifference =
-      (b.matchPorcentaje ?? 0) - (a.matchPorcentaje ?? 0);
-
-    return (
-      matchDifference ||
-      b.fechaPublicacion.localeCompare(a.fechaPublicacion)
-    );
-  });
+  ]
+    .map((vacante) => ({
+      ...vacante,
+      movilidad: resolveMobilityInsight({
+        isRemote: vacante.movilidad.category === 'remote',
+        destinationCluster: vacante.movilidad.destinationCluster,
+        dataset: mobilityDataset,
+      }),
+    }))
+    .sort(compareRecommendedVacancies);
   const start = (filters.page - 1) * filters.limit;
 
   return {
