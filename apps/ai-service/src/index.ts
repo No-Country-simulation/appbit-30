@@ -25,7 +25,7 @@ const app = new Hono();
 app.use('*', cors());
 
 const ONBOARDING_AI_GEMINI_TIMEOUT_MS = Number(
-process.env.ONBOARDING_AI_GEMINI_TIMEOUT_MS ?? 8000,
+  process.env.ONBOARDING_AI_GEMINI_TIMEOUT_MS ?? 8000,
 );
 
 const ONBOARDING_AI_MAX_OUTPUT_TOKENS = Number(
@@ -36,8 +36,6 @@ const ONBOARDING_AI_THINKING_BUDGET = Number(
   process.env.ONBOARDING_AI_THINKING_BUDGET ?? 0,
 );
 
-
-
 const ONBOARDING_AI_PROMPT_SKILLS_LIMIT = Number(
   process.env.ONBOARDING_AI_PROMPT_SKILLS_LIMIT ?? 12,
 );
@@ -47,7 +45,7 @@ const ONBOARDING_AI_RETRY_ATTEMPTS = Number(
 );
 
 const ONBOARDING_AI_RETRY_BASE_DELAY_MS = Number(
-process.env.ONBOARDING_AI_RETRY_ATTEMPTS ?? 1,
+  process.env.ONBOARDING_AI_RETRY_BASE_DELAY_MS ?? 800,
 );
 
 const GEMINI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS ?? '')
@@ -91,7 +89,6 @@ function parseGeminiJson<T>(raw: string): T {
   const cleanJson = raw.replace(/```json|```/g, '').trim();
   return JSON.parse(cleanJson) as T;
 }
-
 
 type SafeGeminiParseResult<T> =
   | {
@@ -166,11 +163,6 @@ function getGeminiFinishReason(result: unknown) {
 
   return typeof finishReason === 'string' ? finishReason : null;
 }
-
-
-
-
-
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -622,53 +614,53 @@ app.post('/api/onboarding', async (c) => {
     });
 
     const [cursosDisponibles, existingUserSkills] = await Promise.all([
-  dbClient.cursos.findMany({
-    where: {
-      activo: true,
-      area: data.areasInteres.length
-        ? { in: data.areasInteres as any }
-        : undefined,
-    },
-    orderBy: { titulo: 'asc' },
-    select: {
-      curso_id: true,
-      titulo: true,
-      area: true,
-      nivel_recomendado: true,
-      tipo_contenido: true,
-      habilidad_principal: true,
-      habilidad: {
-        select: {
-          nombre: true,
+      dbClient.cursos.findMany({
+        where: {
+          activo: true,
+          area: data.areasInteres.length
+            ? { in: data.areasInteres as any }
+            : undefined,
         },
-      },
-      curso_habilidades: {
+        orderBy: { titulo: 'asc' },
         select: {
-          habilidad_id: true,
+          curso_id: true,
+          titulo: true,
+          area: true,
+          nivel_recomendado: true,
+          tipo_contenido: true,
+          habilidad_principal: true,
           habilidad: {
             select: {
               nombre: true,
             },
           },
+          curso_habilidades: {
+            select: {
+              habilidad_id: true,
+              habilidad: {
+                select: {
+                  nombre: true,
+                },
+              },
+            },
+          },
         },
-      },
-    },
-  }),
+      }),
 
-  dbClient.usuarioHabilidades.findMany({
-    where: { usuario_id: userId },
-    include: {
-      habilidad: {
-        select: {
-          habilidad_id: true,
-          nombre: true,
-          categoria: true,
-          area_principal: true,
+      dbClient.usuarioHabilidades.findMany({
+        where: { usuario_id: userId },
+        include: {
+          habilidad: {
+            select: {
+              habilidad_id: true,
+              nombre: true,
+              categoria: true,
+              area_principal: true,
+            },
+          },
         },
-      },
-    },
-  }),
-]);
+      }),
+    ]);
 
     const habilidadesMercado = existingUserSkills
       .map((skill) => skill.habilidad)
@@ -723,12 +715,8 @@ app.post('/api/onboarding', async (c) => {
         title: course.titulo,
         skillIds: Array.from(
           new Set([
-            ...course.curso_habilidades.map(
-              (mapping) => mapping.habilidad_id,
-            ),
-            ...(course.habilidad_principal
-              ? [course.habilidad_principal]
-              : []),
+            ...course.curso_habilidades.map((mapping) => mapping.habilidad_id),
+            ...(course.habilidad_principal ? [course.habilidad_principal] : []),
           ]),
         ),
       })),
@@ -766,9 +754,7 @@ ${cursosDisponibles
     const skills = Array.from(
       new Set([
         ...(course.habilidad?.nombre ? [course.habilidad.nombre] : []),
-        ...course.curso_habilidades.map(
-          (mapping) => mapping.habilidad.nombre,
-        ),
+        ...course.curso_habilidades.map((mapping) => mapping.habilidad.nombre),
       ]),
     );
 
@@ -1061,20 +1047,18 @@ Reglas:
     );
 
     const planRows = safePlanAccion.map((item) => ({
-  usuario_id: userId,
-  titulo: item.title,
-  prioridad: normalizePrioridad(item.priority),
-  orden: item.order,
-  curso_vinculado_id: item.courseId,
-  skill_objetivo_id: item.skillId,
-  tipo_item: item.courseId ? 'course' : 'action',
-  descripcion: item.description,
-  estado: 'pending',
-  accion_label: item.actionLabel,
-  completado: false,
-}));
-
- 
+      usuario_id: userId,
+      titulo: item.title,
+      prioridad: normalizePrioridad(item.priority),
+      orden: item.order,
+      curso_vinculado_id: item.courseId,
+      skill_objetivo_id: item.skillId,
+      tipo_item: item.courseId ? 'course' : 'action',
+      descripcion: item.description,
+      estado: 'pending',
+      accion_label: item.actionLabel,
+      completado: false,
+    }));
 
     const orientacion = await dbClient.$transaction(
       async (tx) => {
@@ -1097,24 +1081,23 @@ Reglas:
           },
         });
 
-        if (shouldReplacePlanAccion) {
-         wait tx.planAccion.deleteMany({
-  where: {
-    usuario_id: userId,
-    completado: false,
-  },
-});
+        await tx.planAccion.deleteMany({
+          where: {
+            usuario_id: userId,
+            completado: false,
+          },
+        });
 
-if (planRows.length > 0) {
-  await tx.planAccion.createMany({
-    data: planRows,
-  });
-}
+        if (planRows.length > 0) {
+          await tx.planAccion.createMany({
+            data: planRows,
+          });
+        }
 
-return {
-  orient,
-  planCreados: planRows.length,
-};
+        return {
+          orient,
+          planCreados: planRows.length,
+        };
       },
       {
         maxWait: 10000,
@@ -1134,6 +1117,7 @@ return {
         usuarioId: userId,
         orientacionId: orientacion.orient.orientacion_id,
         planAccionCount: orientacion.planCreados,
+        planReplaced: true,
         habilidadesCount: existingUserSkills.length,
         aiProviderStatus,
         fallbackReason,
@@ -1147,6 +1131,7 @@ return {
       usuarioId: userId,
       orientacionId: orientacion.orient.orientacion_id,
       planAccionCount: orientacion.planCreados,
+      planReplaced: true,
       habilidadesCount: existingUserSkills.length,
       aiProviderStatus,
       fallbackReason,

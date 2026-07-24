@@ -481,9 +481,7 @@ export const createPostulacionSchema = z.object({
   usar_cv_guardado: z.boolean(),
 });
 
-export type CreatePostulacionRequest = z.infer<
-  typeof createPostulacionSchema
->;
+export type CreatePostulacionRequest = z.infer<typeof createPostulacionSchema>;
 
 // --- SCHEMAS PARA SKILLS (FE-003) ---
 export const skillsResponseSchema = z.object({
@@ -580,19 +578,3 @@ export const onboardingAIResponseSchema = z.object({
 
 export type OnboardingAIRequest = z.infer<typeof onboardingAIRequestSchema>;
 export type OnboardingAIResponse = z.infer<typeof onboardingAIResponseSchema>;
-
-// --- SCHEMAS PARA EMPLEABILIDAD ---
-export const createPostulacionSchema = z.object({
-  vacante_id: z.uuid(),
-  mensaje_motivacion: z
-    .string()
-    .trim()
-    .max(2000)
-    .optional()
-    .transform((value) => value || undefined),
-  usar_cv_guardado: z.boolean(),
-});
-
-export type CreatePostulacionRequest = z.infer<
-  typeof createPostulacionSchema
->;

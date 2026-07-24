@@ -49,7 +49,18 @@ export default function FormacionClient({ data }: Props) {
       });
 
       if (!response.ok) {
-        throw new Error('Learning path regeneration failed');
+        const errorBody = await response.json().catch(() => null);
+
+        console.error('Learning path regeneration failed:', {
+          status: response.status,
+          errorBody,
+        });
+
+        throw new Error(
+          errorBody?.message ??
+            errorBody?.code ??
+            'Learning path regeneration failed',
+        );
       }
 
       router.refresh();

@@ -247,6 +247,144 @@ function getUniqueNonEmptyValues(values: Array<string | null | undefined>) {
   );
 }
 
+type DashboardLocale = 'es' | 'pt';
+
+type DashboardPlanFallbackItem = {
+  plan_item_id: string;
+  titulo: string;
+  descripcion: string | null;
+  prioridad: 'Alta_prioridad' | 'Media_prioridad' | 'Baja_prioridad';
+  completado: boolean;
+  orden: number;
+  accion_label: string | null;
+  curso_vinculado_id: string | null;
+};
+
+function getDashboardAreaLabel(
+  area: string | null | undefined,
+  locale: DashboardLocale,
+) {
+  if (!area) {
+    return locale === 'pt' ? 'tecnologia' : 'tecnología';
+  }
+
+  const labels: Record<string, { es: string; pt: string }> = {
+    Data_Analytics: {
+      es: 'Data & Analytics',
+      pt: 'Data & Analytics',
+    },
+    Desarrollo_Web: {
+      es: 'Desarrollo Web',
+      pt: 'Desenvolvimento Web',
+    },
+    UX_UI_Design: {
+      es: 'UX / UI Design',
+      pt: 'UX / UI Design',
+    },
+    Ciberseguridad: {
+      es: 'Ciberseguridad',
+      pt: 'Cibersegurança',
+    },
+    Cloud_DevOps: {
+      es: 'Cloud & DevOps',
+      pt: 'Cloud & DevOps',
+    },
+    Inteligencia_Artificial: {
+      es: 'Inteligencia Artificial',
+      pt: 'Inteligência Artificial',
+    },
+    Marketing_Digital: {
+      es: 'Marketing Digital',
+      pt: 'Marketing Digital',
+    },
+    Product_Management: {
+      es: 'Product Management',
+      pt: 'Product Management',
+    },
+  };
+
+  return labels[area]?.[locale] ?? area.replaceAll('_', ' ');
+}
+
+function buildDashboardFallbackPlan(params: {
+  locale: DashboardLocale;
+  areasInteres: string[];
+  hasCheckinToday: boolean;
+}): DashboardPlanFallbackItem[] {
+  const { locale, areasInteres, hasCheckinToday } = params;
+  const isPt = locale === 'pt';
+  const areaLabel = getDashboardAreaLabel(areasInteres[0], locale);
+
+  const items: DashboardPlanFallbackItem[] = [
+    {
+      plan_item_id: 'fallback-dashboard-route',
+      titulo: isPt
+        ? `Entender sua rota inicial em ${areaLabel}`
+        : `Entender tu ruta inicial en ${areaLabel}`,
+      descripcion: null,
+      prioridad: 'Alta_prioridad',
+      completado: false,
+      orden: 1,
+      accion_label: isPt ? 'Ver formação' : 'Ver formación',
+      curso_vinculado_id: null,
+    },
+    {
+      plan_item_id: 'fallback-dashboard-first-resource',
+      titulo: isPt
+        ? 'Começar pelo primeiro recurso recomendado'
+        : 'Empezar por el primer recurso recomendado',
+      descripcion: null,
+      prioridad: 'Alta_prioridad',
+      completado: false,
+      orden: 2,
+      accion_label: isPt ? 'Continuar formação' : 'Continuar formación',
+      curso_vinculado_id: null,
+    },
+    {
+      plan_item_id: 'fallback-dashboard-first-skill',
+      titulo: isPt
+        ? 'Completar uma habilidade-chave inicial'
+        : 'Completar una habilidad clave inicial',
+      descripcion: null,
+      prioridad: 'Media_prioridad',
+      completado: false,
+      orden: 3,
+      accion_label: isPt ? 'Ver plano' : 'Ver plan',
+      curso_vinculado_id: null,
+    },
+  ];
+
+  if (!hasCheckinToday) {
+    items.push({
+      plan_item_id: 'fallback-dashboard-checkin',
+      titulo: isPt
+        ? 'Fazer um check-in de bem-estar hoje'
+        : 'Hacer un check-in de bienestar hoy',
+      descripcion: null,
+      prioridad: 'Media_prioridad',
+      completado: false,
+      orden: 4,
+      accion_label: isPt ? 'Fazer check-in' : 'Hacer check-in',
+      curso_vinculado_id: null,
+    });
+  }
+
+  items.push({
+    plan_item_id: 'fallback-dashboard-progress',
+    titulo: isPt
+      ? 'Voltar ao dashboard e revisar seu progresso'
+      : 'Volver al dashboard y revisar tu progreso',
+    descripcion: null,
+    prioridad: 'Media_prioridad',
+    completado: false,
+    orden: hasCheckinToday ? 4 : 5,
+    accion_label: isPt ? 'Revisar progresso' : 'Revisar progreso',
+    curso_vinculado_id: null,
+  });
+
+  return items;
+}
+
 const dashboardUsuarioSelect = {
   usuario_id: true,
   nombre_completo: true,
@@ -259,6 +397,7 @@ const dashboardUsuarioSelect = {
   whatsapp_codigo: true,
   whatsapp_numero: true,
   onboarding_status: true,
+  idioma_app: true,
 } as const;
 
 export async function GET(request: Request) {
@@ -387,17 +526,17 @@ export async function GET(request: Request) {
       },
       select: {
         estado: true,
+        progreso_porcentaje: true,
       },
     });
     const dbStartedAt = getServerNowMs();
-    
+
     const progressHistoryPromise = getProgressHistory({
       client: dbClient,
       usuarioId: userId,
       months: 4,
       includeEvents: false,
     });
-   
 
     const [
       orientacionResult,
@@ -412,7 +551,7 @@ export async function GET(request: Request) {
       trackDashboardPromise(timer, 'recentCheckins', recentCheckinsPromise),
       trackDashboardPromise(timer, 'areasInteres', areasInteresPromise),
       trackDashboardPromise(timer, 'userSkills', userSkillsPromise),
-      trackDashboardPromise(timer, 'progressHistory', progressHistoryPromise),  
+      trackDashboardPromise(timer, 'progressHistory', progressHistoryPromise),
     ] as const);
 
     timer.mark('db_all_settled_done', {
@@ -501,34 +640,52 @@ export async function GET(request: Request) {
       userSkillsResult.status === 'fulfilled' ? userSkillsResult.value : [];
 
     const progressHistory =
-  progressHistoryResult.status === 'fulfilled'
-    ? progressHistoryResult.value
-    : null;
+      progressHistoryResult.status === 'fulfilled'
+        ? progressHistoryResult.value
+        : null;
 
-const todayCheckin =
-  recentCheckins.find(
-    (checkin) =>
-      checkin.creado_en >= todayStart && checkin.creado_en < todayEnd,
-  ) ?? null;
+    const todayCheckin =
+      recentCheckins.find(
+        (checkin) =>
+          checkin.creado_en >= todayStart && checkin.creado_en < todayEnd,
+      ) ?? null;
 
-const notaPromedio =
-  recentCheckins.length > 0
-    ? recentCheckins.reduce(
-        (sum, checkin) => sum + Number(checkin.nota_diaria),
-        0,
-      ) / recentCheckins.length
-    : 0;
+    const notaPromedio =
+      recentCheckins.length > 0
+        ? recentCheckins.reduce(
+            (sum, checkin) => sum + Number(checkin.nota_diaria),
+            0,
+          ) / recentCheckins.length
+        : 0;
 
     const orientacionConfianza =
       orientacion?.confianza != null ? Number(orientacion.confianza) : null;
 
-    const aiRecommendationsStatus: AiRecommendationsStatus = !orientacion
-      ? 'generating'
-      : orientacionConfianza != null && orientacionConfianza >= 0.8
-        ? 'ready'
-        : 'fallback';
+    const dashboardLocale: DashboardLocale =
+      usuario.idioma_app === 'pt' ? 'pt' : 'es';
 
-    const shouldExposePlanAccion = aiRecommendationsStatus !== 'generating';
+    const fallbackPlanAccion = buildDashboardFallbackPlan({
+      locale: dashboardLocale,
+      areasInteres,
+      hasCheckinToday: Boolean(todayCheckin),
+    });
+
+    const effectivePlanAccion =
+      planAccion.length > 0 ? planAccion : fallbackPlanAccion;
+
+    const hasStoredPlanAccion = planAccion.length > 0;
+
+    const aiRecommendationsStatus: AiRecommendationsStatus = orientacion
+      ? orientacionConfianza != null && orientacionConfianza >= 0.8
+        ? 'ready'
+        : 'fallback'
+      : hasStoredPlanAccion
+        ? 'fallback'
+        : 'generating';
+
+    const aiRecommendationsReady = aiRecommendationsStatus !== 'generating';
+
+    const shouldExposePlanAccion = aiRecommendationsReady;
 
     const linkedCursoIds = shouldExposePlanAccion
       ? getUniqueNonEmptyValues(
@@ -622,7 +779,7 @@ const notaPromedio =
         reason: shouldExposePlanAccion
           ? 'no_linked_course_ids'
           : 'ai_generating',
-        planItems: planAccion.length,
+        planItems: effectivePlanAccion.length,
       });
     }
 
@@ -642,6 +799,14 @@ const notaPromedio =
           : null;
 
     const fallbackGapItems: unknown[] = [];
+    const fallbackTrayectoriaSugerida =
+      areasInteres.length > 0
+        ? [
+            dashboardLocale === 'pt'
+              ? `Rota inicial em ${getDashboardAreaLabel(areasInteres[0], dashboardLocale)}`
+              : `Ruta inicial en ${getDashboardAreaLabel(areasInteres[0], dashboardLocale)}`,
+          ]
+        : [];
 
     const matchPerfil =
       gapPorcentual != null
@@ -653,8 +818,9 @@ const notaPromedio =
 
     timer.mark('response_ready', {
       degradedSections,
-      planItems: shouldExposePlanAccion ? planAccion.length : 0,
+      planItems: shouldExposePlanAccion ? effectivePlanAccion.length : 0,
       storedPlanItems: planAccion.length,
+      fallbackPlanItems: fallbackPlanAccion.length,
       linkedCursoIds: linkedCursoIds.length,
       areasInteres: areasInteres.length,
       userSkills: userSkills.length,
@@ -664,7 +830,7 @@ const notaPromedio =
       perfilCompletado,
       matchPerfil,
       aiRecommendationsStatus,
-      aiRecommendationsReady: aiRecommendationsStatus === 'ready',
+      aiRecommendationsReady,
       orientacionConfianza,
     });
 
@@ -672,7 +838,7 @@ const notaPromedio =
       success: true,
       requestId,
       degradedSections,
-      aiRecommendationsReady: aiRecommendationsStatus === 'ready',
+      aiRecommendationsReady,
       aiRecommendationsStatus,
       perfil_completado: perfilCompletado,
       match_perfil: matchPerfil,
@@ -704,36 +870,36 @@ const notaPromedio =
                 : fallbackGapItems,
               trayectoria_sugerida: orientacion
                 ? (orientacion.trayectoria_sugerida as unknown[])
-                : [],
+                : fallbackTrayectoriaSugerida,
             }
           : null,
       planAccion: shouldExposePlanAccion
-  ? planAccion.map((item) => {
-      const linkedCurso = item.curso_vinculado_id
-        ? linkedCursosById.get(item.curso_vinculado_id)
-        : null;
+        ? effectivePlanAccion.map((item) => {
+            const linkedCurso = item.curso_vinculado_id
+              ? linkedCursosById.get(item.curso_vinculado_id)
+              : null;
 
-      return {
-        plan_item_id: item.plan_item_id,
-        titulo: item.titulo,
-        descripcion: item.descripcion,
-        prioridad: item.prioridad,
-        completado: item.completado,
-        orden: item.orden,
-        accion_label: item.accion_label,
-        curso: linkedCurso
-          ? {
-              curso_id: linkedCurso.curso_id,
-              titulo: linkedCurso.titulo,
-              url_externa: linkedCurso.url_externa,
-              plataforma: linkedCurso.plataforma,
-              tipo: linkedCurso.tipo,
-              hasInternalContent: linkedCurso.hasInternalContent,
-            }
-          : null,
-      };
-    })
-  : [],
+            return {
+              plan_item_id: item.plan_item_id,
+              titulo: item.titulo,
+              descripcion: item.descripcion,
+              prioridad: item.prioridad,
+              completado: item.completado,
+              orden: item.orden,
+              accion_label: item.accion_label,
+              curso: linkedCurso
+                ? {
+                    curso_id: linkedCurso.curso_id,
+                    titulo: linkedCurso.titulo,
+                    url_externa: linkedCurso.url_externa,
+                    plataforma: linkedCurso.plataforma,
+                    tipo: linkedCurso.tipo,
+                    hasInternalContent: linkedCurso.hasInternalContent,
+                  }
+                : null,
+            };
+          })
+        : [],
       bienestar: {
         notaPromedio,
         totalCheckins: recentCheckins.length,

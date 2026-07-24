@@ -56,6 +56,16 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof LearningPathRegenerationError) {
+      logApiError({
+        route: 'POST /api/formacion/plan/regenerar',
+        requestId,
+        error,
+        context: {
+          code: error.code,
+          details: error.details,
+        },
+      });
+
       return apiErrorResponse({
         status: error.code === 'PROFILE_INCOMPLETE' ? 409 : 503,
         code: error.code,

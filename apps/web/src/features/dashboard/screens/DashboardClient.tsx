@@ -71,7 +71,10 @@ function getAiRecommendationsStatus(
 }
 
 function hasResolvedRecommendations(dashboard: DashboardClientResponse) {
-  return getAiRecommendationsStatus(dashboard) !== 'generating';
+  return (
+    getAiRecommendationsStatus(dashboard) !== 'generating' ||
+    dashboard.planAccion.length > 0
+  );
 }
 
 const AREA_LABEL_KEYS = {
@@ -261,7 +264,8 @@ export default function DashboardClient({
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
   const [progressHistory, setProgressHistory] =
     useState<ProgressHistoryResponse | null>(null);
-  const [isLoadingProgressHistory, setIsLoadingProgressHistory] = useState(false);
+  const [isLoadingProgressHistory, setIsLoadingProgressHistory] =
+    useState(false);
   const [progressHistoryError, setProgressHistoryError] = useState(false);
 
   const [onboardingCompletedClient, setOnboardingCompletedClient] =
@@ -279,7 +283,8 @@ export default function DashboardClient({
     !shouldShowOnboarding && !data && !dashboardError;
 
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
-  const [progressHistoryModalOpen, setProgressHistoryModalOpen] = useState(false);
+  const [progressHistoryModalOpen, setProgressHistoryModalOpen] =
+    useState(false);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
   const [checkinMood, setCheckinMood] = useState('');
   const [checkinStartStep, setCheckinStartStep] = useState<1 | 2 | 3>(1);
@@ -327,24 +332,27 @@ export default function DashboardClient({
     }
   }, [skillsData, isLoadingSkills]);
 
-  const loadProgressHistory = useCallback(async (force = false) => {
-    if ((!force && progressHistory) || isLoadingProgressHistory) return;
+  const loadProgressHistory = useCallback(
+    async (force = false) => {
+      if ((!force && progressHistory) || isLoadingProgressHistory) return;
 
-    setIsLoadingProgressHistory(true);
-    setProgressHistoryError(false);
+      setIsLoadingProgressHistory(true);
+      setProgressHistoryError(false);
 
-    try {
-      const history = await fetchJson<ProgressHistoryResponse>(
-        '/api/dashboard/progress-history?months=4',
-      );
-      setProgressHistory(history);
-    } catch (error) {
-      console.error('Error fetching progress history:', error);
-      setProgressHistoryError(true);
-    } finally {
-      setIsLoadingProgressHistory(false);
-    }
-  }, [isLoadingProgressHistory, progressHistory]);
+      try {
+        const history = await fetchJson<ProgressHistoryResponse>(
+          '/api/dashboard/progress-history?months=4',
+        );
+        setProgressHistory(history);
+      } catch (error) {
+        console.error('Error fetching progress history:', error);
+        setProgressHistoryError(true);
+      } finally {
+        setIsLoadingProgressHistory(false);
+      }
+    },
+    [isLoadingProgressHistory, progressHistory],
+  );
   const retryRecommendationsInBackground = useCallback(async () => {
     const maxAttempts = 4;
     const delayMs = 1500;
@@ -484,7 +492,7 @@ export default function DashboardClient({
   useEffect(() => {
     const status = getAiRecommendationsStatus(data);
 
-    if (status !== 'generating') {
+    if (!data || status !== 'generating' || data.planAccion.length > 0) {
       aiRefreshScheduledRef.current = false;
       clearAiRefreshTimeouts();
       return;
@@ -627,6 +635,8 @@ export default function DashboardClient({
       };
     }) ?? [];
 
+  const hasActionItems = actionItems.length > 0;
+
   const promedioSemanal = data?.bienestar?.notaPromedio ?? 0;
 
   const skillsMatchFromUserSkills =
@@ -637,7 +647,7 @@ export default function DashboardClient({
     skillsData?.orientacion?.gap_porcentual ??
     null;
 
-  const skillsMatchPorcentaje = isLoadingDashboard
+  const skillsMatchPorcentaje = isInitialDashboardLoading
     ? undefined
     : data?.progressHistorySummary?.currentMatch != null
       ? clampPercent(data.progressHistorySummary.currentMatch)
@@ -706,6 +716,9 @@ export default function DashboardClient({
   const hasCheckinToday = data?.bienestar?.hasCheckinToday ?? false;
   const todayCheckin = data?.bienestar?.todayCheckin ?? null;
   const aiRecommendationsStatus = getAiRecommendationsStatus(data);
+
+  const shouldShowPlanGenerating =
+    aiRecommendationsStatus === 'generating' && !hasActionItems;
 
   const dashboardHero = useMemo<DashboardHero>(() => {
     const firstName = getFirstName(nombre);
@@ -886,7 +899,7 @@ export default function DashboardClient({
           </div>
 
           <div className='xl:col-span-5'>
-            {aiRecommendationsStatus === 'generating' ? (
+            {shouldShowPlanGenerating ? (
               <PlanGeneratingCard
                 title={t('planGeneratingTitle')}
                 description={t('planGeneratingDescription')}
