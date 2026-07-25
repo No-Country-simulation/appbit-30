@@ -191,7 +191,6 @@ async function main() {
     where: { usuario_id: testUserId },
     data: {
       onboarding_status: OnboardingStatusEnum.COMPLETED,
-      avatar_url: '/demo-avatar.svg',
       pais: 'Brasil',
       provincia_estado: 'Santa Catarina',
       ciudad: 'Florianópolis',
