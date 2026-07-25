@@ -1,6 +1,10 @@
 import type { User } from '@supabase/supabase-js';
 import { dbClient } from '@/src/server/clients/db.client';
 import type { Prisma } from '@/src/server/generated/prisma';
+import {
+  getAuthAvatarUrl,
+  resolveStoredAvatarUrl,
+} from './auth-avatar';
 
 function usuarioWhereForAuthUser(authUser: User): Prisma.UsuariosWhereInput {
   return authUser.email
@@ -15,6 +19,7 @@ function usuarioWhereForAuthUser(authUser: User): Prisma.UsuariosWhereInput {
 type LinkedUsuarioSelect<S extends Prisma.UsuariosSelect> = S & {
   usuario_id: true;
   auth_uid: true;
+  avatar_url: true;
 };
 
 type LinkedUsuario<S extends Prisma.UsuariosSelect> =
@@ -28,6 +33,7 @@ export async function findLinkedUsuario<S extends Prisma.UsuariosSelect>(
     ...select,
     usuario_id: true,
     auth_uid: true,
+    avatar_url: true,
   };
 
   const found = await dbClient.usuarios.findFirst({
@@ -39,12 +45,18 @@ export async function findLinkedUsuario<S extends Prisma.UsuariosSelect>(
     return null;
   }
 
-  const { usuario_id, auth_uid } = found as {
+  const { usuario_id, auth_uid, avatar_url } = found as {
     usuario_id: string;
     auth_uid: string | null;
+    avatar_url: string | null;
   };
+  const resolvedAvatarUrl = resolveStoredAvatarUrl({
+    storedAvatarUrl: avatar_url,
+    authAvatarUrl: getAuthAvatarUrl(authUser),
+  });
+  const shouldSyncAvatar = resolvedAvatarUrl !== avatar_url;
 
-  if (auth_uid) {
+  if (auth_uid && !shouldSyncAvatar) {
     return found as LinkedUsuario<S>;
   }
 
@@ -53,7 +65,8 @@ export async function findLinkedUsuario<S extends Prisma.UsuariosSelect>(
       usuario_id,
     },
     data: {
-      auth_uid: authUser.id,
+      ...(!auth_uid ? { auth_uid: authUser.id } : {}),
+      ...(shouldSyncAvatar ? { avatar_url: resolvedAvatarUrl } : {}),
     },
     select: selectWithLinkFields,
   });
