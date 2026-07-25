@@ -8,6 +8,10 @@ import {
   NivelIdiomaEnum,
 } from '../../../server/generated/prisma';
 import type { Prisma } from '../../../server/generated/prisma';
+import {
+  getAuthAvatarUrl,
+  resolveStoredAvatarUrl,
+} from '@/src/server/auth/auth-avatar';
 import { getCurrentAuthUser } from '@/src/server/auth/get-current-auth-user';
 import {
   apiErrorResponse,
@@ -179,12 +183,6 @@ function getAuthDisplayName(authUser: {
   }
 
   return 'Usuario BiT';
-}
-
-function getAvatarUrl(authUser: { user_metadata?: Record<string, unknown> }) {
-  const avatarUrl = authUser.user_metadata?.avatar_url;
-
-  return typeof avatarUrl === 'string' ? avatarUrl : null;
 }
 
 function getRequestLocale(rawBody: unknown): SupportedLocale {
@@ -560,7 +558,7 @@ export async function POST(request: Request) {
     const authUid = authUser.id;
     const email = authUser.email;
     const nombreCompleto = getAuthDisplayName(authUser);
-    const avatarUrl = getAvatarUrl(authUser);
+    const authAvatarUrl = getAuthAvatarUrl(authUser);
     const idiomaApp =
       requestLocale === 'pt' ? IdiomaAppEnum.pt : IdiomaAppEnum.es;
 
@@ -578,6 +576,7 @@ export async function POST(request: Request) {
         },
         select: {
           usuario_id: true,
+          avatar_url: true,
         },
       }),
     );
@@ -608,6 +607,10 @@ export async function POST(request: Request) {
 
     const isNewUsuario = !existingUsuario;
 
+    const avatarUrl = resolveStoredAvatarUrl({
+      storedAvatarUrl: existingUsuario?.avatar_url,
+      authAvatarUrl,
+    });
     const baseData = {
       fecha_nacimiento: new Date(data.fechaNacimiento),
       genero: data.genero,
